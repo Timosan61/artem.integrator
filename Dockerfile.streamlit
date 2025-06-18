@@ -19,12 +19,14 @@ COPY . .
 # Создаем директории
 RUN mkdir -p data logs
 
-# Переменная окружения для Streamlit
+# Создаем wrapper скрипт для правильной обработки PORT
+RUN echo '#!/bin/bash\nPORT=${PORT:-8501}\nstreamlit run admin/streamlit_admin.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false' > /app/start.sh && chmod +x /app/start.sh
+
+# Переменные окружения для Streamlit
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
-ENV STREAMLIT_SERVER_PORT=8501
 
 # Экспозируем порт
-EXPOSE $PORT
+EXPOSE 8501
 
-# Команда запуска (PORT устанавливается Railway)
-CMD streamlit run admin/streamlit_admin.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false
+# Команда запуска через wrapper
+CMD ["/app/start.sh"]
