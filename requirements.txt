@@ -1,5 +1,7 @@
+# Updated requirements - v8 rebuild
 pyTelegramBotAPI==4.14.0
 zep-cloud==2.14.1
 aiohttp==3.9.1
 aiofiles==23.2.0
 python-dotenv==1.0.0
+# Cache buster comment for Docker rebuild
