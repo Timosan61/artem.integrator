@@ -4,10 +4,10 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 
 # import openai  # Временно отключено
-from zep_cloud.client import AsyncZep
-from zep_cloud.types import Message
+# from zep_cloud.client import AsyncZep  # Временно отключено
+# from zep_cloud.types import Message  # Временно отключено
 
-from .config import ZEP_API_KEY, INSTRUCTION_FILE  # Временно убрали OPENAI_API_KEY, OPENAI_MODEL
+from .config import INSTRUCTION_FILE  # Временно убрали OPENAI_API_KEY, OPENAI_MODEL, ZEP_API_KEY
 
 
 class TextilProAgent:
@@ -15,7 +15,8 @@ class TextilProAgent:
         # Временно отключено для тестирования
         # self.openai_client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
         self.openai_client = None
-        self.zep_client = AsyncZep(api_key=ZEP_API_KEY)
+        # self.zep_client = AsyncZep(api_key=ZEP_API_KEY)  # Временно отключено
+        self.zep_client = None
         self.instruction = self._load_instruction()
         self.user_sessions = {}  # Резервное хранение сессий в памяти
     

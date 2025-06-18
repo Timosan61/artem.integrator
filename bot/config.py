@@ -15,7 +15,8 @@ OPENAI_MODEL = 'gpt-4o'
 
 if not TELEGRAM_BOT_TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN не найден в переменных окружения")
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY не найден в переменных окружения")
-if not ZEP_API_KEY:
-    raise ValueError("ZEP_API_KEY не найден в переменных окружения")
+# Временно отключены проверки для тестирования
+# if not OPENAI_API_KEY:
+#     raise ValueError("OPENAI_API_KEY не найден в переменных окружения")
+# if not ZEP_API_KEY:
+#     raise ValueError("ZEP_API_KEY не найден в переменных окружения")
