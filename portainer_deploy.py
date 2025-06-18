@@ -191,9 +191,9 @@ def main():
     
     # Переменные окружения для стека
     ENV_VARS = {
-        "TELEGRAM_BOT_TOKEN": "YOUR_TELEGRAM_BOT_TOKEN",
-        "OPENAI_API_KEY": "YOUR_OPENAI_API_KEY",
-        "ZEP_API_KEY": "YOUR_ZEP_API_KEY",
+        "TELEGRAM_BOT_TOKEN": "7902755829:AAH-WUhXSYq8NckAjFb22E-4D1O7ix_kzPM",
+        "OPENAI_API_KEY": "test_key",
+        "ZEP_API_KEY": "test_key",
         "BOT_USERNAME": "@textilprofi_bot"
     }
     
