@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Скрипт запуска Streamlit админ панели для управления инструкциями бота
+Streamlit админ панель для управления инструкциями Telegram бота
+Доступ через SSH туннель: ssh -L 8502:localhost:8501 coder@104.248.39.106
 """
 
 import os
@@ -8,43 +9,34 @@ import sys
 import subprocess
 
 def main():
-    # Устанавливаем путь к проекту
     project_root = os.path.dirname(os.path.abspath(__file__))
     os.chdir(project_root)
     
-    # Путь к админ панели
     admin_script = os.path.join("admin", "streamlit_admin.py")
     
     if not os.path.exists(admin_script):
-        print("❌ Ошибка: файл админ панели не найден!")
-        print(f"Ожидается: {admin_script}")
+        print("❌ Файл админ панели не найден!")
         sys.exit(1)
     
-    print("🚀 Запуск Textil PRO Bot Admin Panel...")
-    print("📝 Управление инструкциями бота через веб-интерфейс")
-    print("🌐 Интерфейс будет доступен по адресу: http://localhost:8501")
-    print("🔐 Пароль для входа: password")
-    print("-" * 50)
+    print("🚀 Textil PRO Bot - Админ панель")
+    print("📝 Управление инструкциями бота")
+    print("🌐 Сервер: http://localhost:8501")
+    print("🔗 SSH туннель: ssh -L 8502:localhost:8501 coder@104.248.39.106")
+    print("🖥️  Браузер: http://localhost:8502")
+    print("🔐 Пароль: password")
+    print("-" * 60)
     
     try:
-        # Запускаем Streamlit
         subprocess.run([
-            sys.executable, 
-            "-m", "streamlit", 
-            "run", 
-            admin_script,
+            "streamlit", "run", admin_script,
             "--server.port=8501",
-            "--server.headless=true",
+            "--server.headless=true", 
             "--browser.gatherUsageStats=false"
         ], check=True)
     except KeyboardInterrupt:
-        print("\n👋 Админ панель остановлена пользователем")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Ошибка при запуске Streamlit: {e}")
-        sys.exit(1)
+        print("\n👋 Админ панель остановлена")
     except FileNotFoundError:
-        print("❌ Ошибка: Streamlit не установлен!")
-        print("Установите зависимости: pip install -r requirements.txt")
+        print("❌ Streamlit не установлен! Запустите: pip install streamlit streamlit-ace gitpython")
         sys.exit(1)
 
 if __name__ == "__main__":
