@@ -6,7 +6,7 @@ WORKDIR /app
 # Копируем файл зависимостей
 COPY requirements.txt .
 
-# Обновляем pip и устанавливаем зависимости (Fixed versions: 2025-06-18-v3)
+# Обновляем pip и устанавливаем зависимости (Compatible versions: 2025-06-18-v4)
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
