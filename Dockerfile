@@ -6,7 +6,7 @@ WORKDIR /app
 # Копируем файл зависимостей
 COPY requirements.txt .
 
-# Устанавливаем зависимости
+# Устанавливаем зависимости (Cache bust: 2025-06-18)
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем весь проект
