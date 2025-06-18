@@ -12,10 +12,7 @@ from .config import OPENAI_API_KEY, ZEP_API_KEY, OPENAI_MODEL, INSTRUCTION_FILE
 
 class TextilProAgent:
     def __init__(self):
-        self.openai_client = openai.AsyncOpenAI(
-            api_key=OPENAI_API_KEY,
-            timeout=60.0
-        )
+        self.openai_client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
         self.zep_client = AsyncZep(api_key=ZEP_API_KEY)
         self.instruction = self._load_instruction()
         self.user_sessions = {}  # Резервное хранение сессий в памяти

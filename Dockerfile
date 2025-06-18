@@ -6,9 +6,9 @@ WORKDIR /app
 # Копируем файл зависимостей
 COPY requirements.txt .
 
-# Обновляем pip и устанавливаем зависимости (Cache bust: 2025-06-18-v2)
+# Обновляем pip и устанавливаем зависимости (Fixed versions: 2025-06-18-v3)
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir --force-reinstall -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем весь проект
 COPY . .
