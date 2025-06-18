@@ -20,7 +20,11 @@ COPY . .
 RUN mkdir -p data logs
 
 # Создаем wrapper скрипт для правильной обработки PORT
-RUN echo '#!/bin/bash\nPORT=${PORT:-8501}\nstreamlit run admin/streamlit_admin.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false' > /app/start.sh && chmod +x /app/start.sh
+RUN echo '#!/bin/bash' > /app/start.sh && \
+    echo 'export PORT=${PORT:-8501}' >> /app/start.sh && \
+    echo 'echo "Starting Streamlit on port $PORT"' >> /app/start.sh && \
+    echo 'streamlit run admin/streamlit_admin.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false' >> /app/start.sh && \
+    chmod +x /app/start.sh
 
 # Переменные окружения для Streamlit
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
