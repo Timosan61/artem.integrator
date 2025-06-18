@@ -42,8 +42,9 @@ def main():
     print(f"   - Удаленно: http://{server_ip}:8501")
     print("🔐 Пароль для входа: password")
     print("-" * 60)
-    print("💡 Для SSH туннелирования используйте:")
-    print(f"   ssh -L 8501:localhost:8501 user@{server_ip}")
+    print("💡 Для SSH туннелирования с вашего компьютера:")
+    print(f"   ssh -L 8501:localhost:8501 coder@{server_ip}")
+    print("   Затем откройте: http://localhost:8501")
     print("-" * 60)
     
     try:
