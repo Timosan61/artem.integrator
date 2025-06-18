@@ -3,11 +3,11 @@ import asyncio
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-import openai
+# import openai  # Временно отключено
 from zep_cloud.client import AsyncZep
 from zep_cloud.types import Message
 
-from .config import OPENAI_API_KEY, ZEP_API_KEY, OPENAI_MODEL, INSTRUCTION_FILE
+from .config import ZEP_API_KEY, INSTRUCTION_FILE  # Временно убрали OPENAI_API_KEY, OPENAI_MODEL
 
 
 class TextilProAgent:
