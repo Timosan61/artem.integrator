@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  textil-bot:
+    build: .
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ZEP_API_KEY=${ZEP_API_KEY}
+      - BOT_USERNAME=${BOT_USERNAME}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
