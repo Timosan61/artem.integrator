@@ -25,7 +25,7 @@ class PortainerAPI:
         response.raise_for_status()
         return response.json()
     
-    def get_stacks(self, endpoint_id: int = 1) -> list:
+    def get_stacks(self, endpoint_id: int = 2) -> list:
         """Получить список стеков"""
         response = requests.get(
             f"{self.base_url}/api/stacks",
@@ -35,7 +35,7 @@ class PortainerAPI:
         response.raise_for_status()
         return response.json()
     
-    def find_stack_by_name(self, name: str, endpoint_id: int = 1) -> Optional[Dict[str, Any]]:
+    def find_stack_by_name(self, name: str, endpoint_id: int = 2) -> Optional[Dict[str, Any]]:
         """Найти стек по имени"""
         stacks = self.get_stacks(endpoint_id)
         for stack in stacks:
@@ -50,7 +50,7 @@ class PortainerAPI:
                             repository_reference: str = "refs/heads/main",
                             auto_update: bool = True,
                             env_vars: Dict[str, str] = None,
-                            endpoint_id: int = 1) -> Dict[str, Any]:
+                            endpoint_id: int = 2) -> Dict[str, Any]:
         """Создать стек из Git репозитория"""
         
         payload = {
@@ -74,7 +74,7 @@ class PortainerAPI:
         response.raise_for_status()
         return response.json()
     
-    def update_stack(self, stack_id: int, endpoint_id: int = 1) -> Dict[str, Any]:
+    def update_stack(self, stack_id: int, endpoint_id: int = 2) -> Dict[str, Any]:
         """Обновить стек (принудительно подтянуть изменения из Git)"""
         
         response = requests.put(
@@ -86,7 +86,7 @@ class PortainerAPI:
         response.raise_for_status()
         return response.json()
     
-    def restart_stack(self, stack_id: int, endpoint_id: int = 1) -> bool:
+    def restart_stack(self, stack_id: int, endpoint_id: int = 2) -> bool:
         """Перезапустить все контейнеры в стеке"""
         
         # Сначала останавливаем стек
@@ -109,7 +109,7 @@ class PortainerAPI:
         
         return True
     
-    def get_stack_logs(self, stack_name: str, lines: int = 50, endpoint_id: int = 1) -> str:
+    def get_stack_logs(self, stack_name: str, lines: int = 50, endpoint_id: int = 2) -> str:
         """Получить логи контейнеров стека"""
         stack = self.find_stack_by_name(stack_name, endpoint_id)
         if not stack:
@@ -148,7 +148,7 @@ class PortainerAPI:
         
         return "\n".join(logs)
     
-    def get_stack_status(self, stack_name: str, endpoint_id: int = 1) -> Dict[str, Any]:
+    def get_stack_status(self, stack_name: str, endpoint_id: int = 2) -> Dict[str, Any]:
         """Получить статус стека"""
         stack = self.find_stack_by_name(stack_name, endpoint_id)
         if not stack:
@@ -187,12 +187,12 @@ def main():
     PORTAINER_URL = "http://185.135.83.197:9000"
     API_KEY = "ptr_W0/YcW+mOfXDut1onRvf7lYpOGn6yhHKu+5K/DrZt9Q="
     STACK_NAME = "textil-pro-bot"
-    REPOSITORY_URL = "https://github.com/YOUR_USERNAME/textil-pro-bot.git"  # Заменить на реальный URL
+    REPOSITORY_URL = "https://github.com/Timosan61/Textill_PRO_BOT.git"
     
     # Переменные окружения для стека
     ENV_VARS = {
         "TELEGRAM_BOT_TOKEN": "YOUR_TELEGRAM_BOT_TOKEN",
-        "OPENAI_API_KEY": "YOUR_OPENAI_API_KEY",
+        "OPENAI_API_KEY": "YOUR_OPENAI_API_KEY", 
         "ZEP_API_KEY": "YOUR_ZEP_API_KEY",
         "BOT_USERNAME": "@textilprofi_bot"
     }
