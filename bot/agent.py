@@ -12,7 +12,9 @@ from .config import OPENAI_API_KEY, ZEP_API_KEY, OPENAI_MODEL, INSTRUCTION_FILE
 
 class TextilProAgent:
     def __init__(self):
-        self.openai_client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
+        # Временно отключено для тестирования
+        # self.openai_client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
+        self.openai_client = None
         self.zep_client = AsyncZep(api_key=ZEP_API_KEY)
         self.instruction = self._load_instruction()
         self.user_sessions = {}  # Резервное хранение сессий в памяти
@@ -149,14 +151,17 @@ class TextilProAgent:
                 {"role": "user", "content": user_message}
             ]
             
-            response = await self.openai_client.chat.completions.create(
-                model=OPENAI_MODEL,
-                messages=messages,
-                max_tokens=1000,
-                temperature=0.7
-            )
-            
-            bot_response = response.choices[0].message.content
+            # Временная заглушка для тестирования
+            if self.openai_client is None:
+                bot_response = "🤖 Привет! Меня зовут Анастасия, я консультант Textile Pro. Сейчас я настраиваюсь, но уже готова помочь с вопросами о производстве одежды в Китае, Индии и Бангладеш!"
+            else:
+                response = await self.openai_client.chat.completions.create(
+                    model=OPENAI_MODEL,
+                    messages=messages,
+                    max_tokens=1000,
+                    temperature=0.7
+                )
+                bot_response = response.choices[0].message.content
             
             # Сохраняем в Zep Memory (с fallback на локальное хранилище)
             await self.add_to_zep_memory(session_id, user_message, bot_response)

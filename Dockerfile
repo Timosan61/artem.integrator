@@ -6,7 +6,7 @@ WORKDIR /app
 # Копируем файл зависимостей
 COPY requirements.txt .
 
-# Обновляем pip и устанавливаем зависимости (Compatible versions: 2025-06-18-v4)
+# Обновляем pip и устанавливаем зависимости (Test without OpenAI: 2025-06-18-v5)
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
