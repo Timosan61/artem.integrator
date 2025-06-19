@@ -8,6 +8,7 @@ import os
 import sys
 import logging
 import traceback
+from datetime import datetime
 from fastapi import FastAPI, Request, HTTPException
 import telebot
 import json
@@ -60,6 +61,11 @@ app = FastAPI(
     title="🤖 Telegram Business Bot", 
     description="Webhook-only режим для Telegram Business API"
 )
+
+# Хранилище последних updates для отладки
+from collections import deque
+last_updates = deque(maxlen=10)
+update_counter = 0
 
 @app.get("/")
 async def health_check():
@@ -146,9 +152,45 @@ async def delete_webhook():
     except Exception as e:
         return {"status": "❌ ERROR", "error": str(e)}
 
+@app.get("/debug/last-updates")
+async def get_last_updates():
+    """Показать последние полученные updates для отладки"""
+    return {
+        "total_received": update_counter,
+        "last_10_updates": list(last_updates),
+        "current_time": datetime.now().isoformat()
+    }
+
+@app.post("/test/business-send")
+async def test_business_send(request: Request):
+    """Тестовая отправка через Business API"""
+    try:
+        data = await request.json()
+        chat_id = data.get("chat_id")
+        connection_id = data.get("business_connection_id")
+        text = data.get("text", "🧪 Тестовое сообщение Business API")
+        
+        if not chat_id:
+            return {"error": "chat_id обязателен"}
+        
+        if connection_id:
+            bot.send_message(
+                chat_id=chat_id,
+                text=text,
+                business_connection_id=connection_id
+            )
+            return {"status": "✅ Отправлено через Business API", "connection_id": connection_id}
+        else:
+            bot.send_message(chat_id, text)
+            return {"status": "✅ Отправлено как обычное сообщение"}
+            
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
 @app.post("/webhook")
 async def process_webhook(request: Request):
     """Главный обработчик webhook"""
+    global update_counter
     try:
         # Проверяем secret token из заголовков
         secret_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
@@ -163,6 +205,32 @@ async def process_webhook(request: Request):
         print(f"📨 Обработка webhook update...")
         
         update_dict = json.loads(json_string)
+        
+        # Сохраняем update для отладки
+        update_counter += 1
+        debug_update = {
+            "id": update_counter,
+            "timestamp": datetime.now().isoformat(),
+            "type": "unknown",
+            "data": update_dict
+        }
+        
+        # Определяем тип update
+        if "message" in update_dict:
+            debug_update["type"] = "message"
+        elif "business_message" in update_dict:
+            debug_update["type"] = "business_message"
+        elif "business_connection" in update_dict:
+            debug_update["type"] = "business_connection"
+        elif "edited_business_message" in update_dict:
+            debug_update["type"] = "edited_business_message"
+        elif "deleted_business_messages" in update_dict:
+            debug_update["type"] = "deleted_business_messages"
+        else:
+            debug_update["type"] = f"other: {list(update_dict.keys())}"
+            
+        last_updates.append(debug_update)
+        logger.info(f"📊 Update #{update_counter} тип: {debug_update['type']}")
         
         # === ОБЫЧНЫЕ СООБЩЕНИЯ ===
         if "message" in update_dict:
