@@ -1,6 +1,7 @@
 """
 🤖 Telegram Business Bot Webhook Server
 Единственная точка входа - БЕЗ polling режима!
+Updated: 2025-06-19 09:50 - Force rebuild
 """
 
 import os
