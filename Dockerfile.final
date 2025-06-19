@@ -13,7 +13,5 @@ RUN find /app -name "*.py" ! -name "webhook.py" -delete
 
 ENV PYTHONUNBUFFERED=1
 
-EXPOSE $PORT
-
-# Запускаем webhook.py
-CMD python -m uvicorn webhook:app --host 0.0.0.0 --port $PORT --log-level info
+# Запускаем webhook.py - Railway подставит PORT автоматически
+CMD ["sh", "-c", "python -m uvicorn webhook:app --host 0.0.0.0 --port ${PORT:-8000} --log-level info"]
