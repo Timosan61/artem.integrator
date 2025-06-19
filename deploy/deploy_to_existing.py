@@ -185,15 +185,37 @@ def main():
         # Redeploy service
         deployment_id = updater.redeploy_service(service_id)
         
-        print(f"""
-🎉 Deployment update completed!
+        if deployment_id:
+            print(f"""
+🎉 Deployment update started!
 
 Project: https://railway.app/project/{project_id}
 Service: {service_name} (ID: {service_id})
 Deployment ID: {deployment_id}
 
-The service is being redeployed with updated environment variables.
-Monitor the deployment progress in the Railway dashboard.
+""")
+            
+            # Предлагаем мониторинг деплоя
+            try:
+                monitor_choice = input("🔍 Хотите отслеживать прогресс деплоя? (y/N): ").lower()
+                if monitor_choice in ['y', 'yes', 'да']:
+                    from .monitor_deploy import RailwayMonitor
+                    monitor = RailwayMonitor(api_token)
+                    print("\n" + "="*60)
+                    monitor.monitor_deployment(deployment_id, timeout=600)
+                else:
+                    print("✅ Мониторинг деплоя можно запустить командой:")
+                    print(f"python deploy/monitor_deploy.py --deployment-id {deployment_id}")
+            except KeyboardInterrupt:
+                print("\n⏹️ Мониторинг остановлен пользователем")
+            except Exception as e:
+                print(f"\n⚠️ Ошибка запуска мониторинга: {e}")
+                print(f"Запустите мониторинг вручную: python deploy/monitor_deploy.py --deployment-id {deployment_id}")
+        else:
+            print("""
+❌ Deployment failed to start!
+
+Check the Railway dashboard for more details.
 """)
     
     except Exception as e:
