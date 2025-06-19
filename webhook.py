@@ -13,6 +13,7 @@ from fastapi import FastAPI, Request, HTTPException
 import telebot
 import json
 import asyncio
+import requests
 
 # Добавляем путь для импорта модулей бота
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -55,6 +56,33 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# === ФУНКЦИЯ ДЛЯ BUSINESS API ===
+def send_business_message(chat_id, text, business_connection_id):
+    """
+    Отправка сообщения через Business API используя прямой HTTP запрос
+    (pyTelegramBotAPI не поддерживает business_connection_id)
+    """
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    data = {
+        "chat_id": chat_id,
+        "text": text,
+        "business_connection_id": business_connection_id
+    }
+    
+    try:
+        response = requests.post(url, json=data, timeout=10)
+        result = response.json()
+        
+        if result.get("ok"):
+            logger.info(f"✅ Business API: сообщение отправлено через HTTP API")
+            return result.get("result")
+        else:
+            logger.error(f"❌ Business API ошибка: {result}")
+            return None
+    except Exception as e:
+        logger.error(f"❌ Business API HTTP ошибка: {e}")
+        return None
 
 # === FASTAPI ПРИЛОЖЕНИЕ ===
 app = FastAPI(
@@ -174,12 +202,11 @@ async def test_business_send(request: Request):
             return {"error": "chat_id обязателен"}
         
         if connection_id:
-            bot.send_message(
-                chat_id=chat_id,
-                text=text,
-                business_connection_id=connection_id
-            )
-            return {"status": "✅ Отправлено через Business API", "connection_id": connection_id}
+            result = send_business_message(chat_id, text, connection_id)
+            if result:
+                return {"status": "✅ Отправлено через Business API", "connection_id": connection_id, "result": result}
+            else:
+                return {"status": "❌ Ошибка отправки через Business API"}
         else:
             bot.send_message(chat_id, text)
             return {"status": "✅ Отправлено как обычное сообщение"}
@@ -320,17 +347,15 @@ async def process_webhook(request: Request):
                         logger.info(f"🤖 AI отключен, использую стандартный ответ")
                         response = f"💼 Здравствуйте, {user_name}!\n\n✅ Ваше сообщение получено через Business API: {text}\n\n🤖 Наш специалист скоро ответит!"
                     
-                    # Для business_message ВСЕГДА пытаемся отправить с business_connection_id
-                    # Но проверяем его наличие для правильной обработки
+                    # Для business_message используем специальную функцию
                     logger.info(f"📤 Пытаюсь отправить ответ...")
                     if business_connection_id:
-                        logger.info(f"📤 Отправляю с business_connection_id='{business_connection_id}'")
-                        bot.send_message(
-                            chat_id=chat_id,
-                            text=response,
-                            business_connection_id=business_connection_id
-                        )
-                        logger.info(f"✅ Business ответ отправлен в чат {chat_id} с connection_id='{business_connection_id}'")
+                        logger.info(f"📤 Отправляю через Business API с connection_id='{business_connection_id}'")
+                        result = send_business_message(chat_id, response, business_connection_id)
+                        if result:
+                            logger.info(f"✅ Business ответ отправлен в чат {chat_id} с connection_id='{business_connection_id}'")
+                        else:
+                            logger.error(f"❌ Не удалось отправить через Business API")
                     else:
                         # Если connection_id отсутствует, логируем это как критическую ошибку
                         logger.error(f"❌ КРИТИЧНО: Получен business_message без connection_id! chat_id={chat_id}, user={user_name}")
@@ -367,12 +392,13 @@ async def process_webhook(request: Request):
                         
                         # Если есть business_connection_id - используем его
                         if business_connection_id:
-                            bot.send_message(
-                                chat_id=chat_id,
-                                text=error_message,
-                                business_connection_id=business_connection_id
-                            )
-                            logger.info(f"✅ Сообщение об ошибке отправлено через Business API")
+                            result = send_business_message(chat_id, error_message, business_connection_id)
+                            if result:
+                                logger.info(f"✅ Сообщение об ошибке отправлено через Business API")
+                            else:
+                                # Если Business API не сработал, пробуем обычный способ
+                                bot.send_message(chat_id, error_message)
+                                logger.warning(f"⚠️ Business API не сработал, отправлено обычным способом")
                         else:
                             # Fallback: если нет connection_id, отправляем обычное сообщение
                             bot.send_message(chat_id, error_message)
