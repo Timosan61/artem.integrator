@@ -223,7 +223,14 @@ async def process_webhook(request: Request):
             business_connection_id = bus_msg.get("business_connection_id")
             user_name = bus_msg.get("from", {}).get("first_name", "Клиент")
             
-            if text and business_connection_id:
+            # Логируем наличие business_connection_id
+            if business_connection_id:
+                logger.info(f"📊 Business connection ID: {business_connection_id}")
+            else:
+                logger.info("📊 Business message БЕЗ connection ID")
+            
+            # Обрабатываем ВСЕ business сообщения с текстом
+            if text:
                 try:
                     bot.send_chat_action(chat_id, 'typing')
                     
@@ -232,17 +239,30 @@ async def process_webhook(request: Request):
                         session_id = f"business_{user_id}"
                         response = await agent.generate_response(text, session_id)
                     else:
-                        response = f"💼 Здравствуйте, {user_name}!\n\n✅ Ваше сообщение получено через Business API.\n\n📞 Наш специалист скоро ответит!"
+                        response = f"💼 Здравствуйте, {user_name}!\n\n✅ Ваше сообщение получено через Business API: {text}\n\n🤖 Наш специалист скоро ответит!"
                     
-                    bot.send_message(
-                        chat_id=chat_id,
-                        text=response,
-                        business_connection_id=business_connection_id
-                    )
-                    logger.info(f"✅ Business ответ отправлен в чат {chat_id}")
+                    # Отправляем с business_connection_id ТОЛЬКО если он есть
+                    if business_connection_id:
+                        bot.send_message(
+                            chat_id=chat_id,
+                            text=response,
+                            business_connection_id=business_connection_id
+                        )
+                        logger.info(f"✅ Business ответ отправлен С connection_id в чат {chat_id}")
+                    else:
+                        # Отправляем обычным способом если нет business_connection_id
+                        bot.send_message(chat_id, response)
+                        logger.info(f"✅ Business ответ отправлен БЕЗ connection_id в чат {chat_id}")
+                    
+                    print(f"✅ Business ответ отправлен пользователю {user_name}")
                     
                 except Exception as e:
                     logger.error(f"Ошибка обработки business сообщения: {e}")
+                    # Пробуем отправить простое сообщение в случае ошибки
+                    try:
+                        bot.send_message(chat_id, "Извините, произошла ошибка. Попробуйте позже.")
+                    except:
+                        pass
         
         # === BUSINESS CONNECTION ===
         elif "business_connection" in update_dict:
