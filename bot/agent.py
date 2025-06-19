@@ -22,11 +22,19 @@ class TextilProAgent:
         
         # Инициализируем Zep клиент если API ключ доступен
         if ZEP_API_KEY and ZEP_API_KEY != "test_key":
-            self.zep_client = AsyncZep(api_key=ZEP_API_KEY)
-            print("✅ Zep клиент инициализирован")
+            try:
+                self.zep_client = AsyncZep(api_key=ZEP_API_KEY)
+                print(f"✅ Zep клиент инициализирован с ключом длиной {len(ZEP_API_KEY)} символов")
+                print(f"🔑 Zep API Key начинается с: {ZEP_API_KEY[:8]}...")
+            except Exception as e:
+                print(f"❌ Ошибка инициализации Zep клиента: {e}")
+                self.zep_client = None
         else:
             self.zep_client = None
-            print("⚠️ Zep API ключ не найден, используется локальная память")
+            if not ZEP_API_KEY:
+                print("⚠️ ZEP_API_KEY не установлен, используется локальная память")
+            else:
+                print(f"⚠️ ZEP_API_KEY имеет значение 'test_key', используется локальная память")
         self.instruction = self._load_instruction()
         self.user_sessions = {}  # Резервное хранение сессий в памяти
     
@@ -59,6 +67,11 @@ class TextilProAgent:
     
     async def add_to_zep_memory(self, session_id: str, user_message: str, bot_response: str):
         """Добавляет сообщения в Zep Memory"""
+        if not self.zep_client:
+            print(f"⚠️ Zep клиент не инициализирован, используем локальную память для {session_id}")
+            self.add_to_local_session(session_id, user_message, bot_response)
+            return False
+            
         try:
             messages = [
                 Message(
@@ -74,25 +87,31 @@ class TextilProAgent:
             ]
             
             await self.zep_client.memory.add(session_id=session_id, messages=messages)
-            print(f"✅ Сообщения добавлены в Zep для сессии {session_id}")
+            print(f"✅ Сообщения добавлены в Zep Cloud для сессии {session_id}")
+            print(f"   📝 User: {user_message[:50]}...")
+            print(f"   🤖 Bot: {bot_response[:50]}...")
             return True
             
         except Exception as e:
-            print(f"❌ Ошибка при добавлении в Zep: {e}")
+            print(f"❌ Ошибка при добавлении в Zep: {type(e).__name__}: {e}")
             # Fallback: добавляем в локальную память
             self.add_to_local_session(session_id, user_message, bot_response)
             return False
     
     async def get_zep_memory_context(self, session_id: str) -> str:
         """Получает контекст из Zep Memory"""
+        if not self.zep_client:
+            print(f"⚠️ Zep не доступен, используем локальную историю для {session_id}")
+            return self.get_local_session_history(session_id)
+            
         try:
             memory = await self.zep_client.memory.get(session_id=session_id)
             context = memory.context if memory.context else ""
-            print(f"✅ Получен контекст из Zep для сессии {session_id}")
+            print(f"✅ Получен контекст из Zep для сессии {session_id}, длина: {len(context)}")
             return context
             
         except Exception as e:
-            print(f"❌ Ошибка при получении контекста из Zep: {e}")
+            print(f"❌ Ошибка при получении контекста из Zep: {type(e).__name__}: {e}")
             return self.get_local_session_history(session_id)
     
     async def get_zep_recent_messages(self, session_id: str, limit: int = 6) -> str:

@@ -197,6 +197,63 @@ async def get_last_updates():
         "current_time": datetime.now().isoformat()
     }
 
+@app.get("/debug/zep-status")
+async def get_zep_status():
+    """Проверить статус Zep Memory"""
+    zep_info = {
+        "zep_api_key_set": bool(os.getenv('ZEP_API_KEY')),
+        "zep_api_key_length": len(os.getenv('ZEP_API_KEY', '')) if os.getenv('ZEP_API_KEY') else 0,
+        "ai_agent_available": AI_ENABLED,
+        "zep_client_initialized": False,
+        "memory_mode": "unknown"
+    }
+    
+    if AI_ENABLED:
+        try:
+            zep_info["zep_client_initialized"] = agent.zep_client is not None
+            zep_info["memory_mode"] = "Zep Cloud" if agent.zep_client else "Local Fallback"
+            zep_info["local_sessions_count"] = len(agent.user_sessions)
+            zep_info["local_session_ids"] = list(agent.user_sessions.keys())
+        except Exception as e:
+            zep_info["error"] = str(e)
+    
+    return zep_info
+
+@app.get("/debug/memory/{session_id}")
+async def get_session_memory(session_id: str):
+    """Получить память конкретной сессии"""
+    if not AI_ENABLED:
+        return {"error": "AI не включен"}
+    
+    try:
+        memory_info = {
+            "session_id": session_id,
+            "zep_memory": None,
+            "local_memory": None,
+            "zep_available": agent.zep_client is not None
+        }
+        
+        # Пробуем получить из Zep
+        if agent.zep_client:
+            try:
+                context = await agent.get_zep_memory_context(session_id)
+                messages = await agent.get_zep_recent_messages(session_id)
+                memory_info["zep_memory"] = {
+                    "context": context,
+                    "recent_messages": messages
+                }
+            except Exception as e:
+                memory_info["zep_error"] = str(e)
+        
+        # Получаем локальную память
+        if session_id in agent.user_sessions:
+            memory_info["local_memory"] = agent.user_sessions[session_id]
+        
+        return memory_info
+        
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
 @app.post("/test/business-send")
 async def test_business_send(request: Request):
     """Тестовая отправка через Business API"""
