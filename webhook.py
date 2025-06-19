@@ -1,7 +1,7 @@
 """
 🤖 Telegram Business Bot Webhook Server
 Единственная точка входа - БЕЗ polling режима!
-Updated: 2025-06-19 10:15 - Added AI integration
+Updated: 2025-06-19 10:30 - Fixed AI imports + Zep integration
 """
 
 import os
@@ -19,11 +19,20 @@ print("🚀 Загрузка Telegram Business Bot Webhook Server...")
 
 # Пытаемся импортировать AI agent
 try:
+    import bot
+    print("✅ Модуль bot найден")
     from bot.agent import agent
     print("✅ AI Agent загружен успешно")
     AI_ENABLED = True
 except ImportError as e:
     print(f"⚠️ AI Agent не доступен: {e}")
+    print(f"📁 Текущая директория: {os.getcwd()}")
+    print(f"📁 Файлы в директории: {os.listdir('.')}")
+    if os.path.exists('bot'):
+        print(f"📁 Файлы в bot/: {os.listdir('bot')}")
+    AI_ENABLED = False
+except Exception as e:
+    print(f"❌ Ошибка загрузки AI Agent: {e}")
     AI_ENABLED = False
 
 # === НАСТРОЙКИ ===
