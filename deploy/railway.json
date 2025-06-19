@@ -2,10 +2,10 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "dockerfile",
-    "dockerfilePath": "Dockerfile.simple"
+    "dockerfilePath": "Dockerfile.standalone"
   },
   "deploy": {
-    "startCommand": "python -m uvicorn bot.simple_webhook:app --host 0.0.0.0 --port $PORT",
+    "startCommand": "python -m uvicorn standalone_webhook:app --host 0.0.0.0 --port $PORT",
     "healthcheckPath": "/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "on_failure"
@@ -14,8 +14,7 @@
     "production": {
       "variables": {
         "TELEGRAM_BOT_TOKEN": null,
-        "WEBHOOK_SECRET_TOKEN": null,
-        "PYTHONPATH": "/app"
+        "WEBHOOK_SECRET_TOKEN": null
       }
     }
   }
