@@ -157,6 +157,9 @@ class TextilProAgent:
             if zep_history:
                 system_prompt += f"\n\nПоследние сообщения:\n{zep_history}"
             
+            # Дополнительное напоминание о форматировании
+            system_prompt += "\n\n⚠️ КРИТИЧЕСКИ ВАЖНО: Форматируй ответы с абзацами! Используй двойные переносы строк между смысловыми блоками. НЕ пиши сплошным текстом!"
+            
             messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message}
