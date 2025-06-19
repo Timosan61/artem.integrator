@@ -9,7 +9,7 @@ import telebot
 from telebot import types
 import json
 
-# Настройки
+# Настройки из переменных окружения
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 WEBHOOK_SECRET_TOKEN = os.getenv("WEBHOOK_SECRET_TOKEN", "textil_pro_secret_2025")
 
@@ -110,11 +110,21 @@ async def process_webhook(request: Request):
 async def startup_event():
     """Initialize on startup"""
     logger.info("🚀 Starting Simple Webhook Server")
+    
+    # ВАЖНО: Удаляем webhook при старте чтобы избежать конфликтов
+    try:
+        bot.delete_webhook()
+        logger.info("Webhook deleted on startup")
+    except Exception as e:
+        logger.warning(f"Could not delete webhook: {e}")
+    
     try:
         bot_info = bot.get_me()
         logger.info(f"Bot info: @{bot_info.username}")
     except Exception as e:
         logger.error(f"Failed to get bot info: {e}")
+        
+    # НЕ запускаем polling! Только webhook режим
 
 if __name__ == "__main__":
     import uvicorn

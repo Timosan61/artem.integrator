@@ -5,9 +5,14 @@ WORKDIR /app
 # Устанавливаем только нужные зависимости
 RUN pip install --no-cache-dir fastapi uvicorn pyTelegramBotAPI
 
-# Копируем код
-COPY bot/ ./bot/
-COPY .env ./ 
+# Создаем структуру директорий
+RUN mkdir -p ./bot
+
+# Копируем только simple_webhook.py
+COPY bot/simple_webhook.py ./bot/
+
+# Создаем пустой __init__.py
+RUN touch ./bot/__init__.py
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
