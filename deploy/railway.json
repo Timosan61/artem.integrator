@@ -2,10 +2,10 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "dockerfile",
-    "dockerfilePath": "Dockerfile.streamlit"
+    "dockerfilePath": "Dockerfile.webhook"
   },
   "deploy": {
-    "startCommand": "python3 /app/start_streamlit.py",
+    "startCommand": "python -m uvicorn bot.webhook_server:app --host 0.0.0.0 --port $PORT",
     "healthcheckPath": "/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "on_failure"
@@ -13,9 +13,12 @@
   "environments": {
     "production": {
       "variables": {
-        "STREAMLIT_SERVER_PORT": null,
-        "STREAMLIT_SERVER_ADDRESS": null,
-        "STREAMLIT_BROWSER_GATHER_USAGE_STATS": null
+        "TELEGRAM_BOT_TOKEN": null,
+        "WEBHOOK_SECRET_TOKEN": null,
+        "BOT_USERNAME": null,
+        "OPENAI_API_KEY": null,
+        "ZEP_API_KEY": null,
+        "PYTHONPATH": "/app"
       }
     }
   }
