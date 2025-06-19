@@ -21,20 +21,38 @@ RUN mkdir -p data logs
 
 # Создаем wrapper скрипт для правильной обработки PORT
 RUN echo '#!/bin/bash' > /app/start.sh && \
-    echo '# Проверяем и устанавливаем PORT' >> /app/start.sh && \
-    echo 'if [ -z "$PORT" ] || ! [[ "$PORT" =~ ^[0-9]+$ ]]; then' >> /app/start.sh && \
-    echo '  STREAMLIT_PORT=8501' >> /app/start.sh && \
-    echo 'else' >> /app/start.sh && \
-    echo '  STREAMLIT_PORT=$PORT' >> /app/start.sh && \
-    echo 'fi' >> /app/start.sh && \
-    echo 'echo "Starting Streamlit on port $STREAMLIT_PORT"' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Отладочная информация' >> /app/start.sh && \
+    echo 'echo "=== Streamlit Startup Debug ==="' >> /app/start.sh && \
+    echo 'echo "Original PORT: $PORT"' >> /app/start.sh && \
+    echo 'echo "Original STREAMLIT_SERVER_PORT: $STREAMLIT_SERVER_PORT"' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Очищаем все Streamlit переменные окружения' >> /app/start.sh && \
     echo 'unset STREAMLIT_SERVER_PORT' >> /app/start.sh && \
-    echo 'streamlit run admin/streamlit_admin.py --server.port=$STREAMLIT_PORT --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false' >> /app/start.sh && \
+    echo 'unset STREAMLIT_SERVER_ADDRESS' >> /app/start.sh && \
+    echo 'unset STREAMLIT_BROWSER_GATHER_USAGE_STATS' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Проверяем и устанавливаем PORT' >> /app/start.sh && \
+    echo 'if [ -z "$PORT" ]; then' >> /app/start.sh && \
+    echo '  echo "PORT not set, using default 8501"' >> /app/start.sh && \
+    echo '  STREAMLIT_PORT=8501' >> /app/start.sh && \
+    echo 'elif [[ "$PORT" =~ ^[0-9]+$ ]] && [ "$PORT" -ge 1 ] && [ "$PORT" -le 65535 ]; then' >> /app/start.sh && \
+    echo '  echo "Using PORT: $PORT"' >> /app/start.sh && \
+    echo '  STREAMLIT_PORT=$PORT' >> /app/start.sh && \
+    echo 'else' >> /app/start.sh && \
+    echo '  echo "Invalid PORT value: $PORT, using default 8501"' >> /app/start.sh && \
+    echo '  STREAMLIT_PORT=8501' >> /app/start.sh && \
+    echo 'fi' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo 'echo "Final STREAMLIT_PORT: $STREAMLIT_PORT"' >> /app/start.sh && \
+    echo 'echo "==============================="' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Запускаем Streamlit с очищенным окружением' >> /app/start.sh && \
+    echo 'exec streamlit run admin/streamlit_admin.py --server.port=$STREAMLIT_PORT --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false' >> /app/start.sh && \
     chmod +x /app/start.sh
 
-# Переменные окружения для Streamlit
-ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
-ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
+# Переменные окружения (будут очищены в start.sh)
+# ENV убраны чтобы избежать конфликтов с Railway
 
 # Экспозируем порт
 EXPOSE 8501
