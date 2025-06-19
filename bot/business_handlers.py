@@ -3,13 +3,10 @@
 """
 
 import logging
-from telebot import types
-from .handlers import bot
-from .agent import process_message_with_ai
 
 logger = logging.getLogger(__name__)
 
-async def handle_business_update(update: types.Update):
+async def handle_business_update(update, bot):
     """
     Главная функция обработки Business API событий
     """
@@ -18,7 +15,7 @@ async def handle_business_update(update: types.Update):
             await handle_business_connection(update.business_connection)
         
         elif hasattr(update, 'business_message'):
-            await handle_business_message(update.business_message)
+            await handle_business_message(update.business_message, bot)
             
         elif hasattr(update, 'edited_business_message'):
             await handle_edited_business_message(update.edited_business_message)
@@ -43,7 +40,7 @@ async def handle_business_connection(business_connection):
     else:
         logger.info(f"❌ Бот отключен от business аккаунта: {business_connection.user.first_name}")
 
-async def handle_business_message(business_message: types.Message):
+async def handle_business_message(business_message, bot):
     """
     Обработка сообщений от business аккаунта
     """
@@ -57,11 +54,8 @@ async def handle_business_message(business_message: types.Message):
             
         # Обрабатываем текстовые сообщения
         if business_message.text:
-            response = await process_message_with_ai(
-                user_id=business_message.from_user.id,
-                message_text=business_message.text,
-                username=business_message.from_user.username or business_message.from_user.first_name
-            )
+            # Простой ответ (позже можно добавить AI)
+            response = f"Спасибо за сообщение! Получено: {business_message.text}"
             
             # Отправляем ответ через business API
             bot.send_message(
@@ -74,16 +68,16 @@ async def handle_business_message(business_message: types.Message):
             
         # Обрабатываем другие типы сообщений
         elif business_message.photo:
-            await handle_business_photo(business_message)
+            await handle_business_photo(business_message, bot)
         elif business_message.document:
-            await handle_business_document(business_message)
+            await handle_business_document(business_message, bot)
         else:
             logger.info("Получен неподдерживаемый тип business сообщения")
             
     except Exception as e:
         logger.error(f"Ошибка обработки business сообщения: {e}")
 
-async def handle_business_photo(business_message: types.Message):
+async def handle_business_photo(business_message, bot):
     """
     Обработка фото от business аккаунта
     """
@@ -101,7 +95,7 @@ async def handle_business_photo(business_message: types.Message):
     except Exception as e:
         logger.error(f"Ошибка обработки business фото: {e}")
 
-async def handle_business_document(business_message: types.Message):
+async def handle_business_document(business_message, bot):
     """
     Обработка документов от business аккаунта
     """
@@ -119,7 +113,7 @@ async def handle_business_document(business_message: types.Message):
     except Exception as e:
         logger.error(f"Ошибка обработки business документа: {e}")
 
-async def handle_edited_business_message(edited_message: types.Message):
+async def handle_edited_business_message(edited_message):
     """
     Обработка отредактированных business сообщений
     """

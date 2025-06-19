@@ -9,10 +9,13 @@ from fastapi.responses import JSONResponse
 import telebot
 from telebot import types
 import json
+import asyncio
 
-from .handlers import bot
 from .config import TELEGRAM_BOT_TOKEN
 from .business_handlers import handle_business_update
+
+# Создаем синхронный бот для webhook
+webhook_bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 
 # Настройка логирования
 logger = logging.getLogger(__name__)
@@ -41,7 +44,7 @@ async def health_check():
 async def webhook_info():
     """Webhook information endpoint"""
     try:
-        webhook_info = bot.get_webhook_info()
+        webhook_info = webhook_bot.get_webhook_info()
         return {
             "webhook_url": webhook_info.url,
             "pending_updates": webhook_info.pending_update_count,
@@ -78,15 +81,15 @@ async def process_webhook(
         
         # Парсим update объект
         update_dict = json.loads(json_string)
-        update = types.Update.de_json(update_dict, bot)
+        update = types.Update.de_json(update_dict, webhook_bot)
         
         # Проверяем тип update
         if hasattr(update, 'business_connection') or hasattr(update, 'business_message'):
             # Обрабатываем Business API события
-            await handle_business_update(update)
+            await handle_business_update(update, webhook_bot)
         else:
             # Стандартная обработка сообщений
-            bot.process_new_updates([update])
+            webhook_bot.process_new_updates([update])
         
         logger.info(f"Successfully processed update {update.update_id}")
         return {"ok": True}
@@ -122,7 +125,7 @@ async def set_webhook(webhook_url: str = None):
                 )
         
         # Устанавливаем webhook
-        result = bot.set_webhook(
+        result = webhook_bot.set_webhook(
             url=webhook_url,
             secret_token=WEBHOOK_SECRET_TOKEN,
             allowed_updates=[
@@ -163,7 +166,7 @@ async def delete_webhook():
     Delete webhook and switch back to polling
     """
     try:
-        result = bot.delete_webhook()
+        result = webhook_bot.delete_webhook()
         if result:
             logger.info("Webhook deleted successfully")
             return {"ok": True, "message": "Webhook deleted"}
@@ -199,7 +202,7 @@ async def startup_event():
     
     # Проверяем состояние бота
     try:
-        bot_info = bot.get_me()
+        bot_info = webhook_bot.get_me()
         logger.info(f"Bot info: @{bot_info.username} ({bot_info.first_name})")
     except Exception as e:
         logger.error(f"Failed to get bot info: {e}")
