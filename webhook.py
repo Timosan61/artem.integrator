@@ -223,11 +223,8 @@ async def process_webhook(request: Request):
             business_connection_id = bus_msg.get("business_connection_id")
             user_name = bus_msg.get("from", {}).get("first_name", "Клиент")
             
-            # Логируем наличие business_connection_id
-            if business_connection_id:
-                logger.info(f"📊 Business connection ID: {business_connection_id}")
-            else:
-                logger.info("📊 Business message БЕЗ connection ID")
+            # Логируем business_connection_id для отладки
+            logger.info(f"📊 Business message - connection_id: '{business_connection_id}' (тип: {type(business_connection_id)})")
             
             # Обрабатываем ВСЕ business сообщения с текстом
             if text:
@@ -241,18 +238,14 @@ async def process_webhook(request: Request):
                     else:
                         response = f"💼 Здравствуйте, {user_name}!\n\n✅ Ваше сообщение получено через Business API: {text}\n\n🤖 Наш специалист скоро ответит!"
                     
-                    # Отправляем с business_connection_id ТОЛЬКО если он есть
-                    if business_connection_id:
-                        bot.send_message(
-                            chat_id=chat_id,
-                            text=response,
-                            business_connection_id=business_connection_id
-                        )
-                        logger.info(f"✅ Business ответ отправлен С connection_id в чат {chat_id}")
-                    else:
-                        # Отправляем обычным способом если нет business_connection_id
-                        bot.send_message(chat_id, response)
-                        logger.info(f"✅ Business ответ отправлен БЕЗ connection_id в чат {chat_id}")
+                    # ВСЕГДА отправляем business_message с business_connection_id
+                    # Это критично для работы Business API
+                    bot.send_message(
+                        chat_id=chat_id,
+                        text=response,
+                        business_connection_id=business_connection_id
+                    )
+                    logger.info(f"✅ Business ответ отправлен в чат {chat_id} с connection_id='{business_connection_id}'")
                     
                     print(f"✅ Business ответ отправлен пользователю {user_name}")
                     
