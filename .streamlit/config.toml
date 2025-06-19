@@ -1,7 +1,12 @@
+# Streamlit Configuration File
+# This config file takes precedence over environment variables
+# Prevents Railway from auto-injecting STREAMLIT_SERVER_PORT
+
 [server]
 headless = true
 enableCORS = false
 enableXsrfProtection = false
+# Port will be dynamically overridden by start_streamlit.py
 port = 8501
 address = "0.0.0.0"
 baseUrlPath = ""
@@ -15,3 +20,9 @@ backgroundColor = "#ffffff"
 secondaryBackgroundColor = "#f0f2f6"
 textColor = "#262730"
 font = "sans serif"
+
+[global]
+developmentMode = false
+
+[logger]
+level = "info"

@@ -5,8 +5,18 @@
     "dockerfilePath": "Dockerfile.streamlit"
   },
   "deploy": {
+    "startCommand": "python3 /app/start_streamlit.py",
     "healthcheckPath": "/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "on_failure"
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "STREAMLIT_SERVER_PORT": null,
+        "STREAMLIT_SERVER_ADDRESS": null,
+        "STREAMLIT_BROWSER_GATHER_USAGE_STATS": null
+      }
+    }
   }
 }

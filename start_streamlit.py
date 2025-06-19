@@ -40,23 +40,64 @@ def clean_environment():
     
     return final_port
 
+def update_streamlit_config(port):
+    """Обновляем config.toml с правильным портом"""
+    config_dir = ".streamlit"
+    config_file = os.path.join(config_dir, "config.toml")
+    
+    # Создаем директорию если не существует
+    os.makedirs(config_dir, exist_ok=True)
+    
+    config_content = f"""# Streamlit Configuration File - Dynamically Updated
+# This config file takes precedence over environment variables
+
+[server]
+headless = true
+enableCORS = false
+enableXsrfProtection = false
+port = {port}
+address = "0.0.0.0"
+baseUrlPath = ""
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+primaryColor = "#1f77b4"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+font = "sans serif"
+
+[global]
+developmentMode = false
+
+[logger]
+level = "info"
+"""
+    
+    with open(config_file, 'w') as f:
+        f.write(config_content)
+    
+    print(f"Updated {config_file} with port {port}")
+
 def main():
     """Запуск Streamlit с очищенным окружением"""
     try:
         # Очищаем окружение и получаем порт
         port = clean_environment()
         
-        # Подготавливаем команду
+        # Обновляем config.toml с правильным портом
+        update_streamlit_config(port)
+        
+        # Подготавливаем команду без указания порта (будет читать из config.toml)
         cmd = [
             sys.executable, "-m", "streamlit", "run",
-            "admin/streamlit_admin.py",
-            f"--server.port={port}",
-            "--server.address=0.0.0.0",
-            "--server.headless=true",
-            "--browser.gatherUsageStats=false"
+            "admin/streamlit_admin.py"
         ]
         
         print(f"Executing: {' '.join(cmd)}")
+        print("Config.toml will handle all server settings")
         print("=======================================")
         
         # Запускаем Streamlit
