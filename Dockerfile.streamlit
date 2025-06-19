@@ -21,13 +21,20 @@ RUN mkdir -p data logs
 
 # Создаем wrapper скрипт для правильной обработки PORT
 RUN echo '#!/bin/bash' > /app/start.sh && \
-    echo 'export PORT=${PORT:-8501}' >> /app/start.sh && \
-    echo 'echo "Starting Streamlit on port $PORT"' >> /app/start.sh && \
-    echo 'streamlit run admin/streamlit_admin.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false' >> /app/start.sh && \
+    echo '# Проверяем и устанавливаем PORT' >> /app/start.sh && \
+    echo 'if [ -z "$PORT" ] || ! [[ "$PORT" =~ ^[0-9]+$ ]]; then' >> /app/start.sh && \
+    echo '  STREAMLIT_PORT=8501' >> /app/start.sh && \
+    echo 'else' >> /app/start.sh && \
+    echo '  STREAMLIT_PORT=$PORT' >> /app/start.sh && \
+    echo 'fi' >> /app/start.sh && \
+    echo 'echo "Starting Streamlit on port $STREAMLIT_PORT"' >> /app/start.sh && \
+    echo 'unset STREAMLIT_SERVER_PORT' >> /app/start.sh && \
+    echo 'streamlit run admin/streamlit_admin.py --server.port=$STREAMLIT_PORT --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false' >> /app/start.sh && \
     chmod +x /app/start.sh
 
 # Переменные окружения для Streamlit
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
+ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 
 # Экспозируем порт
 EXPOSE 8501
