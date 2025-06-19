@@ -1,7 +1,7 @@
 """
 🤖 Telegram Business Bot Webhook Server
 Единственная точка входа - БЕЗ polling режима!
-Updated: 2025-06-19 09:50 - Force rebuild
+Updated: 2025-06-19 10:00 - Added GET endpoint for webhook/set
 """
 
 import os
@@ -47,7 +47,13 @@ async def health_check():
             "service": "Telegram Business Bot Webhook",
             "bot": f"@{bot_info.username}",
             "bot_id": bot_info.id,
-            "mode": "WEBHOOK_ONLY"
+            "mode": "WEBHOOK_ONLY",
+            "endpoints": {
+                "webhook_info": "/webhook/info",
+                "set_webhook": "/webhook/set",
+                "delete_webhook": "/webhook (DELETE method)"
+            },
+            "hint": "Используйте /webhook/set в браузере для установки webhook"
         }
     except Exception as e:
         return {"status": "🔴 ERROR", "error": str(e)}
@@ -66,6 +72,11 @@ async def webhook_info():
         }
     except Exception as e:
         return {"error": str(e)}
+
+@app.get("/webhook/set")
+async def set_webhook_get():
+    """Установка webhook через GET (для браузера)"""
+    return await set_webhook()
 
 @app.post("/webhook/set")
 async def set_webhook():
@@ -194,6 +205,12 @@ async def startup():
         print("❌ Polling: ОТКЛЮЧЕН")
         print("="*50)
         logger.info("✅ Бот инициализирован успешно")
+        
+        # Автоматически устанавливаем webhook при старте
+        if os.getenv("AUTO_SET_WEBHOOK", "false").lower() == "true":
+            print("🔧 Автоматическая установка webhook...")
+            await set_webhook()
+            
     except Exception as e:
         print(f"❌ Ошибка инициализации: {e}")
         logger.error(f"❌ Ошибка инициализации бота: {e}")
