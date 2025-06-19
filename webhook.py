@@ -218,6 +218,10 @@ async def process_webhook(request: Request):
         # === BUSINESS СООБЩЕНИЯ ===
         elif "business_message" in update_dict:
             bus_msg = update_dict["business_message"]
+            
+            # Детальное логирование структуры business_message
+            logger.info(f"📨 Business message полная структура: {json.dumps(bus_msg, ensure_ascii=False)[:500]}...")
+            
             chat_id = bus_msg["chat"]["id"]
             text = bus_msg.get("text", "")
             user_id = bus_msg.get("from", {}).get("id", "unknown")
@@ -243,14 +247,21 @@ async def process_webhook(request: Request):
                     else:
                         response = f"💼 Здравствуйте, {user_name}!\n\n✅ Ваше сообщение получено через Business API: {text}\n\n🤖 Наш специалист скоро ответит!"
                     
-                    # ВСЕГДА отправляем business_message с business_connection_id
-                    # Это критично для работы Business API
-                    bot.send_message(
-                        chat_id=chat_id,
-                        text=response,
-                        business_connection_id=business_connection_id
-                    )
-                    logger.info(f"✅ Business ответ отправлен в чат {chat_id} с connection_id='{business_connection_id}'")
+                    # Для business_message ВСЕГДА пытаемся отправить с business_connection_id
+                    # Но проверяем его наличие для правильной обработки
+                    if business_connection_id:
+                        bot.send_message(
+                            chat_id=chat_id,
+                            text=response,
+                            business_connection_id=business_connection_id
+                        )
+                        logger.info(f"✅ Business ответ отправлен в чат {chat_id} с connection_id='{business_connection_id}'")
+                    else:
+                        # Если connection_id отсутствует, логируем это как критическую ошибку
+                        logger.error(f"❌ КРИТИЧНО: Получен business_message без connection_id! chat_id={chat_id}, user={user_name}")
+                        # Пробуем отправить как обычное сообщение
+                        bot.send_message(chat_id, response)
+                        logger.warning(f"⚠️ Отправлено как обычное сообщение (fallback)")
                     
                     print(f"✅ Business ответ отправлен пользователю {user_name}")
                     
