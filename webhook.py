@@ -1,16 +1,30 @@
 """
 🤖 Telegram Business Bot Webhook Server
 Единственная точка входа - БЕЗ polling режима!
-Updated: 2025-06-19 10:00 - Added GET endpoint for webhook/set
+Updated: 2025-06-19 10:15 - Added AI integration
 """
 
 import os
+import sys
 import logging
 from fastapi import FastAPI, Request, HTTPException
 import telebot
 import json
+import asyncio
+
+# Добавляем путь для импорта модулей бота
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 print("🚀 Загрузка Telegram Business Bot Webhook Server...")
+
+# Пытаемся импортировать AI agent
+try:
+    from bot.agent import agent
+    print("✅ AI Agent загружен успешно")
+    AI_ENABLED = True
+except ImportError as e:
+    print(f"⚠️ AI Agent не доступен: {e}")
+    AI_ENABLED = False
 
 # === НАСТРОЙКИ ===
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -48,6 +62,8 @@ async def health_check():
             "bot": f"@{bot_info.username}",
             "bot_id": bot_info.id,
             "mode": "WEBHOOK_ONLY",
+            "ai_status": "✅ ENABLED" if AI_ENABLED else "❌ DISABLED",
+            "openai_configured": bool(os.getenv('OPENAI_API_KEY')),
             "endpoints": {
                 "webhook_info": "/webhook/info",
                 "set_webhook": "/webhook/set",
@@ -136,36 +152,76 @@ async def process_webhook(request: Request):
             msg = update_dict["message"]
             chat_id = msg["chat"]["id"]
             text = msg.get("text", "")
+            user_id = msg.get("from", {}).get("id", "unknown")
             user_name = msg.get("from", {}).get("first_name", "Пользователь")
             
-            if text.startswith("/start"):
-                response = f"🤖 Привет, {user_name}! Я Textil PRO бот.\n\n✅ Работаю через webhook\n💼 Поддерживаю Business API\n\nНапишите ваш вопрос!"
-            elif text.startswith("/help"):
-                response = "ℹ️ Помощь:\n/start - начать\n/help - помощь\n\nПросто напишите вопрос и я отвечу!"
-            elif text:
-                response = f"💬 {user_name}, получил сообщение: {text}\n\n🤖 Скоро здесь будет AI ответ!"
-            else:
-                response = "📎 Спасибо за файл! Пока работаю только с текстом."
+            try:
+                # Отправляем индикатор набора текста
+                bot.send_chat_action(chat_id, 'typing')
                 
-            bot.send_message(chat_id, response)
-            logger.info(f"✅ Ответ отправлен в чат {chat_id}")
+                if text.startswith("/start"):
+                    if AI_ENABLED:
+                        response = agent.get_welcome_message()
+                    else:
+                        response = f"🤖 Привет, {user_name}! Я Textil PRO бот.\n\n✅ Работаю через webhook\n💼 Поддерживаю Business API\n\nНапишите ваш вопрос!"
+                
+                elif text.startswith("/help"):
+                    response = """ℹ️ Помощь:
+/start - начать работу
+/help - показать помощь
+
+Просто напишите ваш вопрос о текстильном производстве, и я с радостью помогу!
+
+📞 Для срочных вопросов: +86 123 456 789"""
+                
+                elif text and AI_ENABLED:
+                    # Используем AI для генерации ответа
+                    session_id = f"user_{user_id}"
+                    response = await agent.generate_response(text, session_id)
+                    
+                elif text:
+                    # Fallback если AI не доступен
+                    response = f"💬 {user_name}, получил ваш вопрос: {text}\n\n📞 Для детальной консультации свяжитесь с нашими специалистами."
+                else:
+                    response = "📎 Спасибо за файл! Я работаю только с текстовыми сообщениями."
+                    
+                bot.send_message(chat_id, response, parse_mode='Markdown')
+                logger.info(f"✅ Ответ отправлен в чат {chat_id}")
+                
+            except Exception as e:
+                logger.error(f"Ошибка обработки сообщения: {e}")
+                bot.send_message(chat_id, "Извините, произошла ошибка. Попробуйте позже.")
         
         # === BUSINESS СООБЩЕНИЯ ===
         elif "business_message" in update_dict:
             bus_msg = update_dict["business_message"]
             chat_id = bus_msg["chat"]["id"]
             text = bus_msg.get("text", "")
+            user_id = bus_msg.get("from", {}).get("id", "unknown")
             business_connection_id = bus_msg.get("business_connection_id")
             user_name = bus_msg.get("from", {}).get("first_name", "Клиент")
             
             if text and business_connection_id:
-                response = f"💼 Здравствуйте, {user_name}!\n\n✅ Ваше сообщение получено через Business API: {text}\n\n🤖 Наш специалист скоро ответит!"
-                bot.send_message(
-                    chat_id=chat_id,
-                    text=response,
-                    business_connection_id=business_connection_id
-                )
-                logger.info(f"✅ Business ответ отправлен в чат {chat_id}")
+                try:
+                    bot.send_chat_action(chat_id, 'typing')
+                    
+                    if AI_ENABLED:
+                        # Используем AI для Business сообщений
+                        session_id = f"business_{user_id}"
+                        response = await agent.generate_response(text, session_id)
+                    else:
+                        response = f"💼 Здравствуйте, {user_name}!\n\n✅ Ваше сообщение получено через Business API.\n\n📞 Наш специалист скоро ответит!"
+                    
+                    bot.send_message(
+                        chat_id=chat_id,
+                        text=response,
+                        business_connection_id=business_connection_id,
+                        parse_mode='Markdown'
+                    )
+                    logger.info(f"✅ Business ответ отправлен в чат {chat_id}")
+                    
+                except Exception as e:
+                    logger.error(f"Ошибка обработки business сообщения: {e}")
         
         # === BUSINESS CONNECTION ===
         elif "business_connection" in update_dict:
@@ -203,6 +259,8 @@ async def startup():
         print(f"📛 Имя: {bot_info.first_name}")
         print("🔗 Режим: WEBHOOK ONLY")
         print("❌ Polling: ОТКЛЮЧЕН")
+        print(f"🤖 AI: {'✅ ВКЛЮЧЕН' if AI_ENABLED else '❌ ОТКЛЮЧЕН'}")
+        print(f"🔑 OpenAI API: {'✅ Настроен' if os.getenv('OPENAI_API_KEY') else '❌ Не настроен'}")
         print("="*50)
         logger.info("✅ Бот инициализирован успешно")
         
