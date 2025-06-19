@@ -56,5 +56,5 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
 # Экспозируем порт
 EXPOSE 8501
 
-# Команда запуска через wrapper
-CMD ["/app/start.sh"]
+# Команда запуска через Python wrapper (более надежно чем bash)
+CMD ["python3", "/app/start_streamlit.py"]
