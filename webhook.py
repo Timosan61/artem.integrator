@@ -1,7 +1,7 @@
 """
 🤖 Telegram Business Bot Webhook Server
 Единственная точка входа - БЕЗ polling режима!
-Updated: 2025-06-19 10:30 - Fixed AI imports + Zep integration
+Updated: 2025-06-19 10:45 - Auto webhook setup + better error handling
 """
 
 import os
@@ -149,10 +149,17 @@ async def delete_webhook():
 async def process_webhook(request: Request):
     """Главный обработчик webhook"""
     try:
+        # Проверяем secret token из заголовков
+        secret_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
+        if secret_token != WEBHOOK_SECRET_TOKEN:
+            logger.warning(f"❌ Неверный secret token: {secret_token}")
+            return {"ok": False, "error": "Invalid secret token"}
+        
         json_data = await request.body()
         json_string = json_data.decode('utf-8')
         
         logger.info(f"📨 Webhook получен: {json_string[:150]}...")
+        print(f"📨 Обработка webhook update...")
         
         update_dict = json.loads(json_string)
         
@@ -185,8 +192,12 @@ async def process_webhook(request: Request):
                 
                 elif text and AI_ENABLED:
                     # Используем AI для генерации ответа
-                    session_id = f"user_{user_id}"
-                    response = await agent.generate_response(text, session_id)
+                    try:
+                        session_id = f"user_{user_id}"
+                        response = await agent.generate_response(text, session_id)
+                    except Exception as ai_error:
+                        logger.error(f"Ошибка AI генерации: {ai_error}")
+                        response = f"Извините, произошла ошибка AI. Ваш вопрос: {text}\n\nПопробуйте позже или свяжитесь с поддержкой."
                     
                 elif text:
                     # Fallback если AI не доступен
@@ -194,8 +205,10 @@ async def process_webhook(request: Request):
                 else:
                     response = "📎 Спасибо за файл! Я работаю только с текстовыми сообщениями."
                     
-                bot.send_message(chat_id, response, parse_mode='Markdown')
+                # Отправляем без parse_mode для надежности
+                bot.send_message(chat_id, response)
                 logger.info(f"✅ Ответ отправлен в чат {chat_id}")
+                print(f"✅ Отправлен ответ пользователю {user_name}")
                 
             except Exception as e:
                 logger.error(f"Ошибка обработки сообщения: {e}")
@@ -224,8 +237,7 @@ async def process_webhook(request: Request):
                     bot.send_message(
                         chat_id=chat_id,
                         text=response,
-                        business_connection_id=business_connection_id,
-                        parse_mode='Markdown'
+                        business_connection_id=business_connection_id
                     )
                     logger.info(f"✅ Business ответ отправлен в чат {chat_id}")
                     
@@ -273,10 +285,40 @@ async def startup():
         print("="*50)
         logger.info("✅ Бот инициализирован успешно")
         
-        # Автоматически устанавливаем webhook при старте
-        if os.getenv("AUTO_SET_WEBHOOK", "false").lower() == "true":
-            print("🔧 Автоматическая установка webhook...")
-            await set_webhook()
+        # ВСЕГДА автоматически устанавливаем webhook при старте
+        print("🔧 Автоматическая установка webhook...")
+        try:
+            # Сначала проверяем текущий статус
+            current_webhook = bot.get_webhook_info()
+            if current_webhook.url:
+                print(f"📍 Текущий webhook: {current_webhook.url}")
+            else:
+                print("❌ Webhook не установлен")
+            
+            # Устанавливаем webhook
+            webhook_url = os.getenv("WEBHOOK_URL", "https://bot-production-472c.up.railway.app/webhook")
+            result = bot.set_webhook(
+                url=webhook_url,
+                secret_token=WEBHOOK_SECRET_TOKEN,
+                allowed_updates=[
+                    "message",
+                    "business_connection", 
+                    "business_message",
+                    "edited_business_message",
+                    "deleted_business_messages"
+                ]
+            )
+            
+            if result:
+                print(f"✅ Webhook автоматически установлен: {webhook_url}")
+                logger.info(f"✅ Webhook установлен при старте: {webhook_url}")
+            else:
+                print("❌ Не удалось установить webhook автоматически")
+                logger.error("Ошибка автоматической установки webhook")
+                
+        except Exception as e:
+            print(f"❌ Ошибка при автоматической установке webhook: {e}")
+            logger.error(f"Ошибка автоустановки webhook: {e}")
             
     except Exception as e:
         print(f"❌ Ошибка инициализации: {e}")
