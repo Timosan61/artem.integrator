@@ -306,18 +306,25 @@ async def process_webhook(request: Request):
             # Обрабатываем ВСЕ business сообщения с текстом
             if text:
                 try:
+                    logger.info(f"🔄 Начинаю обработку business message: text='{text}', chat_id={chat_id}")
                     bot.send_chat_action(chat_id, 'typing')
+                    logger.info(f"✅ Отправлен typing индикатор")
                     
                     if AI_ENABLED:
                         # Используем AI для Business сообщений
+                        logger.info(f"🤖 AI включен, генерирую ответ...")
                         session_id = f"business_{user_id}"
                         response = await agent.generate_response(text, session_id)
+                        logger.info(f"✅ AI ответ сгенерирован: {response[:100]}...")
                     else:
+                        logger.info(f"🤖 AI отключен, использую стандартный ответ")
                         response = f"💼 Здравствуйте, {user_name}!\n\n✅ Ваше сообщение получено через Business API: {text}\n\n🤖 Наш специалист скоро ответит!"
                     
                     # Для business_message ВСЕГДА пытаемся отправить с business_connection_id
                     # Но проверяем его наличие для правильной обработки
+                    logger.info(f"📤 Пытаюсь отправить ответ...")
                     if business_connection_id:
+                        logger.info(f"📤 Отправляю с business_connection_id='{business_connection_id}'")
                         bot.send_message(
                             chat_id=chat_id,
                             text=response,
@@ -335,9 +342,24 @@ async def process_webhook(request: Request):
                     
                 except Exception as e:
                     # Детальное логирование ошибки с traceback
+                    error_info = {
+                        "error": str(e),
+                        "traceback": traceback.format_exc(),
+                        "business_connection_id": business_connection_id,
+                        "chat_id": chat_id,
+                        "text": text
+                    }
                     logger.error(f"❌ Ошибка обработки business сообщения: {e}")
                     logger.error(f"Traceback:\n{traceback.format_exc()}")
                     logger.error(f"Business connection_id: '{business_connection_id}'")
+                    
+                    # Сохраняем ошибку в debug данные
+                    last_updates.append({
+                        "id": f"error_{update_counter}",
+                        "timestamp": datetime.now().isoformat(),
+                        "type": "business_message_error",
+                        "error_info": error_info
+                    })
                     
                     # ВАЖНО: Отправляем ошибку ТОЖЕ через Business API!
                     try:
@@ -368,7 +390,7 @@ async def process_webhook(request: Request):
             status = "✅ Подключен" if is_enabled else "❌ Отключен"
             logger.info(f"{status} к Business аккаунту: {user_name}")
         
-        return {"ok": True, "status": "processed"}
+        return {"ok": True, "status": "processed", "update_id": update_counter}
         
     except Exception as e:
         logger.error(f"❌ Ошибка webhook: {e}")
