@@ -7,6 +7,7 @@ Updated: 2025-06-19 10:45 - Auto webhook setup + better error handling
 import os
 import sys
 import logging
+import traceback
 from fastapi import FastAPI, Request, HTTPException
 import telebot
 import json
@@ -226,6 +227,10 @@ async def process_webhook(request: Request):
             # Логируем business_connection_id для отладки
             logger.info(f"📊 Business message - connection_id: '{business_connection_id}' (тип: {type(business_connection_id)})")
             
+            # Проверяем наличие business_connection_id
+            if not business_connection_id:
+                logger.warning(f"⚠️ Business message без connection_id от {user_name} ({user_id})")
+            
             # Обрабатываем ВСЕ business сообщения с текстом
             if text:
                 try:
@@ -250,12 +255,30 @@ async def process_webhook(request: Request):
                     print(f"✅ Business ответ отправлен пользователю {user_name}")
                     
                 except Exception as e:
-                    logger.error(f"Ошибка обработки business сообщения: {e}")
-                    # Пробуем отправить простое сообщение в случае ошибки
+                    # Детальное логирование ошибки с traceback
+                    logger.error(f"❌ Ошибка обработки business сообщения: {e}")
+                    logger.error(f"Traceback:\n{traceback.format_exc()}")
+                    logger.error(f"Business connection_id: '{business_connection_id}'")
+                    
+                    # ВАЖНО: Отправляем ошибку ТОЖЕ через Business API!
                     try:
-                        bot.send_message(chat_id, "Извините, произошла ошибка. Попробуйте позже.")
-                    except:
-                        pass
+                        error_message = "Извините, произошла временная ошибка. Пожалуйста, попробуйте позже или обратитесь к нашему менеджеру."
+                        
+                        # Если есть business_connection_id - используем его
+                        if business_connection_id:
+                            bot.send_message(
+                                chat_id=chat_id,
+                                text=error_message,
+                                business_connection_id=business_connection_id
+                            )
+                            logger.info(f"✅ Сообщение об ошибке отправлено через Business API")
+                        else:
+                            # Fallback: если нет connection_id, отправляем обычное сообщение
+                            bot.send_message(chat_id, error_message)
+                            logger.warning(f"⚠️ Сообщение об ошибке отправлено БЕЗ Business API (нет connection_id)")
+                            
+                    except Exception as send_error:
+                        logger.error(f"❌ Не удалось отправить сообщение об ошибке: {send_error}")
         
         # === BUSINESS CONNECTION ===
         elif "business_connection" in update_dict:
