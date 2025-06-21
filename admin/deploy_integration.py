@@ -8,9 +8,9 @@ from typing import Optional, Dict, Any
 class DeployManager:
     def __init__(self):
         self.repo_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.railway_token = "d68be741-981e-4382-bce5-32281d730f25"
-        self.railway_project_id = "6a08cc81-8944-4807-ab6f-79b06a7840df"
-        self.railway_service_id = "110732af-05f2-43ff-a501-5fa354c5eb7d"
+        self.railway_token = st.secrets.get("RAILWAY_TOKEN", os.getenv("RAILWAY_TOKEN"))
+        self.railway_project_id = st.secrets.get("RAILWAY_PROJECT_ID", os.getenv("RAILWAY_PROJECT_ID"))
+        self.railway_service_id = st.secrets.get("RAILWAY_SERVICE_ID", os.getenv("RAILWAY_SERVICE_ID"))
         
     def get_git_status(self) -> Dict[str, Any]:
         """Получает статус Git репозитория"""
