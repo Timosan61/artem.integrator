@@ -28,7 +28,6 @@ def save_instruction(instruction_data):
             json.dump(instruction_data, f, ensure_ascii=False, indent=2)
         return True
     except Exception as e:
-        st.error(f"Ошибка при сохранении: {e}")
         return False
 
 
@@ -53,71 +52,36 @@ def main():
     
     instruction_data = load_instruction()
     
-    st.header("📝 Управление инструкциями бота")
-    
-    st.subheader("Системная инструкция")
-    st.markdown("*Основные инструкции для AI-агента*")
-    
     system_instruction = st.text_area(
         "Системная инструкция:",
         value=instruction_data.get("system_instruction", ""),
-        height=400,
-        help="Это основная инструкция, которая определяет поведение бота"
+        height=400
     )
-    
-    st.subheader("Приветственное сообщение")
-    st.markdown("*Сообщение, которое видят пользователи при команде /start*")
     
     welcome_message = st.text_area(
         "Приветственное сообщение:",
         value=instruction_data.get("welcome_message", ""),
-        height=150,
-        help="Это сообщение отправляется пользователям при первом запуске бота"
+        height=150
     )
     
-    if instruction_data.get("last_updated"):
-        st.info(f"**Последнее обновление:** {instruction_data['last_updated']}")
-        
     st.markdown("---")
     
-    # Кнопки сохранения
-    col_save, col_deploy = st.columns([1, 1])
-    
-    with col_save:
-        if st.button("💾 Сохранить локально", use_container_width=True):
-            new_instruction_data = {
-                "system_instruction": system_instruction,
-                "welcome_message": welcome_message,
-                "last_updated": datetime.now().isoformat()
-            }
+    if st.button("🚀 Сохранить", type="primary", use_container_width=True):
+        new_instruction_data = {
+            "system_instruction": system_instruction,
+            "welcome_message": welcome_message,
+            "last_updated": datetime.now().isoformat()
+        }
+        
+        if save_instruction(new_instruction_data):
+            # Автоматический деплой через GitHub API
+            commit_message = f"Update bot instructions via admin panel\n\n- Modified system instruction\n- Updated welcome message\n- Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>"
             
-            if save_instruction(new_instruction_data):
-                st.success("✅ Инструкции сохранены локально!")
-            else:
-                st.error("❌ Ошибка при сохранении")
-    
-    with col_deploy:
-        if st.button("🚀 Сохранить и задеплоить", type="primary", use_container_width=True):
-            new_instruction_data = {
-                "system_instruction": system_instruction,
-                "welcome_message": welcome_message,
-                "last_updated": datetime.now().isoformat()
-            }
+            # Конвертируем данные в JSON для передачи в GitHub API
+            instruction_json = json.dumps(new_instruction_data, ensure_ascii=False, indent=2)
             
-            if save_instruction(new_instruction_data):
-                st.success("✅ Инструкции сохранены!")
-                
-                # Автоматический деплой через GitHub API
-                commit_message = f"Update bot instructions via admin panel\n\n- Modified system instruction\n- Updated welcome message\n- Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>"
-                
-                # Конвертируем данные в JSON для передачи в GitHub API
-                instruction_json = json.dumps(new_instruction_data, ensure_ascii=False, indent=2)
-                
-                if deploy_manager.auto_deploy_changes(commit_message, instruction_json):
-                    st.balloons()
-                
-            else:
-                st.error("❌ Ошибка при сохранении")
+            deploy_manager.auto_deploy_changes(commit_message, instruction_json)
+            st.balloons()
 
 
 if __name__ == "__main__":
