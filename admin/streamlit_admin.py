@@ -42,7 +42,7 @@ def main():
     if not check_password():
         return
     
-    # Заголовок
+    # Заголовок  
     st.title("🤖 Textil PRO Bot - Админ панель")
     
     deploy_manager = DeployManager()
