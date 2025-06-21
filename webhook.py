@@ -355,7 +355,14 @@ async def process_webhook(request: Request):
                     # Используем AI для генерации ответа
                     try:
                         session_id = f"user_{user_id}"
-                        response = await agent.generate_response(text, session_id)
+                        # Создаем пользователя в Zep если нужно
+                        if agent.zep_client:
+                            await agent.ensure_user_exists(f"user_{user_id}", {
+                                'first_name': user_name,
+                                'email': f'{user_id}@telegram.user'
+                            })
+                            await agent.ensure_session_exists(session_id, f"user_{user_id}")
+                        response = await agent.generate_response(text, session_id, user_name)
                     except Exception as ai_error:
                         logger.error(f"Ошибка AI генерации: {ai_error}")
                         response = f"Извините, произошла ошибка AI. Ваш вопрос: {text}\n\nПопробуйте позже или свяжитесь с поддержкой."
@@ -406,7 +413,14 @@ async def process_webhook(request: Request):
                         # Используем AI для Business сообщений
                         logger.info(f"🤖 AI включен, генерирую ответ...")
                         session_id = f"business_{user_id}"
-                        response = await agent.generate_response(text, session_id)
+                        # Создаем пользователя в Zep если нужно
+                        if agent.zep_client:
+                            await agent.ensure_user_exists(f"business_{user_id}", {
+                                'first_name': user_name,
+                                'email': f'{user_id}@business.telegram.user'
+                            })
+                            await agent.ensure_session_exists(session_id, f"business_{user_id}")
+                        response = await agent.generate_response(text, session_id, user_name)
                         logger.info(f"✅ AI ответ сгенерирован: {response[:100]}...")
                     else:
                         logger.info(f"🤖 AI отключен, использую стандартный ответ")

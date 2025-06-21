@@ -65,22 +65,25 @@ class TextilProAgent:
         self.instruction = self._load_instruction()
         print("✅ Инструкции перезагружены!")
     
-    async def add_to_zep_memory(self, session_id: str, user_message: str, bot_response: str):
-        """Добавляет сообщения в Zep Memory"""
+    async def add_to_zep_memory(self, session_id: str, user_message: str, bot_response: str, user_name: str = None):
+        """Добавляет сообщения в Zep Memory с именами пользователей"""
         if not self.zep_client:
             print(f"⚠️ Zep клиент не инициализирован, используем локальную память для {session_id}")
             self.add_to_local_session(session_id, user_message, bot_response)
             return False
             
         try:
+            # Используем имя пользователя или ID для роли
+            user_role = user_name if user_name else f"User_{session_id.split('_')[-1][:6]}"
+            
             messages = [
                 Message(
-                    role="user",
+                    role=user_role,  # Имя пользователя вместо generic "user"
                     role_type="user",
                     content=user_message
                 ),
                 Message(
-                    role="assistant", 
+                    role="Анастасия",  # Имя бота-консультанта
                     role_type="assistant",
                     content=bot_response
                 )
@@ -161,7 +164,7 @@ class TextilProAgent:
         
         return "\n".join(history) if history else ""
     
-    async def generate_response(self, user_message: str, session_id: str) -> str:
+    async def generate_response(self, user_message: str, session_id: str, user_name: str = None) -> str:
         try:
             system_prompt = self.instruction.get("system_instruction", "")
             
@@ -214,13 +217,70 @@ class TextilProAgent:
                 bot_response = response.choices[0].message.content
             
             # Сохраняем в Zep Memory (с fallback на локальное хранилище)
-            await self.add_to_zep_memory(session_id, user_message, bot_response)
+            await self.add_to_zep_memory(session_id, user_message, bot_response, user_name)
             
             return bot_response
             
         except Exception as e:
             print(f"Ошибка при генерации ответа: {e}")
             return "Извините, произошла техническая ошибка. Попробуйте позже или обратитесь к нашим специалистам."
+    
+    async def ensure_user_exists(self, user_id: str, user_data: Dict[str, Any] = None):
+        """Создает пользователя в Zep если его еще нет"""
+        if not self.zep_client:
+            return False
+            
+        try:
+            # Пытаемся получить пользователя
+            try:
+                user = await self.zep_client.user.get(user_id=user_id)
+                print(f"✅ Пользователь {user_id} уже существует в Zep")
+                return True
+            except:
+                # Пользователь не существует, создаем
+                pass
+            
+            # Создаем нового пользователя
+            user_info = user_data or {}
+            await self.zep_client.user.add(
+                user_id=user_id,
+                first_name=user_info.get('first_name', 'User'),
+                last_name=user_info.get('last_name', ''),
+                email=user_info.get('email', f'{user_id}@telegram.user'),
+                metadata={
+                    'source': 'telegram',
+                    'created_at': datetime.now().isoformat()
+                }
+            )
+            print(f"✅ Создан новый пользователь в Zep: {user_id}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Ошибка при создании пользователя в Zep: {e}")
+            return False
+    
+    async def ensure_session_exists(self, session_id: str, user_id: str):
+        """Создает сессию в Zep если ее еще нет"""
+        if not self.zep_client:
+            return False
+            
+        try:
+            # Создаем сессию
+            await self.zep_client.memory.add_session(
+                session_id=session_id,
+                user_id=user_id,
+                metadata={
+                    'channel': 'telegram',
+                    'created_at': datetime.now().isoformat()
+                }
+            )
+            print(f"✅ Создана сессия в Zep: {session_id} для пользователя {user_id}")
+            return True
+            
+        except Exception as e:
+            # Сессия может уже существовать или будет создана автоматически
+            print(f"ℹ️ Сессия {session_id} возможно уже существует или будет создана автоматически")
+            return True
     
     def get_welcome_message(self) -> str:
         return self.instruction.get("welcome_message", "Добро пожаловать!")
