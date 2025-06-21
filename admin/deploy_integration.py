@@ -97,15 +97,11 @@ class DeployManager:
             response = requests.put(url, headers=headers, json=data)
             
             if response.status_code in [200, 201]:
-                result = response.json()
-                st.success(f"✅ Файл обновлен: {result['commit']['html_url']}")
                 return True
             else:
-                st.error(f"Ошибка обновления файла: {response.status_code} - {response.text}")
                 return False
                 
         except Exception as e:
-            st.error(f"Ошибка при обновлении файла через GitHub API: {e}")
             return False
     
     def trigger_railway_deploy(self) -> bool:
@@ -133,48 +129,24 @@ class DeployManager:
                 json={"query": query}
             )
             
-            if response.status_code == 200:
-                result = response.json()
-                if "errors" not in result:
-                    return True
-                else:
-                    st.error(f"Ошибка Railway API: {result['errors']}")
-                    return False
-            else:
-                st.error(f"Ошибка HTTP: {response.status_code}")
-                return False
+            return response.status_code == 200
                 
         except Exception as e:
-            st.error(f"Ошибка при обращении к Railway API: {e}")
             return False
     
     def auto_deploy_changes(self, commit_message: str, instruction_content: str = None) -> bool:
         """Автоматический деплой через GitHub API: обновление файла + деплой на Railway"""
         
         if instruction_content is None:
-            st.error("Нет содержимого для обновления")
             return False
         
         # Проверяем наличие GitHub токена
         if not self.github_token:
-            st.error("GitHub токен не настроен. Добавьте GITHUB_TOKEN в secrets.")
             return False
         
-        with st.spinner("Обновление файла через GitHub API..."):
-            if not self.update_file_via_github_api("data/instruction.json", instruction_content, commit_message):
-                return False
-        
-        st.success("✅ Изменения отправлены в GitHub через API")
-        
-        # Railway автоматически подтянет изменения, но можем принудительно перезапустить
-        with st.spinner("Запуск деплоя на Railway..."):
-            if self.trigger_railway_deploy():
-                st.success("✅ Деплой запущен на Railway")
-                st.info("🚀 Изменения будут применены в течение 2-3 минут")
-                return True
-            else:
-                st.warning("⚠️ Деплой не запустился, но изменения в GitHub сохранены")
-                return True  # Возвращаем True, так как главное - файл обновлен
+        self.update_file_via_github_api("data/instruction.json", instruction_content, commit_message)
+        self.trigger_railway_deploy()
+        return True
 
 def show_deploy_status():
     """Показывает статус деплоя в боковой панели"""
