@@ -184,10 +184,13 @@ def main():
                 if save_instruction(new_instruction_data):
                     st.success("✅ Инструкции сохранены!")
                     
-                    # Автоматический деплой
+                    # Автоматический деплой через GitHub API
                     commit_message = f"Update bot instructions via admin panel\n\n- Modified system instruction\n- Updated welcome message\n- Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>"
                     
-                    if deploy_manager.auto_deploy_changes(commit_message):
+                    # Конвертируем данные в JSON для передачи в GitHub API
+                    instruction_json = json.dumps(new_instruction_data, ensure_ascii=False, indent=2)
+                    
+                    if deploy_manager.auto_deploy_changes(commit_message, instruction_json):
                         st.balloons()
                     
                 else:
