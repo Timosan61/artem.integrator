@@ -7,7 +7,7 @@ from streamlit_ace import st_ace
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from bot.config import INSTRUCTION_FILE
+from admin.config import INSTRUCTION_FILE, DEFAULT_INSTRUCTION, STREAMLIT_CONFIG
 from admin.auth import check_password, show_auth_info
 from admin.deploy_integration import show_deploy_status, DeployManager
 
@@ -17,11 +17,9 @@ def load_instruction():
         with open(INSTRUCTION_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
-        return {
-            "system_instruction": "",
-            "welcome_message": "",
-            "last_updated": datetime.now().isoformat()
-        }
+        default_data = DEFAULT_INSTRUCTION.copy()
+        default_data["last_updated"] = datetime.now().isoformat()
+        return default_data
 
 
 def save_instruction(instruction_data):
@@ -37,9 +35,9 @@ def save_instruction(instruction_data):
 
 def main():
     st.set_page_config(
-        page_title="Textil PRO Bot Admin",
-        page_icon="🤖",
-        layout="wide",
+        page_title=STREAMLIT_CONFIG['page_title'],
+        page_icon=STREAMLIT_CONFIG['page_icon'],
+        layout=STREAMLIT_CONFIG['layout'],
         initial_sidebar_state="expanded"
     )
     
