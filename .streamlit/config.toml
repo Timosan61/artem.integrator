@@ -1,18 +1,19 @@
-# Streamlit Configuration File
-# This config file takes precedence over environment variables
-# Prevents Railway from auto-injecting STREAMLIT_SERVER_PORT
+# Streamlit Configuration for Cloud Deployment
+# Optimized for Streamlit Cloud
 
 [server]
 headless = true
 enableCORS = false
 enableXsrfProtection = false
-# Port will be dynamically overridden by start_streamlit.py
 port = 8501
 address = "0.0.0.0"
-baseUrlPath = ""
+maxUploadSize = 200
+enableStaticServing = true
 
 [browser]
 gatherUsageStats = false
+serverAddress = "0.0.0.0"
+serverPort = 8501
 
 [theme]
 primaryColor = "#1f77b4"
@@ -23,6 +24,7 @@ font = "sans serif"
 
 [global]
 developmentMode = false
+showErrorDetails = false
 
 [logger]
 level = "info"
