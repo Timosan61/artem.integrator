@@ -151,7 +151,7 @@ class DeployManager:
             return False
     
     def auto_deploy_changes(self, commit_message: str, instruction_content: str = None) -> bool:
-        """Автоматический деплой через GitHub API: обновление файла + деплой на Railway"""
+        """Автоматический деплой через GitHub API + автоматическая синхронизация Railway"""
         
         if instruction_content is None:
             st.error("❌ Содержимое инструкций не предоставлено")
@@ -160,11 +160,6 @@ class DeployManager:
         # Проверяем наличие GitHub токена
         if not self.github_token:
             st.error("❌ GitHub токен не настроен")
-            return False
-        
-        # Проверяем наличие Railway токена
-        if not self.railway_token:
-            st.error("❌ Railway токен не настроен")
             return False
         
         # Шаг 1: Обновляем файл в GitHub
@@ -177,16 +172,10 @@ class DeployManager:
             
         st.success("✅ Файл обновлен в GitHub")
         
-        # Шаг 2: Запускаем деплой на Railway
-        st.info("🚀 Запуск деплоя на Railway...")
-        railway_success = self.trigger_railway_deploy()
-        
-        if not railway_success:
-            st.error("❌ Ошибка запуска деплоя на Railway")
-            return False
-            
-        st.success("✅ Деплой на Railway запущен")
-        st.info("⏳ Деплой займет 2-3 минуты. Изменения будут применены автоматически.")
+        # Информируем о автоматической синхронизации Railway
+        st.info("🔄 Railway автоматически синхронизируется с GitHub...")
+        st.info("⏳ Изменения будут применены через 2-3 минуты автоматически")
+        st.info("💡 Используйте кнопку 'Перезагрузить промпт' ниже для ручного обновления")
         
         return True
 
@@ -203,11 +192,11 @@ def show_deploy_status():
         **GitHub Репозиторий:**
         {deploy_manager.github_owner}/{deploy_manager.github_repo}
         
-        **API статус:**
-        {'✅ GitHub API готов к работе' if deploy_manager.github_token else '❌ GitHub токен не настроен'}
+        **GitHub API:**
+        {'✅ Готов к работе' if deploy_manager.github_token else '❌ Токен не настроен'}
         
-        **Railway API:**
-        {'✅ Railway API готов к работе' if deploy_manager.railway_token else '❌ Railway токен не настроен'}
+        **Railway:**
+        ✅ Автосинхронизация с GitHub
         """)
     except Exception as e:
         st.sidebar.error(f"❌ Ошибка API: {e}")
