@@ -112,40 +112,82 @@ class DeployManager:
                 "Content-Type": "application/json"
             }
             
-            # GraphQL запрос для редеплоя
+            # GraphQL запрос для редеплоя службы
             query = """
-            mutation {
-                serviceInstanceRedeploy(
-                    serviceId: "%s"
-                ) {
+            mutation serviceInstanceRedeploy($serviceId: String!) {
+                serviceInstanceRedeploy(serviceId: $serviceId) {
                     id
+                    status
                 }
             }
-            """ % self.railway_service_id
+            """
+            
+            variables = {
+                "serviceId": self.railway_service_id
+            }
             
             response = requests.post(
                 "https://backboard.railway.com/graphql/v2",
                 headers=headers,
-                json={"query": query}
+                json={
+                    "query": query,
+                    "variables": variables
+                }
             )
             
-            return response.status_code == 200
+            if response.status_code == 200:
+                result = response.json()
+                if "errors" not in result:
+                    return True
+                else:
+                    print(f"Railway API errors: {result['errors']}")
+                    return False
+            else:
+                print(f"Railway API request failed: {response.status_code}")
+                return False
                 
         except Exception as e:
+            print(f"Railway deploy error: {e}")
             return False
     
     def auto_deploy_changes(self, commit_message: str, instruction_content: str = None) -> bool:
         """Автоматический деплой через GitHub API: обновление файла + деплой на Railway"""
         
         if instruction_content is None:
+            st.error("❌ Содержимое инструкций не предоставлено")
             return False
         
         # Проверяем наличие GitHub токена
         if not self.github_token:
+            st.error("❌ GitHub токен не настроен")
             return False
         
-        self.update_file_via_github_api("data/instruction.json", instruction_content, commit_message)
-        self.trigger_railway_deploy()
+        # Проверяем наличие Railway токена
+        if not self.railway_token:
+            st.error("❌ Railway токен не настроен")
+            return False
+        
+        # Шаг 1: Обновляем файл в GitHub
+        st.info("🔄 Обновление файла в GitHub...")
+        github_success = self.update_file_via_github_api("data/instruction.json", instruction_content, commit_message)
+        
+        if not github_success:
+            st.error("❌ Ошибка обновления файла в GitHub")
+            return False
+            
+        st.success("✅ Файл обновлен в GitHub")
+        
+        # Шаг 2: Запускаем деплой на Railway
+        st.info("🚀 Запуск деплоя на Railway...")
+        railway_success = self.trigger_railway_deploy()
+        
+        if not railway_success:
+            st.error("❌ Ошибка запуска деплоя на Railway")
+            return False
+            
+        st.success("✅ Деплой на Railway запущен")
+        st.info("⏳ Деплой займет 2-3 минуты. Изменения будут применены автоматически.")
+        
         return True
 
 def show_deploy_status():
@@ -163,9 +205,34 @@ def show_deploy_status():
         
         **API статус:**
         {'✅ GitHub API готов к работе' if deploy_manager.github_token else '❌ GitHub токен не настроен'}
+        
+        **Railway API:**
+        {'✅ Railway API готов к работе' if deploy_manager.railway_token else '❌ Railway токен не настроен'}
         """)
     except Exception as e:
-        st.sidebar.error(f"❌ Ошибка GitHub API: {e}")
+        st.sidebar.error(f"❌ Ошибка API: {e}")
+    
+    # Проверяем статус бота
+    st.sidebar.markdown("### 🤖 Статус бота")
+    try:
+        import requests
+        response = requests.get("https://bot-production-472c.up.railway.app/", timeout=5)
+        if response.status_code == 200:
+            st.sidebar.success("✅ Бот онлайн")
+            
+            # Проверяем промпт
+            prompt_response = requests.get("https://bot-production-472c.up.railway.app/debug/prompt", timeout=5)
+            if prompt_response.status_code == 200:
+                prompt_data = prompt_response.json()
+                st.sidebar.info(f"""
+                **Промпт:**
+                Обновлен: {prompt_data.get('last_updated', 'неизвестно')[:16]}
+                Длина: {prompt_data.get('system_instruction_length', 0)} символов
+                """)
+        else:
+            st.sidebar.error("❌ Бот недоступен")
+    except Exception as e:
+        st.sidebar.error(f"❌ Ошибка проверки бота: {str(e)[:50]}")
     
     # Пытаемся получить Git статус (может не работать в облаке)
     try:
