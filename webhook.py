@@ -59,11 +59,44 @@ print(f"✅ Токен бота получен: {TELEGRAM_BOT_TOKEN[:20]}...")
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 
 # === ЛОГИРОВАНИЕ ===
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+import logging.handlers
+
+# Создаем директорию для логов если её нет
+os.makedirs("logs", exist_ok=True)
+
+# Настраиваем логирование в файл и консоль
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Формат логов
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Файловый хендлер с ротацией
+file_handler = logging.handlers.RotatingFileHandler(
+    filename="logs/bot.log",
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=5,
+    encoding='utf-8'
+)
+file_handler.setFormatter(formatter)
+file_handler.setLevel(logging.INFO)
+
+# Консольный хендлер
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+console_handler.setLevel(logging.INFO)
+
+# Добавляем хендлеры к логгеру
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+# Логируем запуск приложения
+logger.info("🚀 Webhook server started")
+logger.info(f"📁 Logs directory: {os.path.abspath('logs')}")
+logger.info(f"🤖 Bot token: {TELEGRAM_BOT_TOKEN[:20]}...")
+logger.info(f"🔄 AI Agent enabled: {AI_ENABLED}")
 
 # === ФУНКЦИЯ ДЛЯ BUSINESS API ===
 def send_business_message(chat_id, text, business_connection_id):
@@ -277,6 +310,55 @@ async def test_business_send(request: Request):
             return {"status": "✅ Отправлено как обычное сообщение"}
             
     except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
+@app.get("/debug/prompt")
+async def get_prompt_status():
+    """Получить текущий промпт и статус инструкций"""
+    if not AI_ENABLED:
+        return {"error": "AI не включен"}
+    
+    try:
+        prompt_info = {
+            "instruction_file": agent.instruction,
+            "last_updated": agent.instruction.get('last_updated', 'неизвестно'),
+            "system_instruction_length": len(agent.instruction.get('system_instruction', '')),
+            "welcome_message_length": len(agent.instruction.get('welcome_message', '')),
+            "current_time": datetime.now().isoformat(),
+            "status": "✅ Активен"
+        }
+        
+        # Показываем первые 200 символов системной инструкции
+        system_instruction = agent.instruction.get('system_instruction', '')
+        if system_instruction:
+            prompt_info["system_instruction_preview"] = system_instruction[:200] + "..." if len(system_instruction) > 200 else system_instruction
+        
+        return prompt_info
+        
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
+@app.post("/admin/reload-prompt")
+async def reload_prompt():
+    """Перезагрузить промпт из файла (для админ панели)"""
+    if not AI_ENABLED:
+        return {"error": "AI не включен"}
+    
+    try:
+        old_updated = agent.instruction.get('last_updated', 'неизвестно')
+        agent.reload_instruction()
+        new_updated = agent.instruction.get('last_updated', 'неизвестно')
+        
+        return {
+            "status": "✅ Промпт перезагружен",
+            "old_updated": old_updated,
+            "new_updated": new_updated,
+            "changed": old_updated != new_updated,
+            "current_time": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка перезагрузки промпта: {e}")
         return {"error": str(e), "traceback": traceback.format_exc()}
 
 @app.post("/webhook")

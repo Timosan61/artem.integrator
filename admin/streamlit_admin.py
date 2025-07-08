@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from admin.config import INSTRUCTION_FILE, DEFAULT_INSTRUCTION, STREAMLIT_CONFIG
 from admin.auth import check_password
-from admin.deploy_integration import DeployManager
+from admin.deploy_integration import DeployManager, show_deploy_status
 
 
 def load_instruction():
@@ -45,7 +45,8 @@ def main():
     # Заголовок  
     st.title("🤖 Textil PRO Bot - Админ панель")
     
-    deploy_manager = DeployManager()
+    # Показываем статус деплоя в боковой панели
+    deploy_manager = show_deploy_status()
     
     if not os.path.exists(INSTRUCTION_FILE):
         st.warning("⚠️ Файл инструкций не найден. Создайте новые инструкции.")
@@ -63,6 +64,46 @@ def main():
         value=instruction_data.get("welcome_message", ""),
         height=150
     )
+    
+    st.markdown("---")
+    
+    # Статус текущего промпта в боте
+    st.subheader("📊 Статус бота")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🔍 Проверить текущий промпт", use_container_width=True):
+            try:
+                import requests
+                response = requests.get("https://bot-production-472c.up.railway.app/debug/prompt", timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    if "error" not in data:
+                        st.success("✅ Связь с ботом установлена")
+                        st.json(data)
+                    else:
+                        st.error(f"❌ Ошибка бота: {data['error']}")
+                else:
+                    st.error(f"❌ HTTP {response.status_code}")
+            except Exception as e:
+                st.error(f"❌ Не удается подключиться к боту: {e}")
+    
+    with col2:
+        if st.button("🔄 Перезагрузить промпт", use_container_width=True):
+            try:
+                import requests
+                response = requests.post("https://bot-production-472c.up.railway.app/admin/reload-prompt", timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get("changed"):
+                        st.success(f"✅ Промпт обновлен: {data['old_updated']} → {data['new_updated']}")
+                    else:
+                        st.info("📝 Промпт перезагружен (без изменений)")
+                else:
+                    st.error(f"❌ HTTP {response.status_code}")
+            except Exception as e:
+                st.error(f"❌ Ошибка перезагрузки: {e}")
     
     st.markdown("---")
     

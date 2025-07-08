@@ -1,5 +1,6 @@
 import json
 import asyncio
+import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
 
@@ -8,6 +9,9 @@ from zep_cloud.client import AsyncZep
 from zep_cloud.types import Message
 
 from .config import INSTRUCTION_FILE, OPENAI_API_KEY, OPENAI_MODEL, ZEP_API_KEY
+
+# Настройка логирования
+logger = logging.getLogger(__name__)
 
 
 class TextilProAgent:
@@ -42,10 +46,14 @@ class TextilProAgent:
         try:
             with open(INSTRUCTION_FILE, 'r', encoding='utf-8') as f:
                 instruction = json.load(f)
+                logger.info(f"✅ Инструкции успешно загружены из {INSTRUCTION_FILE}")
+                logger.info(f"📝 Последнее обновление: {instruction.get('last_updated', 'неизвестно')}")
+                logger.info(f"📏 Длина системной инструкции: {len(instruction.get('system_instruction', ''))}")
                 print(f"✅ Инструкции успешно загружены из {INSTRUCTION_FILE}")
                 print(f"📝 Последнее обновление: {instruction.get('last_updated', 'неизвестно')}")
                 return instruction
         except FileNotFoundError:
+            logger.warning(f"⚠️ ВНИМАНИЕ: Файл {INSTRUCTION_FILE} не найден! Используется базовая инструкция.")
             print(f"⚠️ ВНИМАНИЕ: Файл {INSTRUCTION_FILE} не найден! Используется базовая инструкция.")
             return {
                 "system_instruction": "Вы - помощник службы поддержки Textil PRO.",
@@ -61,9 +69,18 @@ class TextilProAgent:
             }
     
     def reload_instruction(self):
+        logger.info("🔄 Перезагрузка инструкций...")
         print("🔄 Перезагрузка инструкций...")
+        old_updated = self.instruction.get('last_updated', 'неизвестно')
         self.instruction = self._load_instruction()
-        print("✅ Инструкции перезагружены!")
+        new_updated = self.instruction.get('last_updated', 'неизвестно')
+        
+        if old_updated != new_updated:
+            logger.info(f"✅ Инструкции обновлены: {old_updated} -> {new_updated}")
+            print(f"✅ Инструкции обновлены: {old_updated} -> {new_updated}")
+        else:
+            logger.info("📝 Инструкции перезагружены (без изменений)")
+            print("📝 Инструкции перезагружены (без изменений)")
     
     async def add_to_zep_memory(self, session_id: str, user_message: str, bot_response: str, user_name: str = None):
         """Добавляет сообщения в Zep Memory с именами пользователей"""
