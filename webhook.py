@@ -361,6 +361,80 @@ async def reload_prompt():
         logger.error(f"❌ Ошибка перезагрузки промпта: {e}")
         return {"error": str(e), "traceback": traceback.format_exc()}
 
+def has_attachments(message):
+    """Проверяет наличие вложений в сообщении и извлекает их метаданные"""
+    attachment_types = [
+        'photo', 'document', 'video', 'audio', 'voice', 'video_note',
+        'sticker', 'animation', 'contact', 'location', 'venue', 'poll'
+    ]
+    
+    attachments_found = []
+    attachments_details = []
+    
+    for attachment_type in attachment_types:
+        if attachment_type in message:
+            attachments_found.append(attachment_type)
+            
+            # Извлекаем детальную информацию о вложении
+            attachment_data = message[attachment_type]
+            detail = {"type": attachment_type}
+            
+            # Для разных типов вложений извлекаем разную информацию
+            if attachment_type == 'photo':
+                # Фото может быть массивом разных размеров
+                if isinstance(attachment_data, list) and len(attachment_data) > 0:
+                    largest_photo = max(attachment_data, key=lambda x: x.get('file_size', 0))
+                    detail.update({
+                        "file_id": largest_photo.get('file_id'),
+                        "file_size": largest_photo.get('file_size'),
+                        "width": largest_photo.get('width'),
+                        "height": largest_photo.get('height')
+                    })
+            elif attachment_type == 'document':
+                detail.update({
+                    "file_id": attachment_data.get('file_id'),
+                    "file_name": attachment_data.get('file_name'),
+                    "file_size": attachment_data.get('file_size'),
+                    "mime_type": attachment_data.get('mime_type')
+                })
+            elif attachment_type in ['video', 'audio', 'voice', 'video_note']:
+                detail.update({
+                    "file_id": attachment_data.get('file_id'),
+                    "file_size": attachment_data.get('file_size'),
+                    "duration": attachment_data.get('duration')
+                })
+                if attachment_type == 'video':
+                    detail.update({
+                        "width": attachment_data.get('width'),
+                        "height": attachment_data.get('height')
+                    })
+            elif attachment_type == 'sticker':
+                detail.update({
+                    "file_id": attachment_data.get('file_id'),
+                    "width": attachment_data.get('width'),
+                    "height": attachment_data.get('height'),
+                    "emoji": attachment_data.get('emoji')
+                })
+            elif attachment_type == 'contact':
+                detail.update({
+                    "phone_number": attachment_data.get('phone_number'),
+                    "first_name": attachment_data.get('first_name'),
+                    "last_name": attachment_data.get('last_name')
+                })
+            elif attachment_type == 'location':
+                detail.update({
+                    "latitude": attachment_data.get('latitude'),
+                    "longitude": attachment_data.get('longitude')
+                })
+            else:
+                # Для других типов просто сохраняем file_id если есть
+                if hasattr(attachment_data, 'get') and attachment_data.get('file_id'):
+                    detail["file_id"] = attachment_data.get('file_id')
+            
+            attachments_details.append(detail)
+    
+    return attachments_found, attachments_details
+
 @app.post("/webhook")
 async def process_webhook(request: Request):
     """Главный обработчик webhook"""
@@ -414,13 +488,56 @@ async def process_webhook(request: Request):
             user_id = msg.get("from", {}).get("id", "unknown")
             user_name = msg.get("from", {}).get("first_name", "Пользователь")
             
+            # Проверяем наличие вложений
+            attachments, attachments_details = has_attachments(msg)
+            
             try:
+                # Логируем информацию о сообщении
+                if attachments:
+                    logger.info(f"📎 Сообщение с вложениями: {attachments}, текст: '{text}'")
+                    # Детальное логирование вложений
+                    for detail in attachments_details:
+                        logger.info(f"   📄 {detail['type']}: {detail}")
+                
+                # Если есть только вложения без текста - спрашиваем пользователя
+                if attachments and not text:
+                    logger.info(f"📝 Получено вложение от {user_name} без текста - спрашиваем что в вложении")
+                    
+                    # Формируем сообщение в зависимости от типа вложения
+                    attachment_types_ru = {
+                        'photo': 'фотографию',
+                        'document': 'документ',
+                        'video': 'видео',
+                        'audio': 'аудио',
+                        'voice': 'голосовое сообщение',
+                        'video_note': 'видеосообщение',
+                        'sticker': 'стикер',
+                        'animation': 'анимацию',
+                        'contact': 'контакт',
+                        'location': 'местоположение',
+                        'venue': 'место',
+                        'poll': 'опрос'
+                    }
+                    
+                    attachment_names = [attachment_types_ru.get(att, att) for att in attachments]
+                    
+                    if len(attachments) == 1:
+                        response = f"👋 {user_name}, я получил вашу {attachment_names[0]}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этом вложении? Чем могу помочь?"
+                    else:
+                        response = f"👋 {user_name}, я получил ваши вложения: {', '.join(attachment_names)}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этих вложениях? Чем могу помочь?"
+                    
+                    # Отправляем ответ
+                    bot.send_message(chat_id, response)
+                    logger.info(f"✅ Отправлен запрос о вложении пользователю {user_name}")
+                    return {"ok": True, "action": "asked_about_attachment"}
+                
                 # Пытаемся отправить индикатор набора текста
                 try:
                     bot.send_chat_action(chat_id, 'typing')
                 except Exception as typing_error:
                     logger.warning(f"⚠️ Не удалось отправить typing индикатор: {typing_error}")
                 
+                # Обрабатываем команды
                 if text.startswith("/start"):
                     if AI_ENABLED:
                         response = agent.get_welcome_message()
@@ -436,8 +553,8 @@ async def process_webhook(request: Request):
 
 📞 Для срочных вопросов: +86 123 456 789"""
                 
+                # Если есть текст (с вложениями или без) - обрабатываем через AI
                 elif text and AI_ENABLED:
-                    # Используем AI для генерации ответа
                     try:
                         session_id = f"user_{user_id}"
                         # Создаем пользователя в Zep если нужно
@@ -448,6 +565,13 @@ async def process_webhook(request: Request):
                             })
                             await agent.ensure_session_exists(session_id, f"user_{user_id}")
                         response = await agent.generate_response(text, session_id, user_name)
+                        
+                        # Дополнительное логирование для случая с вложениями
+                        if attachments:
+                            logger.info(f"✅ AI ответил на текст с вложениями: {attachments}")
+                            for detail in attachments_details:
+                                logger.info(f"   📄 Обработано вложение {detail['type']}: {detail}")
+                        
                     except Exception as ai_error:
                         logger.error(f"Ошибка AI генерации: {ai_error}")
                         response = f"Извините, произошла ошибка AI. Ваш вопрос: {text}\n\nПопробуйте позже или свяжитесь с поддержкой."
@@ -456,9 +580,11 @@ async def process_webhook(request: Request):
                     # Fallback если AI не доступен
                     response = f"💬 {user_name}, получил ваш вопрос: {text}\n\n📞 Для детальной консультации свяжитесь с нашими специалистами."
                 else:
-                    response = "📎 Спасибо за файл! Я работаю только с текстовыми сообщениями."
+                    # Этот случай не должен происходить из-за проверки выше
+                    logger.warning(f"⚠️ Неожиданный случай: нет текста и нет вложений")
+                    return {"ok": True, "action": "no_action"}
                     
-                # Отправляем без parse_mode для надежности
+                # Отправляем ответ
                 bot.send_message(chat_id, response)
                 logger.info(f"✅ Ответ отправлен в чат {chat_id}")
                 print(f"✅ Отправлен ответ пользователю {user_name}")
@@ -487,7 +613,61 @@ async def process_webhook(request: Request):
             if not business_connection_id:
                 logger.warning(f"⚠️ Business message без connection_id от {user_name} ({user_id})")
             
-            # Обрабатываем ВСЕ business сообщения с текстом
+            # Проверяем наличие вложений в business сообщении
+            attachments, attachments_details = has_attachments(bus_msg)
+            
+            # Логируем информацию о сообщении
+            if attachments:
+                logger.info(f"📎 Business сообщение с вложениями: {attachments}, текст: '{text}'")
+                # Детальное логирование вложений
+                for detail in attachments_details:
+                    logger.info(f"   📄 {detail['type']}: {detail}")
+            
+            # Если есть только вложения без текста - спрашиваем пользователя
+            if attachments and not text:
+                logger.info(f"📝 Получено business вложение от {user_name} без текста - спрашиваем что в вложении")
+                
+                # Формируем сообщение в зависимости от типа вложения
+                attachment_types_ru = {
+                    'photo': 'фотографию',
+                    'document': 'документ',
+                    'video': 'видео',
+                    'audio': 'аудио',
+                    'voice': 'голосовое сообщение',
+                    'video_note': 'видеосообщение',
+                    'sticker': 'стикер',
+                    'animation': 'анимацию',
+                    'contact': 'контакт',
+                    'location': 'местоположение',
+                    'venue': 'место',
+                    'poll': 'опрос'
+                }
+                
+                attachment_names = [attachment_types_ru.get(att, att) for att in attachments]
+                
+                if len(attachments) == 1:
+                    response = f"👋 {user_name}, я получил вашу {attachment_names[0]}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этом вложении? Чем могу помочь?"
+                else:
+                    response = f"👋 {user_name}, я получил ваши вложения: {', '.join(attachment_names)}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этих вложениях? Чем могу помочь?"
+                
+                # Отправляем ответ через Business API
+                if business_connection_id:
+                    result = send_business_message(chat_id, response, business_connection_id)
+                    if result:
+                        logger.info(f"✅ Отправлен запрос о business вложении пользователю {user_name}")
+                    else:
+                        logger.error(f"❌ Не удалось отправить запрос о business вложении")
+                        # Fallback: отправляем обычное сообщение
+                        bot.send_message(chat_id, response)
+                        logger.warning(f"⚠️ Запрос о вложении отправлен как обычное сообщение (fallback)")
+                else:
+                    # Fallback: если нет connection_id
+                    bot.send_message(chat_id, response)
+                    logger.warning(f"⚠️ Запрос о business вложении отправлен БЕЗ Business API (нет connection_id)")
+                
+                return {"ok": True, "action": "asked_about_business_attachment"}
+            
+            # Обрабатываем business сообщения с текстом (с вложениями или без)
             if text:
                 try:
                     logger.info(f"🔄 Начинаю обработку business message: text='{text}', chat_id={chat_id}")
@@ -514,6 +694,12 @@ async def process_webhook(request: Request):
                             await agent.ensure_session_exists(session_id, f"business_{user_id}")
                         response = await agent.generate_response(text, session_id, user_name)
                         logger.info(f"✅ AI ответ сгенерирован: {response[:100]}...")
+                        
+                        # Дополнительное логирование для случая с вложениями
+                        if attachments:
+                            logger.info(f"✅ AI ответил на business текст с вложениями: {attachments}")
+                            for detail in attachments_details:
+                                logger.info(f"   📄 Обработано business вложение {detail['type']}: {detail}")
                     else:
                         logger.info(f"🤖 AI отключен, использую стандартный ответ")
                         response = f"💼 Здравствуйте, {user_name}!\n\n✅ Ваше сообщение получено через Business API: {text}\n\n🤖 Наш специалист скоро ответит!"
