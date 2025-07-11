@@ -415,8 +415,11 @@ async def process_webhook(request: Request):
             user_name = msg.get("from", {}).get("first_name", "Пользователь")
             
             try:
-                # Отправляем индикатор набора текста
-                bot.send_chat_action(chat_id, 'typing')
+                # Пытаемся отправить индикатор набора текста
+                try:
+                    bot.send_chat_action(chat_id, 'typing')
+                except Exception as typing_error:
+                    logger.warning(f"⚠️ Не удалось отправить typing индикатор: {typing_error}")
                 
                 if text.startswith("/start"):
                     if AI_ENABLED:
@@ -488,8 +491,15 @@ async def process_webhook(request: Request):
             if text:
                 try:
                     logger.info(f"🔄 Начинаю обработку business message: text='{text}', chat_id={chat_id}")
-                    bot.send_chat_action(chat_id, 'typing')
-                    logger.info(f"✅ Отправлен typing индикатор")
+                    
+                    # Пытаемся отправить typing, но не критично если не получится для business чатов
+                    try:
+                        bot.send_chat_action(chat_id, 'typing')
+                        logger.info(f"✅ Отправлен typing индикатор")
+                    except Exception as typing_error:
+                        # Business чаты могут не поддерживать typing через обычный API
+                        logger.warning(f"⚠️ Не удалось отправить typing для business чата: {typing_error}")
+                        logger.info(f"ℹ️ Продолжаем без typing индикатора")
                     
                     if AI_ENABLED:
                         # Используем AI для Business сообщений
