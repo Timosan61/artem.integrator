@@ -484,7 +484,8 @@ async def process_webhook(request: Request):
         if "message" in update_dict:
             msg = update_dict["message"]
             chat_id = msg["chat"]["id"]
-            text = msg.get("text", "")
+            # Извлекаем текст из text или caption (для изображений и медиафайлов)
+            text = msg.get("text", "") or msg.get("caption", "")
             user_id = msg.get("from", {}).get("id", "unknown")
             user_name = msg.get("from", {}).get("first_name", "Пользователь")
             
@@ -495,6 +496,7 @@ async def process_webhook(request: Request):
                 # Логируем информацию о сообщении
                 if attachments:
                     logger.info(f"📎 Сообщение с вложениями: {attachments}, текст: '{text}'")
+                    logger.info(f"📋 Источник текста: {'text' if msg.get('text') else 'caption' if msg.get('caption') else 'none'}")
                     # Детальное логирование вложений
                     for detail in attachments_details:
                         logger.info(f"   📄 {detail['type']}: {detail}")
@@ -522,9 +524,9 @@ async def process_webhook(request: Request):
                     attachment_names = [attachment_types_ru.get(att, att) for att in attachments]
                     
                     if len(attachments) == 1:
-                        response = f"👋 {user_name}, я получил вашу {attachment_names[0]}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этом вложении? Чем могу помочь?"
+                        response = f"👋 Я получил вашу {attachment_names[0]}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этом вложении? Чем могу помочь?"
                     else:
-                        response = f"👋 {user_name}, я получил ваши вложения: {', '.join(attachment_names)}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этих вложениях? Чем могу помочь?"
+                        response = f"👋 Я получил ваши вложения: {', '.join(attachment_names)}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этих вложениях? Чем могу помочь?"
                     
                     # Отправляем ответ
                     bot.send_message(chat_id, response)
@@ -601,7 +603,8 @@ async def process_webhook(request: Request):
             logger.info(f"📨 Business message полная структура: {json.dumps(bus_msg, ensure_ascii=False)[:500]}...")
             
             chat_id = bus_msg["chat"]["id"]
-            text = bus_msg.get("text", "")
+            # Извлекаем текст из text или caption (для изображений и медиафайлов)
+            text = bus_msg.get("text", "") or bus_msg.get("caption", "")
             user_id = bus_msg.get("from", {}).get("id", "unknown")
             business_connection_id = bus_msg.get("business_connection_id")
             user_name = bus_msg.get("from", {}).get("first_name", "Клиент")
@@ -619,6 +622,7 @@ async def process_webhook(request: Request):
             # Логируем информацию о сообщении
             if attachments:
                 logger.info(f"📎 Business сообщение с вложениями: {attachments}, текст: '{text}'")
+                logger.info(f"📋 Источник текста: {'text' if bus_msg.get('text') else 'caption' if bus_msg.get('caption') else 'none'}")
                 # Детальное логирование вложений
                 for detail in attachments_details:
                     logger.info(f"   📄 {detail['type']}: {detail}")
@@ -646,9 +650,9 @@ async def process_webhook(request: Request):
                 attachment_names = [attachment_types_ru.get(att, att) for att in attachments]
                 
                 if len(attachments) == 1:
-                    response = f"👋 {user_name}, я получил вашу {attachment_names[0]}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этом вложении? Чем могу помочь?"
+                    response = f"👋 Я получил вашу {attachment_names[0]}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этом вложении? Чем могу помочь?"
                 else:
-                    response = f"👋 {user_name}, я получил ваши вложения: {', '.join(attachment_names)}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этих вложениях? Чем могу помочь?"
+                    response = f"👋 Я получил ваши вложения: {', '.join(attachment_names)}!\n\n🤔 Расскажите, пожалуйста, что именно вас интересует в этих вложениях? Чем могу помочь?"
                 
                 # Отправляем ответ через Business API
                 if business_connection_id:
