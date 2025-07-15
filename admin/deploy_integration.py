@@ -205,12 +205,12 @@ def show_deploy_status():
     st.sidebar.markdown("### 🤖 Статус бота")
     try:
         import requests
-        response = requests.get("https://artyom-integrator-production.up.railway.app/", timeout=5)
+        response = requests.get("https://web-production-84d8.up.railway.app/", timeout=5)
         if response.status_code == 200:
             st.sidebar.success("✅ Бот онлайн")
             
             # Проверяем промпт
-            prompt_response = requests.get("https://artyom-integrator-production.up.railway.app/debug/prompt", timeout=5)
+            prompt_response = requests.get("https://web-production-84d8.up.railway.app/debug/prompt", timeout=5)
             if prompt_response.status_code == 200:
                 prompt_data = prompt_response.json()
                 st.sidebar.info(f"""
