@@ -1,13 +1,13 @@
 """
-🤖 Telegram Business Bot Webhook Server
+🤖 Artyom Integrator Webhook Server
 
 Основной сервер для обработки сообщений через Telegram Business API.
-Работает в режиме webhook для мгновенных ответов.
+Работает в режиме webhook для мгновенных ответов от имени консультанта Елены из Textile Pro.
 
 Возможности:
 - Обработка обычных сообщений боту
 - Обработка Business API сообщений (от вашего Premium аккаунта)
-- AI-powered ответы через OpenAI
+- AI-powered ответы через OpenAI (консультант Елена)
 - Память диалогов через Zep
 - Автоматическая установка webhook при старте
 """
@@ -26,7 +26,7 @@ import requests
 # Добавляем путь для импорта модулей бота
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-print("🚀 Загрузка Telegram Business Bot Webhook Server...")
+print("🚀 Загрузка Artyom Integrator Webhook Server...")
 
 # Пытаемся импортировать AI agent
 try:
@@ -48,7 +48,7 @@ except Exception as e:
 
 # === НАСТРОЙКИ ===
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-WEBHOOK_SECRET_TOKEN = os.getenv("WEBHOOK_SECRET_TOKEN", "textil_pro_secret_2025")
+WEBHOOK_SECRET_TOKEN = os.getenv("WEBHOOK_SECRET_TOKEN", "artyom_integrator_secret_2025")
 
 if not TELEGRAM_BOT_TOKEN:
     raise ValueError("❌ TELEGRAM_BOT_TOKEN отсутствует!")
@@ -127,8 +127,8 @@ def send_business_message(chat_id, text, business_connection_id):
 
 # === FASTAPI ПРИЛОЖЕНИЕ ===
 app = FastAPI(
-    title="🤖 Telegram Business Bot", 
-    description="Webhook-only режим для Telegram Business API"
+    title="🤖 Artyom Integrator Bot", 
+    description="Webhook-only режим для Textile Pro консультанта Елены"
 )
 
 # Хранилище последних updates для отладки
@@ -143,7 +143,7 @@ async def health_check():
         bot_info = bot.get_me()
         return {
             "status": "🟢 ONLINE", 
-            "service": "Telegram Business Bot Webhook",
+            "service": "Artyom Integrator Webhook",
             "bot": f"@{bot_info.username}",
             "bot_id": bot_info.id,
             "mode": "WEBHOOK_ONLY",
@@ -183,7 +183,7 @@ async def set_webhook_get():
 async def set_webhook():
     """Установка webhook"""
     try:
-        webhook_url = "https://bot-production-472c.up.railway.app/webhook"
+        webhook_url = "https://artyom-integrator-production.up.railway.app/webhook"
         
         result = bot.set_webhook(
             url=webhook_url,
@@ -548,7 +548,7 @@ async def process_webhook(request: Request):
                     if AI_ENABLED:
                         response = agent.get_welcome_message()
                     else:
-                        response = f"👋 Привет, {user_name}! Меня зовут Анастасия, я консультант Textil PRO.\n\nЧем могу помочь с текстильным производством?"
+                        response = f"👋 Привет, {user_name}! Меня зовут Елена, я менеджер компании Textile Pro.\n\nКакой у вас вопрос?"
                 
                 elif text.startswith("/help"):
                     response = """ℹ️ Помощь:
@@ -580,11 +580,11 @@ async def process_webhook(request: Request):
                         
                     except Exception as ai_error:
                         logger.error(f"Ошибка AI генерации: {ai_error}")
-                        response = f"Извините, произошла техническая ошибка. Попробуйте позже или напишите вопрос снова.\n\nПо любым срочным вопросам обращайтесь напрямую.\n\nАнастасия, Textil PRO"
+                        response = f"Извините, произошла техническая ошибка. Попробуйте позже или напишите вопрос снова.\n\nПо любым срочным вопросам обращайтесь напрямую.\n\nЕлена, Textile Pro"
                     
                 elif text:
                     # Fallback если AI не доступен
-                    response = f"👋 {user_name}, получила ваш вопрос!\n\nПодготовлю детальный ответ по текстильному производству. Минуточку!\n\nАнастасия, Textil PRO"
+                    response = f"👋 {user_name}, получила ваш вопрос!\n\nПодготовлю детальный ответ по текстильному производству. Минуточку!\n\nЕлена, Textile Pro"
                 else:
                     # Этот случай не должен происходить из-за проверки выше
                     logger.warning(f"⚠️ Неожиданный случай: нет текста и нет вложений")
@@ -597,7 +597,7 @@ async def process_webhook(request: Request):
                 
             except Exception as e:
                 logger.error(f"Ошибка обработки сообщения: {e}")
-                bot.send_message(chat_id, "Извините, произошла непредвиденная ошибка. Попробуйте написать снова.\n\nАнастасия, Textil PRO")
+                bot.send_message(chat_id, "Извините, произошла непредвиденная ошибка. Попробуйте написать снова.\n\nЕлена, Textile Pro")
         
         # === BUSINESS СООБЩЕНИЯ ===
         elif "business_message" in update_dict:
@@ -714,7 +714,7 @@ async def process_webhook(request: Request):
                                 logger.info(f"   📄 Обработано business вложение {detail['type']}: {detail}")
                     else:
                         logger.info(f"🤖 AI отключен, использую стандартный ответ")
-                        response = f"👋 Здравствуйте, {user_name}!\n\nМеня зовут Анастасия, я консультант Textil PRO.\n\nПодготовлю ответ на ваш вопрос о текстильном производстве. Минуточку!"
+                        response = f"👋 Здравствуйте, {user_name}!\n\nМеня зовут Елена, я менеджер компании Textile Pro.\n\nПодготовлю ответ на ваш вопрос о текстильном производстве. Минуточку!"
                     
                     # Для business_message используем специальную функцию
                     logger.info(f"📤 Пытаюсь отправить ответ...")
@@ -757,7 +757,7 @@ async def process_webhook(request: Request):
                     
                     # ВАЖНО: Отправляем ошибку ТОЖЕ через Business API!
                     try:
-                        error_message = "Извините, произошла техническая ошибка. Попробуйте написать снова или обратитесь ко мне напрямую.\n\nАнастасия, Textil PRO"
+                        error_message = "Извините, произошла техническая ошибка. Попробуйте написать снова или обратитесь ко мне напрямую.\n\nЕлена, Textile Pro"
                         
                         # Если есть business_connection_id - используем его
                         if business_connection_id:
@@ -795,7 +795,7 @@ async def process_webhook(request: Request):
 async def startup():
     """Запуск сервера"""
     print("\n" + "="*50)
-    print("🚀 TELEGRAM BUSINESS BOT WEBHOOK SERVER")
+    print("🚀 ARTYOM INTEGRATOR WEBHOOK SERVER")
     print("="*50)
     
     # Очищаем webhook при старте
@@ -828,7 +828,7 @@ async def startup():
                 print("❌ Webhook не установлен")
             
             # Устанавливаем webhook
-            webhook_url = os.getenv("WEBHOOK_URL", "https://bot-production-472c.up.railway.app/webhook")
+            webhook_url = os.getenv("WEBHOOK_URL", "https://artyom-integrator-production.up.railway.app/webhook")
             result = bot.set_webhook(
                 url=webhook_url,
                 secret_token=WEBHOOK_SECRET_TOKEN,
@@ -859,7 +859,7 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     """Остановка сервера"""
-    logger.info("🛑 Остановка Telegram Business Bot Webhook Server")
+    logger.info("🛑 Остановка Artyom Integrator Webhook Server")
     print("🛑 Сервер остановлен")
 
 if __name__ == "__main__":
