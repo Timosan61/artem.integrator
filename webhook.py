@@ -43,6 +43,17 @@ except ImportError as e:
         print(f"📁 Файлы в bot/: {os.listdir('bot')}")
     AI_ENABLED = False
 
+# Пытаемся импортировать SocialMedia сервис и авторизацию
+try:
+    from bot.services.social_media_service import social_media_service
+    from bot.formatters.telegram_formatter import telegram_formatter
+    from bot.auth import is_admin, get_user_mode, format_admin_welcome_message, format_user_welcome_message
+    print("✅ SocialMedia сервис и авторизация загружены успешно")
+    SOCIAL_MEDIA_ENABLED = True
+except ImportError as e:
+    print(f"⚠️ SocialMedia сервис не доступен: {e}")
+    SOCIAL_MEDIA_ENABLED = False
+
 # Пытаемся импортировать Voice Service
 try:
     print(f"🔍 Попытка импорта Voice Service...")
@@ -181,11 +192,14 @@ async def health_check():
             "mode": "WEBHOOK_ONLY",
             "ai_status": "✅ ENABLED" if AI_ENABLED else "❌ DISABLED",
             "voice_status": "✅ ENABLED" if voice_service else "❌ DISABLED",
+            "social_media_status": "✅ ENABLED" if SOCIAL_MEDIA_ENABLED else "❌ DISABLED",
             "openai_configured": bool(os.getenv('OPENAI_API_KEY')),
+            "admin_configured": bool(os.getenv('ADMIN_USER_ID')),
             "endpoints": {
                 "webhook_info": "/webhook/info",
                 "set_webhook": "/webhook/set",
-                "delete_webhook": "/webhook (DELETE method)"
+                "delete_webhook": "/webhook (DELETE method)",
+                "social_media_debug": "/debug/social-media-status"
             },
             "hint": "Используйте /webhook/set в браузере для установки webhook"
         }
@@ -378,6 +392,43 @@ async def get_recent_logs():
             "recent_logs": []
         }
 
+@app.get("/debug/social-media-status")
+async def get_social_media_status():
+    """Получить статус SocialMedia сервиса для диагностики"""
+    try:
+        social_status = {
+            "SOCIAL_MEDIA_ENABLED": SOCIAL_MEDIA_ENABLED,
+            "service_available": social_media_service is not None if SOCIAL_MEDIA_ENABLED else False,
+            "current_time": datetime.now().isoformat()
+        }
+        
+        if SOCIAL_MEDIA_ENABLED and social_media_service:
+            try:
+                service_status = social_media_service.get_service_status()
+                social_status.update(service_status)
+            except Exception as e:
+                social_status["service_error"] = str(e)
+        
+        # Проверяем конфигурацию
+        from bot.config import ADMIN_USER_ID, ADMIN_USERNAMES, YOUTUBE_API_KEY, INSTAGRAM_API_KEY, TIKTOK_API_KEY
+        
+        social_status["admin_config"] = {
+            "admin_user_id": ADMIN_USER_ID,
+            "admin_usernames": ADMIN_USERNAMES,
+            "admin_configured": bool(ADMIN_USER_ID)
+        }
+        
+        social_status["api_keys"] = {
+            "youtube_configured": bool(YOUTUBE_API_KEY),
+            "instagram_configured": bool(INSTAGRAM_API_KEY),
+            "tiktok_configured": bool(TIKTOK_API_KEY)
+        }
+        
+        return social_status
+        
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
 @app.get("/debug/voice-status")
 async def get_voice_status():
     """Получить статус Voice Service для диагностики"""
@@ -466,6 +517,115 @@ async def reload_prompt():
     except Exception as e:
         logger.error(f"❌ Ошибка перезагрузки промпта: {e}")
         return {"error": str(e), "traceback": traceback.format_exc()}
+
+async def handle_admin_command(command: str, user_id: int, user_name: str) -> str:
+    """
+    Обработка админских команд
+    
+    Args:
+        command: Команда (например, "/youtube test")
+        user_id: ID пользователя
+        user_name: Имя пользователя
+        
+    Returns:
+        str: Ответ для пользователя
+    """
+    try:
+        # Разбираем команду
+        parts = command.split(' ', 1)
+        cmd = parts[0].lower()
+        query = parts[1] if len(parts) > 1 else ''
+        
+        logger.info(f"🔑 Админская команда: {cmd}, запрос: '{query}'")
+        
+        # YouTube команды
+        if cmd == '/youtube':
+            if not query:
+                return "❌ Укажите поисковый запрос.\n\n💡 Пример: `/youtube react tutorial`"
+            
+            results = await social_media_service.search('youtube', query, 'videos', 10)
+            return telegram_formatter.format_search_results(results, 'youtube', query)
+        
+        elif cmd == '/channel':
+            if not query:
+                return "❌ Укажите название канала.\n\n💡 Пример: `/channel @pewdiepie`"
+            
+            results = await social_media_service.search('youtube', query, 'channel_videos', 10)
+            return telegram_formatter.format_search_results(results, 'youtube', f"канал {query}")
+        
+        elif cmd == '/youtube_channel':
+            if not query:
+                return "❌ Укажите название канала.\n\n💡 Пример: `/youtube_channel @pewdiepie`"
+            
+            results = await social_media_service.search('youtube', query, 'channels', 5)
+            return telegram_formatter.format_search_results(results, 'youtube', f"каналы {query}")
+        
+        # Instagram команды
+        elif cmd == '/instagram':
+            if not query:
+                return "❌ Укажите поисковый запрос.\n\n💡 Пример: `/instagram travel`"
+            
+            results = await social_media_service.search('instagram', query, 'videos', 10)
+            return telegram_formatter.format_search_results(results, 'instagram', query)
+        
+        elif cmd == '/insta_user':
+            if not query:
+                return "❌ Укажите username.\n\n💡 Пример: `/insta_user natgeo`"
+            
+            results = await social_media_service.search('instagram', query, 'user_posts', 10)
+            return telegram_formatter.format_search_results(results, 'instagram', f"пользователь {query}")
+        
+        # TikTok команды
+        elif cmd == '/tiktok':
+            if not query:
+                return "❌ Укажите поисковый запрос.\n\n💡 Пример: `/tiktok dance`"
+            
+            results = await social_media_service.search('tiktok', query, 'videos', 10)
+            return telegram_formatter.format_search_results(results, 'tiktok', query)
+        
+        elif cmd == '/tiktok_user':
+            if not query:
+                return "❌ Укажите username.\n\n💡 Пример: `/tiktok_user charlidamelio`"
+            
+            results = await social_media_service.search('tiktok', query, 'user_posts', 10)
+            return telegram_formatter.format_search_results(results, 'tiktok', f"пользователь {query}")
+        
+        # Админские команды управления
+        elif cmd == '/admin_status':
+            status = social_media_service.get_service_status()
+            return telegram_formatter.format_admin_status(status)
+        
+        elif cmd == '/social_config':
+            from bot.config import YOUTUBE_API_KEY, INSTAGRAM_API_KEY, TIKTOK_API_KEY
+            
+            config_info = f"""⚙️ **Конфигурация SocialMedia API**
+
+**🎥 YouTube API:**
+{'✅ Настроен' if YOUTUBE_API_KEY else '❌ Не настроен'}
+{f'🔑 Ключ: {YOUTUBE_API_KEY[:20]}...' if YOUTUBE_API_KEY else ''}
+
+**📸 Instagram API:**
+{'✅ Настроен' if INSTAGRAM_API_KEY else '❌ Не настроен'}
+{f'🔑 Ключ: {INSTAGRAM_API_KEY[:20]}...' if INSTAGRAM_API_KEY else ''}
+
+**🎵 TikTok API:**
+{'✅ Настроен' if TIKTOK_API_KEY else '❌ Не настроен'}
+{f'🔑 Ключ: {TIKTOK_API_KEY[:20]}...' if TIKTOK_API_KEY else ''}
+
+📊 **Доступные платформы:** {', '.join(social_media_service.get_available_platforms())}"""
+            
+            return config_info
+        
+        elif cmd == '/help_admin':
+            return telegram_formatter.format_admin_command_help()
+        
+        else:
+            return f"❌ Неизвестная команда: `{cmd}`\n\n💡 Используйте `/help_admin` для списка команд"
+    
+    except Exception as e:
+        logger.error(f"❌ Ошибка обработки админской команды '{command}': {e}")
+        return telegram_formatter.format_error_message(str(e))
+
 
 def has_attachments(message):
     """Проверяет наличие вложений в сообщении и извлекает их метаданные"""
@@ -733,23 +893,50 @@ async def process_webhook(request: Request):
                 print(f"📝 Processing text: '{text}'")
                 print(f"🤖 AI_ENABLED: {AI_ENABLED}")
                 
+                # Определяем режим пользователя
+                user_mode = get_user_mode(user_id, msg.get("from", {}).get("username")) if SOCIAL_MEDIA_ENABLED else "user"
+                is_admin_user = (user_mode == "admin")
+                
+                print(f"🔑 User mode: {user_mode} (admin: {is_admin_user})")
+                
                 # Обрабатываем команды
                 if text.startswith("/start"):
                     print(f"🚀 START command detected")
-                    if AI_ENABLED:
+                    if SOCIAL_MEDIA_ENABLED and is_admin_user:
+                        response = format_admin_welcome_message(user_id, msg.get("from", {}).get("username"))
+                    elif AI_ENABLED:
                         response = agent.get_welcome_message()
                     else:
-                        response = f"👋 Привет, {user_name}! Меня зовут Елена, я менеджер компании Textile Pro.\n\nКакой у вас вопрос?"
+                        response = format_user_welcome_message(user_name) if SOCIAL_MEDIA_ENABLED else f"👋 Привет, {user_name}! Меня зовут Елена, я менеджер компании Textile Pro.\n\nКакой у вас вопрос?"
                 
                 elif text.startswith("/help"):
                     print(f"❓ HELP command detected")
-                    response = """ℹ️ Помощь:
+                    if SOCIAL_MEDIA_ENABLED and is_admin_user:
+                        response = telegram_formatter.format_admin_command_help()
+                    else:
+                        response = """ℹ️ Помощь:
 /start - начать работу
 /help - показать помощь
 
 Просто напишите ваш вопрос о текстильном производстве, и я с радостью помогу!
 
 📞 Для срочных вопросов: +86 123 456 789"""
+                
+                # === АДМИНСКИЕ КОМАНДЫ ===
+                elif SOCIAL_MEDIA_ENABLED and is_admin_user and text.startswith("/"):
+                    print(f"🔑 Admin command detected: {text}")
+                    try:
+                        response = await handle_admin_command(text, user_id, user_name)
+                    except Exception as admin_error:
+                        logger.error(f"❌ Ошибка админской команды: {admin_error}")
+                        response = telegram_formatter.format_error_message(str(admin_error))
+                
+                elif text.startswith("/") and SOCIAL_MEDIA_ENABLED and not is_admin_user:
+                    # Неадминские команды - отказ в доступе
+                    response = """🚫 Команда недоступна
+                    
+👤 Эта команда доступна только администратору системы.
+💬 Для консультации просто напишите ваш вопрос."""
                 
                 # Если есть текст (с вложениями или без) - обрабатываем через AI
                 elif text and AI_ENABLED:
@@ -764,7 +951,37 @@ async def process_webhook(request: Request):
                                 'email': f'{user_id}@telegram.user'
                             })
                             await agent.ensure_session_exists(session_id, f"user_{user_id}")
-                        response = await agent.generate_response(text, session_id, user_name)
+                        
+                        # Проверяем намерение социальных медиа для админов
+                        if SOCIAL_MEDIA_ENABLED and is_admin_user:
+                            social_intent = await agent.detect_social_media_intent(text)
+                            print(f"🔍 Social media intent detected: {social_intent}")
+                            
+                            if social_intent['has_social_intent']:
+                                platform = social_intent['platform']
+                                query = social_intent['query']
+                                
+                                if query:  # Есть поисковый запрос
+                                    print(f"🎯 Executing social media search: {platform} '{query}'")
+                                    try:
+                                        search_type = 'channel_videos' if social_intent['is_channel'] else 'videos'
+                                        results = await social_media_service.search(platform, query, search_type, 10)
+                                        response = telegram_formatter.format_search_results(results, platform, query)
+                                        response += f"\n\n💡 Найдено автоматически. Используйте /{platform} для прямых запросов."
+                                    except Exception as search_error:
+                                        logger.error(f"❌ Ошибка автоматического поиска: {search_error}")
+                                        response = await agent.generate_response(text, session_id, user_name)
+                                        response += f"\n\n💡 Для поиска на {platform.upper()} используйте /{platform} <запрос>"
+                                else:
+                                    # Нет конкретного запроса, отвечаем через AI с подсказкой
+                                    response = await agent.generate_response(text, session_id, user_name)
+                                    response += f"\n\n💡 Для поиска на {platform.upper()} используйте /{platform} <запрос>"
+                            else:
+                                # Обычный AI ответ
+                                response = await agent.generate_response(text, session_id, user_name)
+                        else:
+                            # Обычный AI ответ для неадминов
+                            response = await agent.generate_response(text, session_id, user_name)
                         
                         # Дополнительное логирование для случая с вложениями
                         if attachments:
@@ -869,6 +1086,12 @@ async def process_webhook(request: Request):
                 try:
                     logger.info(f"🔄 Начинаю обработку business message: text='{text}', chat_id={chat_id}")
                     
+                    # Определяем режим пользователя для business сообщений
+                    user_mode = get_user_mode(user_id, bus_msg.get("from", {}).get("username")) if SOCIAL_MEDIA_ENABLED else "user"
+                    is_admin_user = (user_mode == "admin")
+                    
+                    logger.info(f"🔑 Business user mode: {user_mode} (admin: {is_admin_user})")
+                    
                     # Пытаемся отправить typing, но не критично если не получится для business чатов
                     try:
                         bot.send_chat_action(chat_id, 'typing')
@@ -878,7 +1101,11 @@ async def process_webhook(request: Request):
                         logger.warning(f"⚠️ Не удалось отправить typing для business чата: {typing_error}")
                         logger.info(f"ℹ️ Продолжаем без typing индикатора")
                     
-                    if AI_ENABLED:
+                    # Обработка админских команд в business сообщениях
+                    if SOCIAL_MEDIA_ENABLED and is_admin_user and text.startswith("/"):
+                        logger.info(f"🔑 Business admin command: {text}")
+                        response = await handle_admin_command(text, user_id, user_name)
+                    elif AI_ENABLED:
                         # Используем AI для Business сообщений
                         logger.info(f"🤖 AI включен, генерирую ответ...")
                         session_id = f"business_{user_id}"
@@ -1005,9 +1232,19 @@ async def startup():
         print("❌ Polling: ОТКЛЮЧЕН")
         print(f"🤖 AI: {'✅ ВКЛЮЧЕН' if AI_ENABLED else '❌ ОТКЛЮЧЕН'}")
         print(f"🎤 Voice Service: {'✅ ВКЛЮЧЕН' if voice_service else '❌ ОТКЛЮЧЕН'}")
+        print(f"📱 SocialMedia: {'✅ ВКЛЮЧЕН' if SOCIAL_MEDIA_ENABLED else '❌ ОТКЛЮЧЕН'}")
         print(f"🔑 OpenAI API: {'✅ Настроен' if os.getenv('OPENAI_API_KEY') else '❌ Не настроен'}")
+        print(f"🔑 Admin: {'✅ Настроен' if os.getenv('ADMIN_USER_ID') else '❌ Не настроен'}")
         print(f"🔑 VOICE_ENABLED: {VOICE_ENABLED}")
         print(f"🔑 voice_service object: {voice_service}")
+        
+        # Информация о SocialMedia
+        if SOCIAL_MEDIA_ENABLED:
+            print(f"📊 SocialMedia платформы: {social_media_service.get_available_platforms()}")
+            print(f"🎥 YouTube: {'✅' if social_media_service.youtube_enabled else '❌'}")
+            print(f"📸 Instagram: {'✅' if social_media_service.instagram_enabled else '❌'}")
+            print(f"🎵 TikTok: {'✅' if social_media_service.tiktok_enabled else '❌'}")
+        
         print("="*50)
         logger.info("✅ Бот инициализирован успешно")
         

@@ -181,6 +181,57 @@ class myassistant:
         
         return "\n".join(history) if history else ""
     
+    async def detect_social_media_intent(self, user_message: str) -> dict:
+        """
+        Определяет намерение пользователя связанное с социальными медиа
+        
+        Args:
+            user_message: Сообщение пользователя
+            
+        Returns:
+            dict: Информация о намерении
+        """
+        # Ключевые слова для определения платформы
+        youtube_keywords = ['youtube', 'ютуб', 'видео youtube', 'канал youtube', 'yt']
+        instagram_keywords = ['instagram', 'инстаграм', 'insta', 'реелс', 'reels']
+        tiktok_keywords = ['tiktok', 'тикток', 'tt', 'тик ток']
+        
+        # Ключевые слова для определения типа действия
+        search_keywords = ['найди', 'найти', 'поиск', 'покажи', 'show', 'search', 'find']
+        channel_keywords = ['канал', 'channel', 'профиль', 'profile', 'пользователь', 'user']
+        
+        message_lower = user_message.lower()
+        
+        # Определяем платформу
+        platform = None
+        if any(keyword in message_lower for keyword in youtube_keywords):
+            platform = 'youtube'
+        elif any(keyword in message_lower for keyword in instagram_keywords):
+            platform = 'instagram'
+        elif any(keyword in message_lower for keyword in tiktok_keywords):
+            platform = 'tiktok'
+        
+        # Определяем тип действия
+        is_search = any(keyword in message_lower for keyword in search_keywords)
+        is_channel = any(keyword in message_lower for keyword in channel_keywords)
+        
+        # Извлекаем поисковый запрос
+        query = user_message
+        for keyword in youtube_keywords + instagram_keywords + tiktok_keywords + search_keywords:
+            query = query.replace(keyword, '').strip()
+        
+        # Очищаем от лишних символов
+        query = ' '.join(query.split())
+        
+        return {
+            'platform': platform,
+            'is_search': is_search,
+            'is_channel': is_channel,
+            'query': query,
+            'has_social_intent': platform is not None and (is_search or is_channel),
+            'original_message': user_message
+        }
+    
     async def generate_response(self, user_message: str, session_id: str, user_name: str = None) -> str:
         try:
             system_prompt = self.instruction.get("system_instruction", "")

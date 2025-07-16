@@ -37,7 +37,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 # Отправляем на GitHub
 echo -e "${BLUE}🔄 Отправка на GitHub...${NC}"
-git push origin whisper_golos
+git push origin main
 
 echo -e "${GREEN}✅ Изменения отправлены на GitHub${NC}"
 echo ""
