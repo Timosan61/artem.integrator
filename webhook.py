@@ -45,15 +45,24 @@ except ImportError as e:
 
 # Пытаемся импортировать Voice Service
 try:
+    print(f"🔍 Попытка импорта Voice Service...")
+    print(f"📁 Текущая директория: {os.getcwd()}")
+    print(f"📁 Содержимое директории: {os.listdir('.')}")
+    print(f"📁 Существует ли voice/: {os.path.exists('voice')}")
+    if os.path.exists('voice'):
+        print(f"📁 Содержимое voice/: {os.listdir('voice')}")
+    
     from voice import VoiceService
     print("✅ Voice Service загружен успешно")
     VOICE_ENABLED = True
 except ImportError as e:
-    print(f"⚠️ Voice Service не доступен: {e}")
+    print(f"⚠️ Voice Service не доступен (ImportError): {e}")
+    print(f"📍 Python path: {sys.path}")
     VOICE_ENABLED = False
 except Exception as e:
-    print(f"❌ Ошибка загрузки AI Agent: {e}")
-    AI_ENABLED = False
+    print(f"❌ Ошибка загрузки Voice Service: {e}")
+    print(f"🔍 Traceback: {traceback.format_exc()}")
+    VOICE_ENABLED = False
 
 # === НАСТРОЙКИ ===
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
