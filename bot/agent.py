@@ -14,7 +14,7 @@ from .config import INSTRUCTION_FILE, OPENAI_API_KEY, OPENAI_MODEL, ZEP_API_KEY
 logger = logging.getLogger(__name__)
 
 
-class TextilProAgent:
+class myassistant:
     def __init__(self):
         # Инициализируем OpenAI клиент если API ключ доступен
         if OPENAI_API_KEY:
@@ -303,4 +303,4 @@ class TextilProAgent:
         return self.instruction.get("welcome_message", "Добро пожаловать!")
 
 
-agent = TextilProAgent()
+agent = myassistant()
