@@ -18,7 +18,7 @@ MAX_AUDIO_DURATION_SECONDS = 600  # 10 минут
 
 # Поддерживаемые форматы аудио для Whisper
 SUPPORTED_AUDIO_FORMATS = [
-    'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm'
+    'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm', 'oga'
 ]
 
 # Настройки Telegram Bot API
