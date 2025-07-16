@@ -84,6 +84,12 @@ if not TELEGRAM_BOT_TOKEN:
 
 print(f"✅ Токен бота получен: {TELEGRAM_BOT_TOKEN[:20]}...")
 
+# === ГЛОБАЛЬНАЯ ПЕРЕМЕННАЯ ДЛЯ ТЕСТИРОВАНИЯ РЕЖИМОВ ===
+# Хранит состояние режима тестирования для каждого пользователя
+# Формат: {user_id: "admin" | "user" | None}
+# None означает использование реального режима
+admin_test_mode = {}
+
 # === СОЗДАНИЕ СИНХРОННОГО БОТА (НЕ ASYNC!) ===
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 
@@ -199,7 +205,8 @@ async def health_check():
                 "webhook_info": "/webhook/info",
                 "set_webhook": "/webhook/set",
                 "delete_webhook": "/webhook (DELETE method)",
-                "social_media_debug": "/debug/social-media-status"
+                "social_media_debug": "/debug/social-media-status",
+                "test_mode_debug": "/debug/test-mode-status"
             },
             "hint": "Используйте /webhook/set в браузере для установки webhook"
         }
@@ -469,6 +476,28 @@ async def get_voice_status():
     except Exception as e:
         return {"error": str(e), "traceback": traceback.format_exc()}
 
+@app.get("/debug/test-mode-status")
+async def get_test_mode_status():
+    """Получить статус тестового режима для диагностики"""
+    try:
+        test_mode_status = {
+            "admin_test_mode": admin_test_mode,
+            "active_test_users": len(admin_test_mode),
+            "current_time": datetime.now().isoformat()
+        }
+        
+        # Добавляем информацию о каждом пользователе в тестовом режиме
+        for user_id, mode in admin_test_mode.items():
+            test_mode_status[f"user_{user_id}"] = {
+                "test_mode": mode,
+                "real_admin": is_admin(user_id) if SOCIAL_MEDIA_ENABLED else False
+            }
+        
+        return test_mode_status
+        
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
 @app.get("/debug/prompt")
 async def get_prompt_status():
     """Получить текущий промпт и статус инструкций"""
@@ -618,6 +647,24 @@ async def handle_admin_command(command: str, user_id: int, user_name: str) -> st
         
         elif cmd == '/help_admin':
             return telegram_formatter.format_admin_command_help()
+        
+        # Команды тестирования режимов
+        elif cmd == '/test_user':
+            admin_test_mode[user_id] = "user"
+            return f"🧪 **Тестовый режим: ПОЛЬЗОВАТЕЛЬ**\n\n✅ Теперь вы будете получать ответы как обычный пользователь.\n\n📝 Используйте `/test_status` для проверки режима\n🔄 Используйте `/test_admin` для возврата в админ режим"
+        
+        elif cmd == '/test_admin':
+            admin_test_mode[user_id] = "admin"
+            return f"🧪 **Тестовый режим: АДМИНИСТРАТОР**\n\n✅ Теперь вы снова в админ режиме.\n\n📝 Используйте `/test_status` для проверки режима\n👤 Используйте `/test_user` для тестирования пользовательского режима"
+        
+        elif cmd == '/test_status':
+            current_mode = admin_test_mode.get(user_id, None)
+            real_mode = "admin" if is_admin(user_id, user_name) else "user"
+            
+            if current_mode is None:
+                return f"🔍 **Статус тестирования режимов**\n\n📊 **Текущий режим:** {real_mode.upper()} (реальный)\n🧪 **Тестовый режим:** ОТКЛЮЧЕН\n\n💡 Используйте `/test_user` или `/test_admin` для включения тестирования"
+            else:
+                return f"🔍 **Статус тестирования режимов**\n\n📊 **Реальный режим:** {real_mode.upper()}\n🧪 **Тестовый режим:** {current_mode.upper()}\n\n💡 Используйте `/test_user` или `/test_admin` для смены режима"
         
         else:
             return f"❌ Неизвестная команда: `{cmd}`\n\n💡 Используйте `/help_admin` для списка команд"
@@ -893,8 +940,8 @@ async def process_webhook(request: Request):
                 print(f"📝 Processing text: '{text}'")
                 print(f"🤖 AI_ENABLED: {AI_ENABLED}")
                 
-                # Определяем режим пользователя
-                user_mode = get_user_mode(user_id, msg.get("from", {}).get("username")) if SOCIAL_MEDIA_ENABLED else "user"
+                # Определяем режим пользователя с учетом тестового режима
+                user_mode = get_user_mode(user_id, msg.get("from", {}).get("username"), admin_test_mode) if SOCIAL_MEDIA_ENABLED else "user"
                 is_admin_user = (user_mode == "admin")
                 
                 print(f"🔑 User mode: {user_mode} (admin: {is_admin_user})")
@@ -903,11 +950,11 @@ async def process_webhook(request: Request):
                 if text.startswith("/start"):
                     print(f"🚀 START command detected")
                     if SOCIAL_MEDIA_ENABLED and is_admin_user:
-                        response = format_admin_welcome_message(user_id, msg.get("from", {}).get("username"))
+                        response = format_admin_welcome_message(user_id, msg.get("from", {}).get("username"), admin_test_mode)
                     elif AI_ENABLED:
                         response = agent.get_welcome_message()
                     else:
-                        response = format_user_welcome_message(user_name) if SOCIAL_MEDIA_ENABLED else f"👋 Привет, {user_name}! Меня зовут Елена, я менеджер компании Textile Pro.\n\nКакой у вас вопрос?"
+                        response = format_user_welcome_message(user_name, user_id, admin_test_mode) if SOCIAL_MEDIA_ENABLED else f"👋 Привет, {user_name}! Меня зовут Елена, я менеджер компании Textile Pro.\n\nКакой у вас вопрос?"
                 
                 elif text.startswith("/help"):
                     print(f"❓ HELP command detected")
@@ -930,6 +977,15 @@ async def process_webhook(request: Request):
                     except Exception as admin_error:
                         logger.error(f"❌ Ошибка админской команды: {admin_error}")
                         response = telegram_formatter.format_error_message(str(admin_error))
+                
+                # === КОМАНДЫ ТЕСТИРОВАНИЯ ДЛЯ РЕАЛЬНЫХ АДМИНОВ ===
+                elif SOCIAL_MEDIA_ENABLED and is_admin(user_id, msg.get("from", {}).get("username")) and text.startswith("/test_"):
+                    print(f"🧪 Test command detected: {text}")
+                    try:
+                        response = await handle_admin_command(text, user_id, user_name)
+                    except Exception as test_error:
+                        logger.error(f"❌ Ошибка команды тестирования: {test_error}")
+                        response = telegram_formatter.format_error_message(str(test_error))
                 
                 elif text.startswith("/") and SOCIAL_MEDIA_ENABLED and not is_admin_user:
                     # Неадминские команды - отказ в доступе
@@ -1086,8 +1142,8 @@ async def process_webhook(request: Request):
                 try:
                     logger.info(f"🔄 Начинаю обработку business message: text='{text}', chat_id={chat_id}")
                     
-                    # Определяем режим пользователя для business сообщений
-                    user_mode = get_user_mode(user_id, bus_msg.get("from", {}).get("username")) if SOCIAL_MEDIA_ENABLED else "user"
+                    # Определяем режим пользователя для business сообщений с учетом тестового режима
+                    user_mode = get_user_mode(user_id, bus_msg.get("from", {}).get("username"), admin_test_mode) if SOCIAL_MEDIA_ENABLED else "user"
                     is_admin_user = (user_mode == "admin")
                     
                     logger.info(f"🔑 Business user mode: {user_mode} (admin: {is_admin_user})")

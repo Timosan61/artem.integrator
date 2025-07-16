@@ -40,17 +40,25 @@ def is_admin(user_id: int, username: str = None) -> bool:
     return False
 
 
-def get_user_mode(user_id: int, username: str = None) -> str:
+def get_user_mode(user_id: int, username: str = None, test_mode_override: dict = None) -> str:
     """
     Определяет режим работы бота для пользователя
     
     Args:
         user_id: Telegram User ID
         username: Telegram username
+        test_mode_override: Словарь с тестовыми режимами {user_id: "admin"|"user"}
         
     Returns:
         str: "admin" или "user"
     """
+    # Проверяем тестовый режим в первую очередь
+    if test_mode_override and user_id in test_mode_override:
+        test_mode = test_mode_override[user_id]
+        if test_mode in ["admin", "user"]:
+            return test_mode
+    
+    # Обычная проверка прав
     if is_admin(user_id, username):
         return "admin"
     return "user"
@@ -144,18 +152,25 @@ def format_access_denied_message(user_id: int, username: str = None) -> str:
 Для получения доступа обратитесь к администратору системы."""
 
 
-def format_admin_welcome_message(user_id: int, username: str = None) -> str:
+def format_admin_welcome_message(user_id: int, username: str = None, test_mode_override: dict = None) -> str:
     """
     Форматирует приветственное сообщение для админа
     
     Args:
         user_id: User ID админа
         username: Username админа
+        test_mode_override: Словарь с тестовыми режимами
         
     Returns:
         str: Приветственное сообщение для админа
     """
-    return f"""🔑 Добро пожаловать, Администратор!
+    # Проверяем тестовый режим
+    test_mode_info = ""
+    if test_mode_override and user_id in test_mode_override:
+        test_mode = test_mode_override[user_id]
+        test_mode_info = f"\n🧪 **ТЕСТОВЫЙ РЕЖИМ: {test_mode.upper()}**"
+    
+    return f"""🔑 Добро пожаловать, Администратор!{test_mode_info}
 
 👤 ID: {user_id}
 📛 Username: @{username or 'не указан'}
@@ -168,20 +183,33 @@ def format_admin_welcome_message(user_id: int, username: str = None) -> str:
 • /admin_status - статус админской панели
 • /social_config - настройки SocialMedia
 
+🧪 Тестирование режимов:
+• /test_user - переключиться в пользовательский режим
+• /test_admin - переключиться в админский режим  
+• /test_status - проверить текущий режим
+
 📊 Также доступны все базовые функции консультанта."""
 
 
-def format_user_welcome_message(user_name: str) -> str:
+def format_user_welcome_message(user_name: str, user_id: int = None, test_mode_override: dict = None) -> str:
     """
     Форматирует приветственное сообщение для обычного пользователя
     
     Args:
         user_name: Имя пользователя
+        user_id: ID пользователя (для проверки тестового режима)
+        test_mode_override: Словарь с тестовыми режимами
         
     Returns:
         str: Приветственное сообщение для пользователя
     """
-    return f"""👋 Привет, {user_name}!
+    # Проверяем тестовый режим
+    test_mode_info = ""
+    if test_mode_override and user_id and user_id in test_mode_override:
+        test_mode = test_mode_override[user_id]
+        test_mode_info = f"\n🧪 **ТЕСТОВЫЙ РЕЖИМ: {test_mode.upper()}**"
+    
+    return f"""👋 Привет, {user_name}!{test_mode_info}
 
 Меня зовут Анастасия, я консультант Textile Pro.
 
