@@ -696,59 +696,29 @@ async def process_webhook(request: Request):
                                 voice_result = {'success': False, 'error': str(voice_proc_error)}
                             
                             if voice_result['success']:
-                                # Получили транскрипцию - обрабатываем как обычное текстовое сообщение
+                                # Получили транскрипцию - только логируем, НЕ отвечаем пользователю
                                 transcribed_text = voice_result['text']
                                 logger.info(f"✅ Голос транскрибирован: {transcribed_text[:100]}...")
+                                print(f"🎤 Voice transcribed: {transcribed_text[:100]}...")
                                 
-                                # Комбинируем транскрипцию с текстом если есть
-                                combined_text = f"{transcribed_text}"
-                                if text:
-                                    combined_text = f"{transcribed_text}\n\n{text}"
-                                
-                                # Обрабатываем как обычное сообщение через AI
-                                if AI_ENABLED:
-                                    session_id = f"user_{user_id}"
-                                    if agent.zep_client:
-                                        loop2 = asyncio.new_event_loop()
-                                        asyncio.set_event_loop(loop2)
-                                        try:
-                                            loop2.run_until_complete(agent.ensure_user_exists(f"user_{user_id}", {
-                                                'first_name': user_name,
-                                                'email': f'{user_id}@telegram.user'
-                                            }))
-                                            loop2.run_until_complete(agent.ensure_session_exists(session_id, f"user_{user_id}"))
-                                        finally:
-                                            loop2.close()
-                                    
-                                    loop3 = asyncio.new_event_loop()
-                                    asyncio.set_event_loop(loop3)
-                                    try:
-                                        response = loop3.run_until_complete(agent.generate_response(combined_text, session_id, user_name))
-                                    finally:
-                                        loop3.close()
-                                    bot.send_message(chat_id, response)
-                                    logger.info(f"✅ AI ответ на голосовое сообщение отправлен")
-                                    return {"ok": True, "action": "voice_processed_with_ai"}
-                                else:
-                                    # Fallback без AI
-                                    response = f"🎤 Голосовое сообщение получено и обработано!\n\nВы сказали: '{transcribed_text}'\n\nПодготовлю ответ по вашему вопросу!\n\nЕлена, Textile Pro"
-                                    bot.send_message(chat_id, response)
-                                    logger.info(f"✅ Fallback ответ на голосовое сообщение отправлен")
-                                    return {"ok": True, "action": "voice_processed_fallback"}
+                                # ВАЖНО: НЕ отправляем никаких ответов на голосовые сообщения
+                                logger.info(f"🔇 Голосовое сообщение обработано молча (без ответа пользователю)")
+                                print(f"🔇 Voice processed silently - no response sent")
+                                return {"ok": True, "action": "voice_processed_silently"}
                             else:
-                                # Ошибка обработки голоса
+                                # Ошибка обработки голоса - только логируем
                                 logger.error(f"❌ Ошибка обработки голоса: {voice_result['error']}")
-                                response = "🎤 Извините, не удалось обработать голосовое сообщение. Попробуйте написать текстом или отправить голос еще раз.\n\nЕлена, Textile Pro"
-                                bot.send_message(chat_id, response)
-                                return {"ok": True, "action": "voice_error"}
+                                print(f"❌ Voice processing error: {voice_result['error']}")
+                                # НЕ отправляем сообщение об ошибке пользователю
+                                return {"ok": True, "action": "voice_error_silent"}
                         else:
                             logger.error("❌ Не найдены данные голосового сообщения")
                             
                     except Exception as voice_error:
                         logger.error(f"❌ Критическая ошибка обработки голоса: {voice_error}")
-                        response = "🎤 Извините, произошла ошибка при обработке голосового сообщения. Напишите, пожалуйста, текстом.\n\nЕлена, Textile Pro"
-                        bot.send_message(chat_id, response)
-                        return {"ok": True, "action": "voice_critical_error"}
+                        print(f"❌ Critical voice error: {voice_error}")
+                        # НЕ отправляем сообщение об ошибке пользователю
+                        return {"ok": True, "action": "voice_critical_error_silent"}
                 
                 
                 # Пытаемся отправить индикатор набора текста
@@ -797,76 +767,31 @@ async def process_webhook(request: Request):
                         
                         # Дополнительное логирование для случая с вложениями
                         if attachments:
-                            logger.info(f"✅ AI ответил на текст с вложениями: {attachments}")
+                            logger.info(f"✅ AI ответил на ТЕКСТ (вложения проигнорированы): {attachments}")
                             for detail in attachments_details:
-                                logger.info(f"   📄 Обработано вложение {detail['type']}: {detail}")
+                                logger.info(f"   📄 Вложение проигнорировано {detail['type']}: {detail}")
                         
                     except Exception as ai_error:
                         logger.error(f"Ошибка AI генерации: {ai_error}")
                         response = f"Извините, произошла техническая ошибка. Попробуйте позже или напишите вопрос снова.\n\nПо любым срочным вопросам обращайтесь напрямую.\n\nЕлена, Textile Pro"
                     
-                # Если есть только вложения без текста - также обрабатываем через AI
-                elif attachments and AI_ENABLED:
-                    print(f"📎 AI processing attachments only: {attachments}")
-                    try:
-                        session_id = f"user_{user_id}"
-                        # Создаем пользователя в Zep если нужно
-                        if agent.zep_client:
-                            loop_zep = asyncio.new_event_loop()
-                            asyncio.set_event_loop(loop_zep)
-                            try:
-                                loop_zep.run_until_complete(agent.ensure_user_exists(f"user_{user_id}", {
-                                    'first_name': user_name,
-                                    'email': f'{user_id}@telegram.user'
-                                }))
-                                loop_zep.run_until_complete(agent.ensure_session_exists(session_id, f"user_{user_id}"))
-                            finally:
-                                loop_zep.close()
-                        
-                        # Создаем описание вложений для AI
-                        attachment_types_ru = {
-                            'photo': 'фотографию',
-                            'document': 'документ',
-                            'video': 'видео',
-                            'audio': 'аудио',
-                            'voice': 'голосовое сообщение',
-                            'video_note': 'видеосообщение',
-                            'sticker': 'стикер',
-                            'animation': 'анимацию',
-                            'contact': 'контакт',
-                            'location': 'местоположение',
-                            'venue': 'место',
-                            'poll': 'опрос'
-                        }
-                        
-                        attachment_descriptions = [attachment_types_ru.get(att, att) for att in attachments]
-                        if len(attachments) == 1:
-                            attachment_text = f"Пользователь отправил {attachment_descriptions[0]}"
-                        else:
-                            attachment_text = f"Пользователь отправил: {', '.join(attachment_descriptions)}"
-                        
-                        loop_ai = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop_ai)
-                        try:
-                            response = loop_ai.run_until_complete(agent.generate_response(attachment_text, session_id, user_name))
-                        finally:
-                            loop_ai.close()
-                        
-                        logger.info(f"✅ AI ответил на вложения без текста: {attachments}")
-                        
-                    except Exception as ai_error:
-                        logger.error(f"Ошибка AI генерации для вложений: {ai_error}")
-                        response = f"Вижу, что вы отправили файл. Чем могу помочь по этому поводу?\n\nЕлена, Textile Pro"
+                # Если есть только вложения без текста - НЕ отвечаем
+                elif attachments and not text:
+                    print(f"📎 Attachments received but no response sent: {attachments}")
+                    logger.info(f"📎 Вложения получены без текста, ответ НЕ отправляется: {attachments}")
+                    # НЕ обрабатываем и НЕ отвечаем на вложения без текста
+                    return {"ok": True, "action": "attachments_ignored"}
                 
                 elif text:
                     # Fallback если AI не доступен
                     print(f"💬 Text fallback (AI disabled): '{text}'")
                     response = f"👋 {user_name}, получила ваш вопрос!\n\nПодготовлю детальный ответ по текстильному производству. Минуточку!\n\nЕлена, Textile Pro"
                 
-                elif attachments:
-                    # Fallback для вложений без AI
-                    print(f"📎 Attachments fallback (AI disabled): {attachments}")
-                    response = f"👋 {user_name}, файл получила!\n\nЧем могу помочь?\n\nЕлена, Textile Pro"
+                elif attachments and not text:
+                    # Fallback для вложений без AI - НЕ отвечаем
+                    print(f"📎 Attachments ignored (AI disabled): {attachments}")
+                    logger.info(f"📎 Вложения проигнорированы (AI отключен): {attachments}")
+                    return {"ok": True, "action": "attachments_ignored_no_ai"}
                 
                 else:
                     # Этот случай не должен происходить
@@ -876,13 +801,18 @@ async def process_webhook(request: Request):
                     logger.warning(f"📋 Структура сообщения: {json.dumps(msg, ensure_ascii=False)}")
                     return {"ok": True, "action": "no_action"}
                     
-                # Отправляем ответ
-                print(f"\n--- SENDING RESPONSE ---")
-                print(f"📤 Response: '{response[:100]}...'")
-                print(f"💬 To chat: {chat_id}")
-                bot.send_message(chat_id, response)
-                logger.info(f"✅ Ответ отправлен в чат {chat_id}")
-                print(f"✅ Response sent to {user_name}")
+                # Отправляем ответ только если он определен
+                if 'response' in locals() and response:
+                    print(f"\n--- SENDING RESPONSE ---")
+                    print(f"📤 Response: '{response[:100]}...'")
+                    print(f"💬 To chat: {chat_id}")
+                    bot.send_message(chat_id, response)
+                    logger.info(f"✅ Ответ отправлен в чат {chat_id}")
+                    print(f"✅ Response sent to {user_name}")
+                else:
+                    print(f"\n--- NO RESPONSE ---")
+                    print(f"🔇 No response generated (attachments ignored)")
+                    logger.info(f"🔇 Ответ НЕ отправлен (вложения проигнорированы)")
                 print(f"=== MESSAGE PROCESSING END ===\n")
                 
             except Exception as e:
@@ -963,9 +893,9 @@ async def process_webhook(request: Request):
                         
                         # Дополнительное логирование для случая с вложениями
                         if attachments:
-                            logger.info(f"✅ AI ответил на business текст с вложениями: {attachments}")
+                            logger.info(f"✅ AI ответил на business ТЕКСТ (вложения проигнорированы): {attachments}")
                             for detail in attachments_details:
-                                logger.info(f"   📄 Обработано business вложение {detail['type']}: {detail}")
+                                logger.info(f"   📄 Business вложение проигнорировано {detail['type']}: {detail}")
                     else:
                         logger.info(f"🤖 AI отключен, использую стандартный ответ")
                         response = f"👋 Здравствуйте, {user_name}!\n\nМеня зовут Елена, я менеджер компании Textile Pro.\n\nПодготовлю ответ на ваш вопрос о текстильном производстве. Минуточку!"
@@ -1030,84 +960,11 @@ async def process_webhook(request: Request):
                     except Exception as send_error:
                         logger.error(f"❌ Не удалось отправить сообщение об ошибке: {send_error}")
             
-            # Обрабатываем business вложения без текста
+            # Business вложения без текста - ИГНОРИРУЕМ (не отвечаем)
             elif attachments:
-                try:
-                    logger.info(f"📎 Получены business вложения без текста: {attachments}")
-                    
-                    if AI_ENABLED:
-                        session_id = f"business_{user_id}"
-                        # Создаем пользователя в Zep если нужно
-                        if agent.zep_client:
-                            import asyncio
-                            loop_zep = asyncio.new_event_loop()
-                            asyncio.set_event_loop(loop_zep)
-                            try:
-                                loop_zep.run_until_complete(agent.ensure_user_exists(f"business_{user_id}", {
-                                    'first_name': user_name,
-                                    'email': f'{user_id}@business.telegram.user'
-                                }))
-                                loop_zep.run_until_complete(agent.ensure_session_exists(session_id, f"business_{user_id}"))
-                            finally:
-                                loop_zep.close()
-                        
-                        # Создаем описание вложений для AI
-                        attachment_types_ru = {
-                            'photo': 'фотографию',
-                            'document': 'документ',
-                            'video': 'видео',
-                            'audio': 'аудио',
-                            'voice': 'голосовое сообщение',
-                            'video_note': 'видеосообщение',
-                            'sticker': 'стикер',
-                            'animation': 'анимацию',
-                            'contact': 'контакт',
-                            'location': 'местоположение',
-                            'venue': 'место',
-                            'poll': 'опрос'
-                        }
-                        
-                        attachment_descriptions = [attachment_types_ru.get(att, att) for att in attachments]
-                        if len(attachments) == 1:
-                            attachment_text = f"Пользователь отправил {attachment_descriptions[0]}"
-                        else:
-                            attachment_text = f"Пользователь отправил: {', '.join(attachment_descriptions)}"
-                        
-                        loop_ai = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop_ai)
-                        try:
-                            response = loop_ai.run_until_complete(agent.generate_response(attachment_text, session_id, user_name))
-                        finally:
-                            loop_ai.close()
-                        logger.info(f"✅ AI ответил на business вложения без текста: {attachments}")
-                    else:
-                        response = f"👋 {user_name}, файл получила!\n\nЧем могу помочь?\n\nЕлена, Textile Pro"
-                    
-                    # Отправляем ответ через Business API
-                    if business_connection_id:
-                        result = send_business_message(chat_id, response, business_connection_id)
-                        if result:
-                            logger.info(f"✅ Business ответ на вложения отправлен пользователю {user_name}")
-                        else:
-                            logger.error(f"❌ Не удалось отправить business ответ на вложения")
-                            # Fallback: отправляем обычное сообщение
-                            bot.send_message(chat_id, response)
-                            logger.warning(f"⚠️ Ответ на вложения отправлен как обычное сообщение")
-                    else:
-                        # Fallback: если нет connection_id
-                        bot.send_message(chat_id, response)
-                        logger.warning(f"⚠️ Ответ на business вложения отправлен БЕЗ Business API")
-                
-                except Exception as e:
-                    logger.error(f"❌ Ошибка обработки business вложений: {e}")
-                    error_message = "Файл получила. Чем могу помочь?\n\nЕлена, Textile Pro"
-                    try:
-                        if business_connection_id:
-                            send_business_message(chat_id, error_message, business_connection_id)
-                        else:
-                            bot.send_message(chat_id, error_message)
-                    except Exception as send_error:
-                        logger.error(f"❌ Не удалось отправить fallback сообщение: {send_error}")
+                logger.info(f"📎 Business вложения проигнорированы (не отвечаем): {attachments}")
+                print(f"📎 Business attachments ignored: {attachments}")
+                # НЕ отправляем никаких ответов на business вложения
         
         # === BUSINESS CONNECTION ===
         elif "business_connection" in update_dict:
