@@ -288,8 +288,24 @@ class YouTubeStrategy:
         Получение ID канала по handle
         """
         import aiohttp
+        import re
         
-        clean_handle = handle.replace('@', '').strip()
+        # Извлекаем handle из URL если передан полный URL
+        if 'youtube.com/' in handle:
+            # Ищем паттерн @username в URL
+            match = re.search(r'@([^/?&]+)', handle)
+            if match:
+                clean_handle = match.group(1)
+            else:
+                # Если не найден @, пробуем извлечь из /channel/ или /c/
+                if '/channel/' in handle:
+                    clean_handle = handle.split('/channel/')[-1].split('?')[0]
+                elif '/c/' in handle:
+                    clean_handle = handle.split('/c/')[-1].split('?')[0]
+                else:
+                    clean_handle = handle
+        else:
+            clean_handle = handle.replace('@', '').strip()
         
         search_url = f"{self.base_url}/search"
         search_params = {
