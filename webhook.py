@@ -336,6 +336,46 @@ async def test_business_send(request: Request):
     except Exception as e:
         return {"error": str(e), "traceback": traceback.format_exc()}
 
+@app.get("/debug/voice-status")
+async def get_voice_status():
+    """Получить статус Voice Service для диагностики"""
+    try:
+        voice_status = {
+            "VOICE_ENABLED": VOICE_ENABLED,
+            "AI_ENABLED": AI_ENABLED,
+            "voice_service_initialized": voice_service is not None,
+            "voice_service_type": str(type(voice_service)),
+            "openai_api_key_set": bool(os.getenv('OPENAI_API_KEY')),
+            "openai_api_key_length": len(os.getenv('OPENAI_API_KEY', '')),
+            "telegram_token_set": bool(os.getenv('TELEGRAM_BOT_TOKEN')),
+            "current_time": datetime.now().isoformat()
+        }
+        
+        if voice_service:
+            try:
+                voice_status["service_info"] = voice_service.get_service_info()
+            except Exception as e:
+                voice_status["service_info_error"] = str(e)
+        
+        # Тест has_attachments с голосовым сообщением
+        test_voice_msg = {
+            "voice": {
+                "duration": 3,
+                "file_id": "test_voice_id",
+                "file_size": 15234
+            }
+        }
+        
+        attachments, attachments_details = has_attachments(test_voice_msg)
+        voice_status["test_attachments"] = attachments
+        voice_status["test_details"] = attachments_details
+        voice_status["test_condition"] = 'voice' in attachments and voice_service is not None
+        
+        return voice_status
+        
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
 @app.get("/debug/prompt")
 async def get_prompt_status():
     """Получить текущий промпт и статус инструкций"""
