@@ -1244,11 +1244,144 @@ async def process_webhook(request: Request):
                     except Exception as send_error:
                         logger.error(f"❌ Не удалось отправить сообщение об ошибке: {send_error}")
             
-            # Business вложения без текста - ИГНОРИРУЕМ (не отвечаем)
+            # === ОБРАБОТКА ГОЛОСОВЫХ BUSINESS СООБЩЕНИЙ ===
+            elif 'voice' in attachments and voice_service:
+                logger.info(f"🎤 Business голосовое сообщение от {user_name}, текст='{text}'")
+                print(f"🎤 BUSINESS VOICE PROCESSING STARTED!")
+                
+                try:
+                    # Отправляем индикатор записи голоса
+                    try:
+                        bot.send_chat_action(chat_id, 'record_voice')
+                        logger.info(f"✅ Отправлен voice typing индикатор для business чата")
+                    except Exception as typing_error:
+                        logger.warning(f"⚠️ Не удалось отправить voice typing для business чата: {typing_error}")
+                    
+                    # Находим данные голосового сообщения
+                    voice_data = None
+                    for detail in attachments_details:
+                        if detail['type'] == 'voice':
+                            voice_data = detail
+                            break
+                    
+                    if voice_data:
+                        logger.info(f"🎤 Processing business voice data: {voice_data}")
+                        
+                        # Обрабатываем голосовое сообщение (аналогично обычным сообщениям)
+                        import threading
+                        import queue
+                        
+                        result_queue = queue.Queue()
+                        
+                        def run_business_voice_processing():
+                            try:
+                                loop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                                try:
+                                    result = loop.run_until_complete(
+                                        voice_service.process_voice_message(
+                                            voice_data, 
+                                            str(user_id), 
+                                            str(bus_msg.get('message_id', 'unknown'))
+                                        )
+                                    )
+                                    result_queue.put(('success', result))
+                                finally:
+                                    loop.close()
+                            except Exception as e:
+                                result_queue.put(('error', str(e)))
+                        
+                        thread = threading.Thread(target=run_business_voice_processing)
+                        thread.start()
+                        thread.join(timeout=30)  # 30 секунд таймаут
+                        
+                        if thread.is_alive():
+                            logger.warning(f"⏰ Таймаут обработки business голоса")
+                            voice_result = {'success': False, 'error': 'Voice processing timeout'}
+                        else:
+                            try:
+                                status, result = result_queue.get_nowait()
+                                if status == 'success':
+                                    voice_result = result
+                                else:
+                                    voice_result = {'success': False, 'error': result}
+                            except queue.Empty:
+                                voice_result = {'success': False, 'error': 'No result from voice processing'}
+                        
+                        if voice_result['success']:
+                            # Получили транскрипцию - передаем агенту для обработки
+                            transcribed_text = voice_result['text']
+                            logger.info(f"✅ Business голос транскрибирован: {transcribed_text[:100]}...")
+                            
+                            # Определяем режим пользователя для business голосовых сообщений
+                            user_mode = get_user_mode(user_id, bus_msg.get("from", {}).get("username"), admin_test_mode) if SOCIAL_MEDIA_ENABLED else "user"
+                            is_admin_user = (user_mode == "admin")
+                            
+                            logger.info(f"🔑 Business voice user mode: {user_mode} (admin: {is_admin_user})")
+                            
+                            # Обработка админских команд в голосовых business сообщениях
+                            if SOCIAL_MEDIA_ENABLED and is_admin_user and transcribed_text.startswith("/"):
+                                logger.info(f"🔑 Business voice admin command: {transcribed_text}")
+                                response = await handle_admin_command(transcribed_text, user_id, user_name)
+                            elif AI_ENABLED:
+                                # Используем AI для Business голосовых сообщений
+                                logger.info(f"🤖 AI включен для business voice, генерирую ответ...")
+                                session_id = f"business_{user_id}"
+                                # Создаем пользователя в Zep если нужно
+                                if agent.zep_client:
+                                    await agent.ensure_user_exists(f"business_{user_id}", {
+                                        'first_name': user_name,
+                                        'email': f'{user_id}@business.telegram.user'
+                                    })
+                                    await agent.ensure_session_exists(session_id, f"business_{user_id}")
+                                response = await agent.generate_response(transcribed_text, session_id, user_name)
+                                logger.info(f"✅ AI business voice ответ сгенерирован: {response[:100]}...")
+                            else:
+                                logger.info(f"🤖 AI отключен для business voice, использую стандартный ответ")
+                                response = f"👋 Здравствуйте, {user_name}!\n\nМеня зовут Елена, я менеджер компании Textile Pro.\n\nВы сказали: {transcribed_text}\n\nПодготовлю ответ на ваш вопрос!"
+                            
+                            # Отправляем ответ через Business API
+                            logger.info(f"📤 Отправляю business voice ответ...")
+                            if business_connection_id:
+                                logger.info(f"📤 Отправляю через Business API с connection_id='{business_connection_id}'")
+                                result = send_business_message(chat_id, response, business_connection_id)
+                                if result:
+                                    logger.info(f"✅ Business voice ответ отправлен в чат {chat_id}")
+                                else:
+                                    logger.error(f"❌ Не удалось отправить business voice ответ через Business API")
+                            else:
+                                logger.error(f"❌ КРИТИЧНО: Business voice без connection_id! chat_id={chat_id}")
+                                # Fallback: отправляем как обычное сообщение
+                                bot.send_message(chat_id, response)
+                                logger.warning(f"⚠️ Business voice ответ отправлен как обычное сообщение")
+                        
+                        else:
+                            # Ошибка обработки голоса
+                            logger.error(f"❌ Ошибка обработки business голоса: {voice_result['error']}")
+                            error_message = "Извините, не удалось обработать голосовое сообщение. Попробуйте написать текстом.\n\nЕлена, Textile Pro"
+                            
+                            if business_connection_id:
+                                result = send_business_message(chat_id, error_message, business_connection_id)
+                                if result:
+                                    logger.info(f"✅ Business voice error отправлено через Business API")
+                                else:
+                                    bot.send_message(chat_id, error_message)
+                                    logger.warning(f"⚠️ Business voice error отправлено как обычное сообщение")
+                            else:
+                                bot.send_message(chat_id, error_message)
+                                logger.warning(f"⚠️ Business voice error отправлено БЕЗ Business API")
+                    else:
+                        logger.error("❌ Не найдены данные business голосового сообщения")
+                        
+                except Exception as business_voice_error:
+                    logger.error(f"❌ Критическая ошибка обработки business голоса: {business_voice_error}")
+                    logger.error(f"Traceback:\n{traceback.format_exc()}")
+            
+            # Business вложения без текста (кроме голосовых) - ИГНОРИРУЕМ
             elif attachments:
                 logger.info(f"📎 Business вложения проигнорированы (не отвечаем): {attachments}")
                 print(f"📎 Business attachments ignored: {attachments}")
-                # НЕ отправляем никаких ответов на business вложения
+                # НЕ отправляем никаких ответов на business вложения (кроме голосовых)
         
         # === BUSINESS CONNECTION ===
         elif "business_connection" in update_dict:
