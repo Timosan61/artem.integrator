@@ -513,8 +513,22 @@ async def process_webhook(request: Request):
             user_id = msg.get("from", {}).get("id", "unknown")
             user_name = msg.get("from", {}).get("first_name", "Пользователь")
             
+            # ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ СООБЩЕНИЯ
+            print(f"\n=== MESSAGE PROCESSING START ===")
+            print(f"📨 USER: {user_name} (ID: {user_id})")
+            print(f"💬 CHAT: {chat_id}")
+            print(f"📝 TEXT: '{text}'")
+            print(f"📋 MSG KEYS: {list(msg.keys())}")
+            logger.info(f"📨 Обработка сообщения от {user_name} ({user_id}) в чате {chat_id}")
+            logger.info(f"📝 Текст: '{text}'")
+            logger.info(f"📋 Ключи сообщения: {list(msg.keys())}")
+            
             # Проверяем наличие вложений
             attachments, attachments_details = has_attachments(msg)
+            
+            # ДЕТАЛЬНОЕ ЛОГИРОВАНИЕ ВЛОЖЕНИЙ
+            print(f"📎 ATTACHMENTS: {attachments}")
+            print(f"📄 DETAILS: {attachments_details}")
             
             try:
                 # Логируем информацию о сообщении
@@ -526,8 +540,17 @@ async def process_webhook(request: Request):
                         logger.info(f"   📄 {detail['type']}: {detail}")
                 
                 # === ОБРАБОТКА ГОЛОСОВЫХ СООБЩЕНИЙ ===
+                print(f"\n--- VOICE CHECK ---")
+                print(f"🔍 attachments: {attachments}")
+                print(f"🔍 voice_service: {voice_service is not None}")
+                print(f"🔍 VOICE_ENABLED: {VOICE_ENABLED}")
+                print(f"🔍 'voice' in attachments: {'voice' in attachments if attachments else False}")
+                print(f"🔍 voice_service type: {type(voice_service)}")
                 logger.info(f"🔍 Проверка голосовых: attachments={attachments}, voice_service={voice_service is not None}, VOICE_ENABLED={VOICE_ENABLED}")
+                
                 if 'voice' in attachments and voice_service:
+                    print(f"🎤 VOICE PROCESSING STARTED!")
+                    print(f"🎤 Voice attachments found: {[d for d in attachments_details if d['type'] == 'voice']}")
                     logger.info(f"🎤 Получено голосовое сообщение от {user_name}, текст='{text}'")
                     
                     try:
@@ -619,14 +642,21 @@ async def process_webhook(request: Request):
                 except Exception as typing_error:
                     logger.warning(f"⚠️ Не удалось отправить typing индикатор: {typing_error}")
                 
+                # === ОБРАБОТКА КОМАНД И ТЕКСТА ===
+                print(f"\n--- TEXT PROCESSING ---")
+                print(f"📝 Processing text: '{text}'")
+                print(f"🤖 AI_ENABLED: {AI_ENABLED}")
+                
                 # Обрабатываем команды
                 if text.startswith("/start"):
+                    print(f"🚀 START command detected")
                     if AI_ENABLED:
                         response = agent.get_welcome_message()
                     else:
                         response = f"👋 Привет, {user_name}! Меня зовут Елена, я менеджер компании Textile Pro.\n\nКакой у вас вопрос?"
                 
                 elif text.startswith("/help"):
+                    print(f"❓ HELP command detected")
                     response = """ℹ️ Помощь:
 /start - начать работу
 /help - показать помощь
@@ -637,6 +667,8 @@ async def process_webhook(request: Request):
                 
                 # Если есть текст (с вложениями или без) - обрабатываем через AI
                 elif text and AI_ENABLED:
+                    print(f"🤖 AI processing text: '{text[:50]}...'")
+                    print(f"📎 With attachments: {attachments}")
                     try:
                         session_id = f"user_{user_id}"
                         # Создаем пользователя в Zep если нужно
@@ -660,6 +692,7 @@ async def process_webhook(request: Request):
                     
                 # Если есть только вложения без текста - также обрабатываем через AI
                 elif attachments and AI_ENABLED:
+                    print(f"📎 AI processing attachments only: {attachments}")
                     try:
                         session_id = f"user_{user_id}"
                         # Создаем пользователя в Zep если нужно
@@ -712,25 +745,45 @@ async def process_webhook(request: Request):
                 
                 elif text:
                     # Fallback если AI не доступен
+                    print(f"💬 Text fallback (AI disabled): '{text}'")
                     response = f"👋 {user_name}, получила ваш вопрос!\n\nПодготовлю детальный ответ по текстильному производству. Минуточку!\n\nЕлена, Textile Pro"
                 
                 elif attachments:
                     # Fallback для вложений без AI
+                    print(f"📎 Attachments fallback (AI disabled): {attachments}")
                     response = f"👋 {user_name}, файл получила!\n\nЧем могу помочь?\n\nЕлена, Textile Pro"
                 
                 else:
                     # Этот случай не должен происходить
+                    print(f"⚠️ UNEXPECTED: No text and no attachments")
+                    print(f"📋 MSG STRUCTURE: {json.dumps(msg, ensure_ascii=False, indent=2)}")
                     logger.warning(f"⚠️ Неожиданный случай: нет текста и нет вложений")
+                    logger.warning(f"📋 Структура сообщения: {json.dumps(msg, ensure_ascii=False)}")
                     return {"ok": True, "action": "no_action"}
                     
                 # Отправляем ответ
+                print(f"\n--- SENDING RESPONSE ---")
+                print(f"📤 Response: '{response[:100]}...'")
+                print(f"💬 To chat: {chat_id}")
                 bot.send_message(chat_id, response)
                 logger.info(f"✅ Ответ отправлен в чат {chat_id}")
-                print(f"✅ Отправлен ответ пользователю {user_name}")
+                print(f"✅ Response sent to {user_name}")
+                print(f"=== MESSAGE PROCESSING END ===\n")
                 
             except Exception as e:
-                logger.error(f"Ошибка обработки сообщения: {e}")
-                bot.send_message(chat_id, "Извините, произошла непредвиденная ошибка. Попробуйте написать снова.\n\nЕлена, Textile Pro")
+                print(f"\n❌ CRITICAL ERROR in message processing:")
+                print(f"❌ Error: {e}")
+                print(f"❌ Traceback: {traceback.format_exc()}")
+                print(f"❌ Message data: {json.dumps(msg, ensure_ascii=False, indent=2)}")
+                logger.error(f"❌ Ошибка обработки сообщения: {e}")
+                logger.error(f"❌ Traceback: {traceback.format_exc()}")
+                logger.error(f"❌ Данные сообщения: {json.dumps(msg, ensure_ascii=False)}")
+                try:
+                    bot.send_message(chat_id, "Извините, произошла непредвиденная ошибка. Попробуйте написать снова.\n\nЕлена, Textile Pro")
+                    print(f"✅ Error message sent")
+                except Exception as send_error:
+                    print(f"❌ Failed to send error message: {send_error}")
+                    logger.error(f"❌ Не удалось отправить сообщение об ошибке: {send_error}")
         
         # === BUSINESS СООБЩЕНИЯ ===
         elif "business_message" in update_dict:
@@ -978,7 +1031,10 @@ async def startup():
         print("🔗 Режим: WEBHOOK ONLY")
         print("❌ Polling: ОТКЛЮЧЕН")
         print(f"🤖 AI: {'✅ ВКЛЮЧЕН' if AI_ENABLED else '❌ ОТКЛЮЧЕН'}")
+        print(f"🎤 Voice Service: {'✅ ВКЛЮЧЕН' if voice_service else '❌ ОТКЛЮЧЕН'}")
         print(f"🔑 OpenAI API: {'✅ Настроен' if os.getenv('OPENAI_API_KEY') else '❌ Не настроен'}")
+        print(f"🔑 VOICE_ENABLED: {VOICE_ENABLED}")
+        print(f"🔑 voice_service object: {voice_service}")
         print("="*50)
         logger.info("✅ Бот инициализирован успешно")
         
