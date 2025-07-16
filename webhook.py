@@ -69,7 +69,7 @@ bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 
 # === ИНИЦИАЛИЗАЦИЯ VOICE SERVICE ===
 voice_service = None
-if VOICE_ENABLED and AI_ENABLED:
+if VOICE_ENABLED:  # Убираем требование AI_ENABLED
     try:
         openai_api_key = os.getenv('OPENAI_API_KEY')
         if openai_api_key:
@@ -526,8 +526,9 @@ async def process_webhook(request: Request):
                         logger.info(f"   📄 {detail['type']}: {detail}")
                 
                 # === ОБРАБОТКА ГОЛОСОВЫХ СООБЩЕНИЙ ===
+                logger.info(f"🔍 Проверка голосовых: attachments={attachments}, voice_service={voice_service is not None}, VOICE_ENABLED={VOICE_ENABLED}")
                 if 'voice' in attachments and voice_service:
-                    logger.info(f"🎤 Получено голосовое сообщение от {user_name}")
+                    logger.info(f"🎤 Получено голосовое сообщение от {user_name}, текст='{text}'")
                     
                     try:
                         # Отправляем индикатор записи голоса
