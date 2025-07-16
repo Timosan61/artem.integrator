@@ -54,6 +54,15 @@ except ImportError as e:
     print(f"⚠️ SocialMedia сервис не доступен: {e}")
     SOCIAL_MEDIA_ENABLED = False
 
+# Пытаемся импортировать YouTube Transcript Service
+try:
+    from bot.services.youtube_transcript_service import youtube_transcript_service
+    print("✅ YouTube Transcript Service загружен успешно")
+    YOUTUBE_TRANSCRIPT_ENABLED = True
+except ImportError as e:
+    print(f"⚠️ YouTube Transcript Service не доступен: {e}")
+    YOUTUBE_TRANSCRIPT_ENABLED = False
+
 # Пытаемся импортировать Voice Service
 try:
     print(f"🔍 Попытка импорта Voice Service...")
@@ -89,6 +98,11 @@ print(f"✅ Токен бота получен: {TELEGRAM_BOT_TOKEN[:20]}...")
 # Формат: {user_id: "admin" | "user" | None}
 # None означает использование реального режима
 admin_test_mode = {}
+
+# === СИСТЕМА СОСТОЯНИЙ ПОЛЬЗОВАТЕЛЕЙ ===
+# Хранит состояние ожидания для каждого пользователя
+# Формат: {user_id: {"command": "transcript", "waiting_for": "youtube_link", "timestamp": datetime}}
+user_waiting_states = {}
 
 # === СОЗДАНИЕ СИНХРОННОГО БОТА (НЕ ASYNC!) ===
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
@@ -567,27 +581,77 @@ async def handle_admin_command(command: str, user_id: int, user_name: str) -> st
         
         logger.info(f"🔑 Админская команда: {cmd}, запрос: '{query}'")
         
-        # YouTube команды
+        # YouTube команды с интерактивным режимом
         if cmd == '/youtube':
             if not query:
-                return "❌ Укажите поисковый запрос.\n\n💡 Пример: `/youtube react tutorial`"
+                # Устанавливаем состояние ожидания
+                user_waiting_states[user_id] = {
+                    'command': 'youtube',
+                    'waiting_for': 'search_query',
+                    'timestamp': datetime.now()
+                }
+                return "🎥 Жду поисковый запрос для YouTube\n\n💡 Отправьте запрос или /cancel для отмены"
             
             results = await social_media_service.search('youtube', query, 'videos', 10)
             return telegram_formatter.format_search_results(results, 'youtube', query)
         
         elif cmd == '/channel':
             if not query:
-                return "❌ Укажите название канала.\n\n💡 Пример: `/channel @pewdiepie`"
+                # Устанавливаем состояние ожидания
+                user_waiting_states[user_id] = {
+                    'command': 'channel',
+                    'waiting_for': 'channel_name',
+                    'timestamp': datetime.now()
+                }
+                return "📺 Жду название канала YouTube\n\n💡 Отправьте название канала или /cancel для отмены"
             
             results = await social_media_service.search('youtube', query, 'channel_videos', 10)
             return telegram_formatter.format_search_results(results, 'youtube', f"канал {query}")
         
         elif cmd == '/youtube_channel':
             if not query:
-                return "❌ Укажите название канала.\n\n💡 Пример: `/youtube_channel @pewdiepie`"
+                # Устанавливаем состояние ожидания
+                user_waiting_states[user_id] = {
+                    'command': 'youtube_channel',
+                    'waiting_for': 'channel_name',
+                    'timestamp': datetime.now()
+                }
+                return "📺 Жду название канала для поиска\n\n💡 Отправьте название канала или /cancel для отмены"
             
             results = await social_media_service.search('youtube', query, 'channels', 5)
             return telegram_formatter.format_search_results(results, 'youtube', f"каналы {query}")
+        
+        # YouTube Transcript команда
+        elif cmd == '/transcript':
+            if not query:
+                # Устанавливаем состояние ожидания
+                user_waiting_states[user_id] = {
+                    'command': 'transcript',
+                    'waiting_for': 'youtube_link',
+                    'timestamp': datetime.now()
+                }
+                return "🎬 Жду ссылку на видео YouTube\n\n💡 Отправьте ссылку на видео или /cancel для отмены"
+            
+            if YOUTUBE_TRANSCRIPT_ENABLED:
+                # Обрабатываем транскрипцию
+                result = youtube_transcript_service.get_transcript(query)
+                
+                if result['success']:
+                    # Сохраняем в файл
+                    video_info = result.get('video_info', {})
+                    file_path = youtube_transcript_service.save_transcript_to_file(
+                        result['text'], 
+                        result['video_id'], 
+                        video_info.get('title')
+                    )
+                    
+                    # Отправляем файл
+                    await send_transcript_file(user_id, file_path, result)
+                    return youtube_transcript_service.format_transcript_message(result)
+                else:
+                    return youtube_transcript_service.format_transcript_message(result)
+            else:
+                return "❌ YouTube Transcript Service не доступен"
         
         # Instagram команды
         elif cmd == '/instagram':
@@ -666,12 +730,59 @@ async def handle_admin_command(command: str, user_id: int, user_name: str) -> st
             else:
                 return f"🔍 **Статус тестирования режимов**\n\n📊 **Реальный режим:** {real_mode.upper()}\n🧪 **Тестовый режим:** {current_mode.upper()}\n\n💡 Используйте `/test_user` или `/test_admin` для смены режима"
         
+        # Команды управления состояниями
+        elif cmd == '/cancel':
+            if user_id in user_waiting_states:
+                del user_waiting_states[user_id]
+                return "✅ Команда отменена"
+            else:
+                return "ℹ️ Нет активных команд для отмены"
+        
+        elif cmd == '/status':
+            if user_id in user_waiting_states:
+                state = user_waiting_states[user_id]
+                return f"⏳ Активная команда: {state['command']}\n🔄 Ожидание: {state['waiting_for']}\n\n💡 Используйте /cancel для отмены"
+            else:
+                return "ℹ️ Нет активных команд"
+        
         else:
             return f"❌ Неизвестная команда: `{cmd}`\n\n💡 Используйте `/help_admin` для списка команд"
     
     except Exception as e:
         logger.error(f"❌ Ошибка обработки админской команды '{command}': {e}")
         return telegram_formatter.format_error_message(str(e))
+
+
+async def send_transcript_file(user_id: int, file_path: str, result: dict):
+    """
+    Отправляет файл транскрипции пользователю
+    
+    Args:
+        user_id: ID пользователя
+        file_path: Путь к файлу
+        result: Результат получения транскрипции
+    """
+    try:
+        # Проверяем режим пользователя для выбора способа отправки
+        user_mode = get_user_mode(user_id, test_mode_override=admin_test_mode)
+        
+        with open(file_path, 'rb') as f:
+            if user_mode == "admin":
+                # Отправляем напрямую для админа
+                bot.send_document(user_id, f, caption="📄 Транскрипция YouTube видео")
+            else:
+                # Для обычного пользователя отправляем как есть
+                bot.send_document(user_id, f, caption="📄 Транскрипция YouTube видео")
+        
+        logger.info(f"✅ Файл транскрипции отправлен пользователю {user_id}")
+        
+        # Удаляем временный файл
+        import os
+        os.remove(file_path)
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки файла транскрипции: {e}")
+        raise
 
 
 def has_attachments(message):
@@ -969,6 +1080,76 @@ async def process_webhook(request: Request):
 
 📞 Для срочных вопросов: +86 123 456 789"""
                 
+                # === ПРОВЕРКА СОСТОЯНИЙ ПОЛЬЗОВАТЕЛЕЙ ===
+                elif user_id in user_waiting_states and not text.startswith("/"):
+                    print(f"⏳ User {user_id} в состоянии ожидания: {user_waiting_states[user_id]}")
+                    
+                    state = user_waiting_states[user_id]
+                    command = state['command']
+                    waiting_for = state['waiting_for']
+                    
+                    # Очищаем состояние
+                    del user_waiting_states[user_id]
+                    
+                    # Обрабатываем в зависимости от команды
+                    if command == 'transcript' and waiting_for == 'youtube_link':
+                        if YOUTUBE_TRANSCRIPT_ENABLED:
+                            print(f"🎬 Обработка транскрипции для: {text}")
+                            result = youtube_transcript_service.get_transcript(text)
+                            
+                            if result['success']:
+                                # Сохраняем в файл
+                                video_info = result.get('video_info', {})
+                                file_path = youtube_transcript_service.save_transcript_to_file(
+                                    result['text'], 
+                                    result['video_id'], 
+                                    video_info.get('title')
+                                )
+                                
+                                # Отправляем файл
+                                await send_transcript_file(user_id, file_path, result)
+                                response = youtube_transcript_service.format_transcript_message(result)
+                            else:
+                                response = youtube_transcript_service.format_transcript_message(result)
+                        else:
+                            response = "❌ YouTube Transcript Service не доступен"
+                    
+                    elif command == 'youtube' and waiting_for == 'search_query':
+                        if SOCIAL_MEDIA_ENABLED:
+                            print(f"🎥 Поиск на YouTube: {text}")
+                            try:
+                                results = await social_media_service.search('youtube', text, 'videos', 10)
+                                response = telegram_formatter.format_search_results(results, 'youtube', text)
+                            except Exception as e:
+                                response = telegram_formatter.format_error_message(str(e), 'youtube')
+                        else:
+                            response = "❌ SocialMedia сервис не доступен"
+                    
+                    elif command == 'channel' and waiting_for == 'channel_name':
+                        if SOCIAL_MEDIA_ENABLED:
+                            print(f"📺 Поиск видео канала: {text}")
+                            try:
+                                results = await social_media_service.search('youtube', text, 'channel_videos', 10)
+                                response = telegram_formatter.format_search_results(results, 'youtube', f"канал {text}")
+                            except Exception as e:
+                                response = telegram_formatter.format_error_message(str(e), 'youtube')
+                        else:
+                            response = "❌ SocialMedia сервис не доступен"
+                    
+                    elif command == 'youtube_channel' and waiting_for == 'channel_name':
+                        if SOCIAL_MEDIA_ENABLED:
+                            print(f"📺 Поиск каналов: {text}")
+                            try:
+                                results = await social_media_service.search('youtube', text, 'channels', 5)
+                                response = telegram_formatter.format_search_results(results, 'youtube', f"каналы {text}")
+                            except Exception as e:
+                                response = telegram_formatter.format_error_message(str(e), 'youtube')
+                        else:
+                            response = "❌ SocialMedia сервис не доступен"
+                    
+                    else:
+                        response = "❌ Неизвестная команда или состояние"
+                
                 # === АДМИНСКИЕ КОМАНДЫ ===
                 elif SOCIAL_MEDIA_ENABLED and is_admin_user and text.startswith("/"):
                     print(f"🔑 Admin command detected: {text}")
@@ -1157,8 +1338,92 @@ async def process_webhook(request: Request):
                         logger.warning(f"⚠️ Не удалось отправить typing для business чата: {typing_error}")
                         logger.info(f"ℹ️ Продолжаем без typing индикатора")
                     
+                    # === ПРОВЕРКА СОСТОЯНИЙ ПОЛЬЗОВАТЕЛЕЙ В BUSINESS СООБЩЕНИЯХ ===
+                    if user_id in user_waiting_states and not text.startswith("/"):
+                        logger.info(f"⏳ Business user {user_id} в состоянии ожидания: {user_waiting_states[user_id]}")
+                        
+                        state = user_waiting_states[user_id]
+                        command = state['command']
+                        waiting_for = state['waiting_for']
+                        
+                        # Очищаем состояние
+                        del user_waiting_states[user_id]
+                        
+                        # Обрабатываем в зависимости от команды
+                        if command == 'transcript' and waiting_for == 'youtube_link':
+                            if YOUTUBE_TRANSCRIPT_ENABLED:
+                                logger.info(f"🎬 Business обработка транскрипции для: {text}")
+                                result = youtube_transcript_service.get_transcript(text)
+                                
+                                if result['success']:
+                                    # Сохраняем в файл
+                                    video_info = result.get('video_info', {})
+                                    file_path = youtube_transcript_service.save_transcript_to_file(
+                                        result['text'], 
+                                        result['video_id'], 
+                                        video_info.get('title')
+                                    )
+                                    
+                                    # Отправляем файл через business API
+                                    try:
+                                        with open(file_path, 'rb') as f:
+                                            # Сначала отправляем файл
+                                            bot.send_document(chat_id, f, caption="📄 Транскрипция YouTube видео")
+                                            
+                                        # Затем отправляем описание
+                                        response = youtube_transcript_service.format_transcript_message(result)
+                                        
+                                        # Удаляем временный файл
+                                        import os
+                                        os.remove(file_path)
+                                        
+                                    except Exception as file_error:
+                                        logger.error(f"❌ Ошибка отправки файла транскрипции: {file_error}")
+                                        response = youtube_transcript_service.format_transcript_message(result)
+                                        response += f"\n\n❌ Ошибка отправки файла: {str(file_error)}"
+                                else:
+                                    response = youtube_transcript_service.format_transcript_message(result)
+                            else:
+                                response = "❌ YouTube Transcript Service не доступен"
+                        
+                        elif command == 'youtube' and waiting_for == 'search_query':
+                            if SOCIAL_MEDIA_ENABLED:
+                                logger.info(f"🎥 Business поиск на YouTube: {text}")
+                                try:
+                                    results = await social_media_service.search('youtube', text, 'videos', 10)
+                                    response = telegram_formatter.format_search_results(results, 'youtube', text)
+                                except Exception as e:
+                                    response = telegram_formatter.format_error_message(str(e), 'youtube')
+                            else:
+                                response = "❌ SocialMedia сервис не доступен"
+                        
+                        elif command == 'channel' and waiting_for == 'channel_name':
+                            if SOCIAL_MEDIA_ENABLED:
+                                logger.info(f"📺 Business поиск видео канала: {text}")
+                                try:
+                                    results = await social_media_service.search('youtube', text, 'channel_videos', 10)
+                                    response = telegram_formatter.format_search_results(results, 'youtube', f"канал {text}")
+                                except Exception as e:
+                                    response = telegram_formatter.format_error_message(str(e), 'youtube')
+                            else:
+                                response = "❌ SocialMedia сервис не доступен"
+                        
+                        elif command == 'youtube_channel' and waiting_for == 'channel_name':
+                            if SOCIAL_MEDIA_ENABLED:
+                                logger.info(f"📺 Business поиск каналов: {text}")
+                                try:
+                                    results = await social_media_service.search('youtube', text, 'channels', 5)
+                                    response = telegram_formatter.format_search_results(results, 'youtube', f"каналы {text}")
+                                except Exception as e:
+                                    response = telegram_formatter.format_error_message(str(e), 'youtube')
+                            else:
+                                response = "❌ SocialMedia сервис не доступен"
+                        
+                        else:
+                            response = "❌ Неизвестная команда или состояние"
+                    
                     # Обработка админских команд в business сообщениях
-                    if SOCIAL_MEDIA_ENABLED and is_admin_user and text.startswith("/"):
+                    elif SOCIAL_MEDIA_ENABLED and is_admin_user and text.startswith("/"):
                         logger.info(f"🔑 Business admin command: {text}")
                         response = await handle_admin_command(text, user_id, user_name)
                     elif AI_ENABLED:
