@@ -345,6 +345,39 @@ async def test_business_send(request: Request):
     except Exception as e:
         return {"error": str(e), "traceback": traceback.format_exc()}
 
+@app.get("/debug/recent-logs")
+async def get_recent_logs():
+    """Получить последние логи из файла для диагностики"""
+    try:
+        log_data = {
+            "log_file_exists": os.path.exists("logs/bot.log"),
+            "log_file_size": 0,
+            "recent_logs": [],
+            "error": None
+        }
+        
+        if os.path.exists("logs/bot.log"):
+            # Получаем размер файла
+            log_data["log_file_size"] = os.path.getsize("logs/bot.log")
+            
+            # Читаем последние 50 строк
+            with open("logs/bot.log", "r", encoding="utf-8") as f:
+                lines = f.readlines()
+                log_data["recent_logs"] = [line.strip() for line in lines[-50:]]
+                log_data["total_lines"] = len(lines)
+        else:
+            log_data["error"] = "Файл логов не найден"
+        
+        return log_data
+        
+    except Exception as e:
+        return {
+            "error": str(e), 
+            "traceback": traceback.format_exc(),
+            "log_file_exists": False,
+            "recent_logs": []
+        }
+
 @app.get("/debug/voice-status")
 async def get_voice_status():
     """Получить статус Voice Service для диагностики"""
@@ -614,20 +647,53 @@ async def process_webhook(request: Request):
                                 break
                         
                         if voice_data:
-                            # Обрабатываем голосовое сообщение (создаем async event loop)
-                            import asyncio
-                            loop = asyncio.new_event_loop()
-                            asyncio.set_event_loop(loop)
+                            # Обрабатываем голосовое сообщение
+                            print(f"🎤 Processing voice data: {voice_data}")
                             try:
-                                voice_result = loop.run_until_complete(
-                                    voice_service.process_voice_message(
-                                        voice_data, 
-                                        str(user_id), 
-                                        str(msg.get('message_id', 'unknown'))
-                                    )
-                                )
-                            finally:
-                                loop.close()
+                                # Простой подход - запускаем в отдельном thread
+                                import threading
+                                import queue
+                                
+                                result_queue = queue.Queue()
+                                
+                                def run_voice_processing():
+                                    try:
+                                        loop = asyncio.new_event_loop()
+                                        asyncio.set_event_loop(loop)
+                                        try:
+                                            result = loop.run_until_complete(
+                                                voice_service.process_voice_message(
+                                                    voice_data, 
+                                                    str(user_id), 
+                                                    str(msg.get('message_id', 'unknown'))
+                                                )
+                                            )
+                                            result_queue.put(('success', result))
+                                        finally:
+                                            loop.close()
+                                    except Exception as e:
+                                        result_queue.put(('error', str(e)))
+                                
+                                thread = threading.Thread(target=run_voice_processing)
+                                thread.start()
+                                thread.join(timeout=30)  # 30 секунд таймаут
+                                
+                                if thread.is_alive():
+                                    print(f"⏰ Таймаут обработки голоса")
+                                    voice_result = {'success': False, 'error': 'Voice processing timeout'}
+                                else:
+                                    try:
+                                        status, result = result_queue.get_nowait()
+                                        if status == 'success':
+                                            voice_result = result
+                                        else:
+                                            voice_result = {'success': False, 'error': result}
+                                    except queue.Empty:
+                                        voice_result = {'success': False, 'error': 'No result from voice processing'}
+                                        
+                            except Exception as voice_proc_error:
+                                print(f"❌ Ошибка обработки голоса: {voice_proc_error}")
+                                voice_result = {'success': False, 'error': str(voice_proc_error)}
                             
                             if voice_result['success']:
                                 # Получили транскрипцию - обрабатываем как обычное текстовое сообщение
