@@ -23,11 +23,34 @@ def load_instruction():
 
 def save_instruction(instruction_data):
     try:
+        # Валидация данных
+        if not isinstance(instruction_data, dict):
+            raise ValueError("Данные должны быть словарем")
+        
+        required_fields = ['system_instruction', 'welcome_message']
+        for field in required_fields:
+            if field not in instruction_data:
+                raise ValueError(f"Отсутствует обязательное поле: {field}")
+            if not isinstance(instruction_data[field], str):
+                raise ValueError(f"Поле {field} должно быть строкой")
+        
+        # Проверка длины полей
+        if len(instruction_data['system_instruction']) < 10:
+            raise ValueError("Системная инструкция слишком короткая (минимум 10 символов)")
+        if len(instruction_data['welcome_message']) < 5:
+            raise ValueError("Приветственное сообщение слишком короткое (минимум 5 символов)")
+        
         instruction_data["last_updated"] = datetime.now().isoformat()
+        
+        # Проверяем, что JSON валидный
+        json_str = json.dumps(instruction_data, ensure_ascii=False, indent=2)
+        json.loads(json_str)  # Проверяем, что можно десериализовать
+        
         with open(INSTRUCTION_FILE, 'w', encoding='utf-8') as f:
-            json.dump(instruction_data, f, ensure_ascii=False, indent=2)
+            f.write(json_str)
         return True
     except Exception as e:
+        st.error(f"Ошибка сохранения: {e}")
         return False
 
 

@@ -14,7 +14,7 @@ class DeployManager:
         # GitHub API настройки
         self.github_token = st.secrets.get("GITHUB_TOKEN", os.getenv("GITHUB_TOKEN"))
         self.github_owner = st.secrets.get("GITHUB_OWNER", "Timosan61")
-        self.github_repo = st.secrets.get("GITHUB_REPO", "Textill_PRO_BOT")
+        self.github_repo = st.secrets.get("GITHUB_REPO", "artem.integrator")
         self.github_api_base = "https://api.github.com"
         
         # Railway настройки

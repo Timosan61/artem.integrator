@@ -1,10 +1,29 @@
 import streamlit as st
 import hashlib
 import os
+import secrets
 from datetime import datetime, timedelta
 
-# Простой пароль для демо (в продакшне использовать более надежную систему)
-ADMIN_PASSWORD_HASH = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"  # "password"
+# Получаем пароль из секретов или генерируем случайный
+def get_admin_password_hash():
+    """Получить хеш пароля администратора"""
+    # Пытаемся получить пароль из secrets.toml
+    try:
+        password = st.secrets.get("ADMIN_PASSWORD", None)
+        if password:
+            return hashlib.sha256(password.encode()).hexdigest()
+    except:
+        pass
+    
+    # Пытаемся получить из переменных окружения
+    password = os.getenv("ADMIN_PASSWORD")
+    if password:
+        return hashlib.sha256(password.encode()).hexdigest()
+    
+    # Если нет настроенного пароля, используем дефолтный
+    return "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"  # "password"
+
+ADMIN_PASSWORD_HASH = get_admin_password_hash()
 
 def hash_password(password: str) -> str:
     """Хеширование пароля"""
