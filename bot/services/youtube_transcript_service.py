@@ -89,6 +89,15 @@ class YouTubeTranscriptService:
                 available_languages = [t.language_code for t in transcript_list]
                 logger.info(f"📋 Доступные языки: {available_languages}")
                 
+                # Проверяем, есть ли вообще транскрипции
+                if not available_languages:
+                    return {
+                        'success': False,
+                        'error': 'Для этого видео нет доступных транскрипций',
+                        'video_id': video_id,
+                        'error_type': 'no_transcripts_available'
+                    }
+                
                 # Пытаемся найти транскрипцию на предпочтительном языке
                 transcript = None
                 used_language = None
@@ -157,12 +166,45 @@ class YouTubeTranscriptService:
                 }
                 
             except Exception as e:
+                error_msg = str(e)
                 logger.error(f"❌ Ошибка получения транскрипции: {e}")
-                return {
-                    'success': False,
-                    'error': f'Ошибка API: {str(e)}',
-                    'video_id': video_id
-                }
+                
+                # Специальная обработка для разных типов ошибок
+                if "no element found" in error_msg:
+                    return {
+                        'success': False,
+                        'error': 'Субтитры недоступны для этого видео. Возможно, автор отключил их или видео слишком новое.',
+                        'video_id': video_id,
+                        'error_type': 'no_subtitles'
+                    }
+                elif "Video unavailable" in error_msg:
+                    return {
+                        'success': False,
+                        'error': 'Видео недоступно. Возможно, оно приватное или удалено.',
+                        'video_id': video_id,
+                        'error_type': 'video_unavailable'
+                    }
+                elif "TranscriptsDisabled" in error_msg:
+                    return {
+                        'success': False,
+                        'error': 'Транскрипции отключены для этого видео.',
+                        'video_id': video_id,
+                        'error_type': 'transcripts_disabled'
+                    }
+                elif "NoTranscriptFound" in error_msg:
+                    return {
+                        'success': False,
+                        'error': 'Транскрипция не найдена для этого видео.',
+                        'video_id': video_id,
+                        'error_type': 'no_transcript'
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'error': f'Ошибка API: {error_msg}',
+                        'video_id': video_id,
+                        'error_type': 'api_error'
+                    }
                 
         except ImportError:
             logger.error("❌ youtube_transcript_api не установлен")
@@ -296,14 +338,40 @@ class YouTubeTranscriptService:
             error_message = f"❌ **Ошибка получения транскрипции**\n\n"
             error_message += f"🔍 **Проблема:** {result['error']}\n"
             
+            if result.get('video_id'):
+                error_message += f"🆔 **ID видео:** {result['video_id']}\n"
+            
             if result.get('available_languages'):
                 error_message += f"📋 **Доступные языки:** {', '.join(result['available_languages'])}\n"
             
-            error_message += f"\n💡 **Возможные причины:**\n"
-            error_message += f"• Видео не имеет субтитров\n"
-            error_message += f"• Субтитры отключены автором\n"
-            error_message += f"• Видео приватное или удалено\n"
-            error_message += f"• Неверная ссылка на видео"
+            # Специфические советы в зависимости от типа ошибки
+            error_type = result.get('error_type', 'unknown')
+            error_message += f"\n💡 **Рекомендации:**\n"
+            
+            if error_type == 'no_subtitles':
+                error_message += f"• Попробуйте другое видео с субтитрами\n"
+                error_message += f"• Проверьте, что видео не слишком новое\n"
+                error_message += f"• Убедитесь, что автор не отключил субтитры\n"
+            elif error_type == 'video_unavailable':
+                error_message += f"• Проверьте правильность ссылки\n"
+                error_message += f"• Убедитесь, что видео публичное\n"
+                error_message += f"• Возможно, видео было удалено\n"
+            elif error_type == 'transcripts_disabled':
+                error_message += f"• Субтитры отключены автором видео\n"
+                error_message += f"• Попробуйте другое видео\n"
+            elif error_type == 'no_transcript':
+                error_message += f"• Видео не имеет транскрипций\n"
+                error_message += f"• Попробуйте видео с субтитрами\n"
+            elif error_type == 'no_transcripts_available':
+                error_message += f"• Для данного видео транскрипции недоступны\n"
+                error_message += f"• Попробуйте другое видео\n"
+                error_message += f"• Возможно, видео слишком короткое или новое\n"
+            else:
+                error_message += f"• Проверьте интернет-соединение\n"
+                error_message += f"• Попробуйте повторить запрос позже\n"
+                error_message += f"• Убедитесь в правильности ссылки\n"
+            
+            error_message += f"\n🔗 **Формат ссылки:** https://www.youtube.com/watch?v=VIDEO_ID"
             
             return error_message
 
