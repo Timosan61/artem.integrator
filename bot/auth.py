@@ -8,7 +8,7 @@
 
 import logging
 from functools import wraps
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 from .config import ADMIN_USER_ID, ADMIN_USERNAMES
 
