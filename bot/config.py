@@ -17,6 +17,15 @@ YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 INSTAGRAM_API_KEY = os.getenv('INSTAGRAM_API_KEY')
 TIKTOK_API_KEY = os.getenv('TIKTOK_API_KEY')
 
+# MCP настройки
+MCP_ENABLED = os.getenv('MCP_ENABLED', 'false').lower() == 'true'
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
+
+# MCP серверы
+MCP_SUPABASE_ENABLED = os.getenv('MCP_SUPABASE_ENABLED', 'false').lower() == 'true'
+MCP_DIGITALOCEAN_ENABLED = os.getenv('MCP_DIGITALOCEAN_ENABLED', 'false').lower() == 'true'
+MCP_CONTEXT7_ENABLED = os.getenv('MCP_CONTEXT7_ENABLED', 'false').lower() == 'true'
+
 # Абсолютный путь к файлу инструкций
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INSTRUCTION_FILE = os.path.join(BASE_DIR, 'data', 'instruction.json')
@@ -53,3 +62,21 @@ if TIKTOK_API_KEY:
     print(f"✅ TikTok API ключ настроен: {TIKTOK_API_KEY[:20]}...")
 else:
     print("⚠️ TIKTOK_API_KEY не найден в переменных окружения")
+
+# Проверки MCP настроек
+if MCP_ENABLED:
+    print("✅ MCP включен")
+    if ANTHROPIC_API_KEY:
+        print(f"✅ Anthropic API ключ настроен: {ANTHROPIC_API_KEY[:20]}...")
+    else:
+        print("⚠️ ANTHROPIC_API_KEY не найден (MCP будет использовать OpenAI)")
+    
+    # Проверка MCP серверов
+    if MCP_SUPABASE_ENABLED:
+        print("✅ MCP Supabase включен")
+    if MCP_DIGITALOCEAN_ENABLED:
+        print("✅ MCP DigitalOcean включен")
+    if MCP_CONTEXT7_ENABLED:
+        print("✅ MCP Context7 включен")
+else:
+    print("ℹ️ MCP отключен")

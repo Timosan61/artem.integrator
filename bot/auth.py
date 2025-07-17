@@ -121,11 +121,51 @@ def get_permission_info() -> Dict[str, Any]:
     Returns:
         dict: Информация о правах доступа
     """
+    from .config import MCP_ENABLED
     return {
         "admin_user_id": ADMIN_USER_ID,
         "admin_usernames": ADMIN_USERNAMES,
         "admin_configured": bool(ADMIN_USER_ID or ADMIN_USERNAMES),
-        "security_mode": "enabled" if ADMIN_USER_ID else "disabled"
+        "security_mode": "enabled" if ADMIN_USER_ID else "disabled",
+        "mcp_enabled": MCP_ENABLED
+    }
+
+
+def is_mcp_admin(user_id: int, username: str = None) -> bool:
+    """
+    Проверяет права доступа к MCP функциям
+    
+    Args:
+        user_id: Telegram User ID
+        username: Telegram username
+        
+    Returns:
+        bool: True если пользователь имеет права на MCP
+    """
+    # Сейчас права на MCP есть у всех админов
+    # В будущем можно добавить отдельную проверку
+    return is_admin(user_id, username)
+
+
+def get_mcp_permissions(user_id: int, username: str = None) -> Dict[str, List[str]]:
+    """
+    Получает список разрешенных MCP операций для пользователя
+    
+    Args:
+        user_id: Telegram User ID
+        username: Telegram username
+        
+    Returns:
+        dict: Словарь с разрешениями по серверам
+    """
+    if not is_mcp_admin(user_id, username):
+        return {}
+    
+    # Полные права для админов
+    return {
+        "supabase": ["read", "write", "admin"],
+        "digitalocean": ["read", "deploy", "admin"],
+        "context7": ["read"]
     }
 
 
@@ -170,6 +210,20 @@ def format_admin_welcome_message(user_id: int, username: str = None, test_mode_o
         test_mode = test_mode_override[user_id]
         test_mode_info = f"\n🧪 **ТЕСТОВЫЙ РЕЖИМ: {test_mode.upper()}**"
     
+    # Проверяем доступность MCP
+    from .config import MCP_ENABLED
+    mcp_section = ""
+    if MCP_ENABLED:
+        mcp_section = """
+🔌 **MCP команды:**
+• /mcp status - статус MCP серверов
+• /mcp projects - список Supabase проектов
+• /db <запрос> - выполнить SQL запрос
+• /mcp apps - список DigitalOcean приложений
+• /docs <библиотека> <запрос> - поиск документации
+• /mcp help - справка по MCP
+"""
+    
     return f"""🔑 Добро пожаловать, Администратор!{test_mode_info}
 
 👤 ID: {user_id}
@@ -182,7 +236,7 @@ def format_admin_welcome_message(user_id: int, username: str = None, test_mode_o
 • /channel <канал> - анализ YouTube канала
 • /admin_status - статус админской панели
 • /social_config - настройки SocialMedia
-
+{mcp_section}
 🧪 Тестирование режимов:
 • /test_user - переключиться в пользовательский режим
 • /test_admin - переключиться в админский режим  

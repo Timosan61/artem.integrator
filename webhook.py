@@ -84,6 +84,28 @@ except Exception as e:
     print(f"🔍 Traceback: {traceback.format_exc()}")
     VOICE_ENABLED = False
 
+# Пытаемся импортировать MCP компоненты
+try:
+    from bot.config import MCP_ENABLED
+    if MCP_ENABLED:
+        from bot.mcp_agent import initialize_mcp_agent, mcp_agent
+        from bot.mcp_manager import MCPManager
+        from bot.services.mcp_service import MCPServiceFactory
+        from bot.formatters.mcp_formatter import mcp_formatter
+        print("✅ MCP компоненты загружены успешно")
+        MCP_AVAILABLE = True
+    else:
+        print("ℹ️ MCP отключен в конфигурации")
+        MCP_AVAILABLE = False
+except ImportError as e:
+    print(f"⚠️ MCP компоненты не доступны: {e}")
+    MCP_AVAILABLE = False
+    MCP_ENABLED = False
+except Exception as e:
+    print(f"❌ Ошибка загрузки MCP: {e}")
+    MCP_AVAILABLE = False
+    MCP_ENABLED = False
+
 # === НАСТРОЙКИ ===
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 WEBHOOK_SECRET_TOKEN = os.getenv("WEBHOOK_SECRET_TOKEN", "artyom_integrator_secret_2025")
@@ -120,6 +142,30 @@ if VOICE_ENABLED:  # Убираем требование AI_ENABLED
     except Exception as e:
         print(f"❌ Ошибка инициализации Voice Service: {e}")
         voice_service = None
+
+# === ИНИЦИАЛИЗАЦИЯ MCP ===
+mcp_agent_instance = None
+mcp_service_factory = None
+if MCP_AVAILABLE and MCP_ENABLED:
+    try:
+        # Инициализируем MCP Agent
+        mcp_agent_instance = initialize_mcp_agent()
+        if mcp_agent_instance:
+            # Инициализируем MCP Manager
+            mcp_config = mcp_agent_instance.mcp_config
+            mcp_manager = MCPManager(mcp_config)
+            mcp_agent_instance.mcp_manager = mcp_manager
+            
+            # Инициализируем сервисы
+            mcp_service_factory = MCPServiceFactory(mcp_manager)
+            
+            print("✅ MCP система инициализирована")
+        else:
+            print("❌ Не удалось инициализировать MCP Agent")
+            MCP_AVAILABLE = False
+    except Exception as e:
+        print(f"❌ Ошибка инициализации MCP: {e}")
+        MCP_AVAILABLE = False
 
 # === ЛОГИРОВАНИЕ ===
 import logging.handlers
@@ -538,6 +584,62 @@ async def get_prompt_status():
     except Exception as e:
         return {"error": str(e), "traceback": traceback.format_exc()}
 
+@app.get("/debug/mcp-status")
+async def get_mcp_status():
+    """Получить статус MCP системы для диагностики"""
+    try:
+        mcp_status = {
+            "MCP_ENABLED": MCP_ENABLED,
+            "MCP_AVAILABLE": MCP_AVAILABLE,
+            "ANTHROPIC_API_KEY_SET": bool(os.getenv('ANTHROPIC_API_KEY')),
+            "ANTHROPIC_API_KEY_LENGTH": len(os.getenv('ANTHROPIC_API_KEY', '')) if os.getenv('ANTHROPIC_API_KEY') else 0,
+            "current_time": datetime.now().isoformat()
+        }
+        
+        if MCP_AVAILABLE:
+            try:
+                # Получаем статус от MCP агента
+                agent_status = await mcp_agent.get_status()
+                mcp_status.update({
+                    "mcp_agent_initialized": True,
+                    "mcp_enabled": agent_status.get("mcp_enabled", False),
+                    "anthropic_available": agent_status.get("anthropic_available", False),
+                    "openai_available": agent_status.get("openai_available", False),
+                    "total_functions": agent_status.get("total_functions", 0),
+                    "servers": agent_status.get("servers", {})
+                })
+                
+                # Получаем метрики от MCP менеджера
+                if mcp_agent.mcp_manager:
+                    metrics = mcp_agent.mcp_manager.get_metrics()
+                    mcp_status["metrics"] = {
+                        "total_calls": metrics.get("total_calls", 0),
+                        "total_successful": metrics.get("total_successful", 0),
+                        "total_failed": metrics.get("total_failed", 0),
+                        "average_execution_time": metrics.get("average_execution_time", 0),
+                        "servers": metrics.get("servers", {})
+                    }
+            except Exception as e:
+                mcp_status["mcp_status_error"] = str(e)
+                logger.error(f"❌ Ошибка получения статуса MCP: {e}")
+        else:
+            mcp_status.update({
+                "mcp_agent_initialized": False,
+                "mcp_disabled_reason": "MCP не включен в конфигурации или агент не инициализирован"
+            })
+        
+        # Проверяем конфигурацию серверов
+        mcp_status["servers_config"] = {
+            "SUPABASE_ENABLED": bool(os.getenv('MCP_SUPABASE_ENABLED', 'false').lower() == 'true'),
+            "DIGITALOCEAN_ENABLED": bool(os.getenv('MCP_DIGITALOCEAN_ENABLED', 'false').lower() == 'true'),
+            "CONTEXT7_ENABLED": bool(os.getenv('MCP_CONTEXT7_ENABLED', 'false').lower() == 'true')
+        }
+        
+        return mcp_status
+        
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
 @app.post("/admin/reload-prompt")
 async def reload_prompt():
     """Перезагрузить промпт из файла (для админ панели)"""
@@ -729,6 +831,91 @@ async def handle_admin_command(command: str, user_id: int, user_name: str) -> st
                 return f"🔍 **Статус тестирования режимов**\n\n📊 **Текущий режим:** {real_mode.upper()} (реальный)\n🧪 **Тестовый режим:** ОТКЛЮЧЕН\n\n💡 Используйте `/test_user` или `/test_admin` для включения тестирования"
             else:
                 return f"🔍 **Статус тестирования режимов**\n\n📊 **Реальный режим:** {real_mode.upper()}\n🧪 **Тестовый режим:** {current_mode.upper()}\n\n💡 Используйте `/test_user` или `/test_admin` для смены режима"
+        
+        # MCP команды
+        elif MCP_AVAILABLE and cmd == '/mcp':
+            # Подкоманды MCP
+            if not query:
+                return mcp_formatter.format_help_message()
+            
+            mcp_parts = query.split(' ', 1)
+            mcp_cmd = mcp_parts[0].lower()
+            mcp_args = mcp_parts[1] if len(mcp_parts) > 1 else ''
+            
+            if mcp_cmd == 'status':
+                status = mcp_agent_instance.get_mcp_status()
+                return mcp_formatter.format_mcp_status(status)
+            
+            elif mcp_cmd == 'metrics':
+                metrics = mcp_agent_instance.mcp_manager.get_metrics()
+                return mcp_formatter.format_server_metrics(metrics)
+            
+            elif mcp_cmd == 'projects':
+                # Получаем список проектов Supabase
+                result = await mcp_service_factory.get_supabase_service().list_projects(str(user_id))
+                return mcp_formatter.format_project_list(result)
+            
+            elif mcp_cmd == 'apps':
+                # Получаем список приложений DigitalOcean
+                result = await mcp_service_factory.get_digitalocean_service().list_apps(user_id=str(user_id))
+                return mcp_formatter.format_app_list(result)
+            
+            elif mcp_cmd == 'tables':
+                if not mcp_args:
+                    return "❌ Укажите ID проекта\n\n💡 Пример: `/mcp tables proj_123`"
+                result = await mcp_service_factory.get_supabase_service().list_tables(mcp_args, user_id=str(user_id))
+                return mcp_formatter.format_sql_results(result)
+            
+            elif mcp_cmd == 'examples':
+                if not mcp_args:
+                    return "❌ Укажите библиотеку и тему\n\n💡 Пример: `/mcp examples react hooks`"
+                args_parts = mcp_args.split(' ', 1)
+                library = args_parts[0]
+                topic = args_parts[1] if len(args_parts) > 1 else 'basics'
+                result = await mcp_service_factory.get_context7_service().get_code_examples(library, topic, user_id=str(user_id))
+                return mcp_formatter.format_code_examples(result)
+            
+            elif mcp_cmd == 'help':
+                return mcp_formatter.format_help_message()
+            
+            else:
+                return f"❌ Неизвестная MCP команда: `{mcp_cmd}`\n\n💡 Используйте `/mcp help` для справки"
+        
+        elif MCP_AVAILABLE and (cmd == '/db' or cmd == '/sql'):
+            if not query:
+                return "❌ Укажите SQL запрос\n\n💡 Пример: `/db SELECT * FROM users LIMIT 10`"
+            
+            # Здесь нужно будет определить project_id - пока используем заглушку
+            # В реальной реализации можно хранить последний использованный проект в сессии
+            return "❌ Сначала выберите проект командой `/mcp projects`, затем используйте ID проекта"
+        
+        elif MCP_AVAILABLE and cmd == '/deploy':
+            if not query:
+                return "❌ Укажите ID приложения\n\n💡 Пример: `/deploy app_123`"
+            
+            result = await mcp_service_factory.get_digitalocean_service().create_deployment(query, user_id=str(user_id))
+            if result.get('success'):
+                return f"🚀 Деплой запущен!\n\n🆔 ID: `{result.get('deployment_id')}`\n\n💡 Проверить статус: `/mcp deployment {query} {result.get('deployment_id')}`"
+            else:
+                return mcp_formatter.format_error(result)
+        
+        elif MCP_AVAILABLE and cmd == '/logs':
+            if not query:
+                return "❌ Укажите ID приложения\n\n💡 Пример: `/logs app_123`"
+            
+            result = await mcp_service_factory.get_digitalocean_service().get_app_logs(query, user_id=str(user_id))
+            return mcp_formatter.format_logs(result)
+        
+        elif MCP_AVAILABLE and cmd == '/docs':
+            if not query:
+                return "❌ Укажите библиотеку и запрос\n\n💡 Пример: `/docs react useState`"
+            
+            args_parts = query.split(' ', 1)
+            library = args_parts[0]
+            search_query = args_parts[1] if len(args_parts) > 1 else library
+            
+            result = await mcp_service_factory.get_context7_service().search_docs(library, search_query, user_id=str(user_id))
+            return mcp_formatter.format_doc_search_results(result)
         
         # Команды управления состояниями
         elif cmd == '/cancel':
@@ -1189,8 +1376,47 @@ async def process_webhook(request: Request):
                             })
                             await agent.ensure_session_exists(session_id, f"user_{user_id}")
                         
-                        # Проверяем намерение социальных медиа для админов
-                        if SOCIAL_MEDIA_ENABLED and is_admin_user:
+                        # Проверяем MCP намерения для админов
+                        if MCP_AVAILABLE and is_admin_user and mcp_agent_instance:
+                            can_handle = await mcp_agent_instance.can_handle_mcp(text, user_id, user_name)
+                            if can_handle:
+                                print(f"🔌 MCP может обработать запрос: '{text[:50]}...'")
+                                response = await mcp_agent_instance.process_mcp_request(
+                                    text, session_id, user_name, user_id
+                                )
+                            else:
+                                # Проверяем намерение социальных медиа для админов
+                                if SOCIAL_MEDIA_ENABLED:
+                                    social_intent = await agent.detect_social_media_intent(text)
+                                    print(f"🔍 Social media intent detected: {social_intent}")
+                                    
+                                    if social_intent['has_social_intent']:
+                                        platform = social_intent['platform']
+                                        query = social_intent['query']
+                                        
+                                        if query:  # Есть поисковый запрос
+                                            print(f"🎯 Executing social media search: {platform} '{query}'")
+                                            try:
+                                                search_type = 'channel_videos' if social_intent['is_channel'] else 'videos'
+                                                results = await social_media_service.search(platform, query, search_type, 10)
+                                                response = telegram_formatter.format_search_results(results, platform, query)
+                                                response += f"\n\n💡 Найдено автоматически. Используйте /{platform} для прямых запросов."
+                                            except Exception as search_error:
+                                                logger.error(f"❌ Ошибка автоматического поиска: {search_error}")
+                                                response = await agent.generate_response(text, session_id, user_name)
+                                                response += f"\n\n💡 Для поиска на {platform.upper()} используйте /{platform} <запрос>"
+                                        else:
+                                            # Нет конкретного запроса, отвечаем через AI с подсказкой
+                                            response = await agent.generate_response(text, session_id, user_name)
+                                            response += f"\n\n💡 Для поиска на {platform.upper()} используйте /{platform} <запрос>"
+                                    else:
+                                        # Обычный AI ответ
+                                        response = await agent.generate_response(text, session_id, user_name)
+                                else:
+                                    # Обычный AI ответ без социальных медиа
+                                    response = await agent.generate_response(text, session_id, user_name)
+                        elif SOCIAL_MEDIA_ENABLED and is_admin_user:
+                            # Проверяем намерение социальных медиа для админов (без MCP)
                             social_intent = await agent.detect_social_media_intent(text)
                             print(f"🔍 Social media intent detected: {social_intent}")
                             
@@ -1426,6 +1652,32 @@ async def process_webhook(request: Request):
                     elif SOCIAL_MEDIA_ENABLED and is_admin_user and text.startswith("/"):
                         logger.info(f"🔑 Business admin command: {text}")
                         response = await handle_admin_command(text, user_id, user_name)
+                    # === MCP ОБРАБОТКА для Business сообщений ===
+                    elif MCP_AVAILABLE and mcp_agent.can_handle_mcp(text, user_id, bus_msg.get("from", {}).get("username")):
+                        logger.info(f"🔌 Business сообщение передано MCP агенту: {text}")
+                        try:
+                            session_id = f"business_mcp_{user_id}"
+                            response = await mcp_agent.process_mcp_request(
+                                text, 
+                                session_id, 
+                                user_name, 
+                                user_id
+                            )
+                            logger.info(f"✅ MCP Business ответ получен")
+                        except Exception as mcp_error:
+                            logger.error(f"❌ Ошибка MCP для Business: {mcp_error}")
+                            # Fallback на обычный AI
+                            if AI_ENABLED:
+                                session_id = f"business_{user_id}"
+                                if agent.zep_client:
+                                    await agent.ensure_user_exists(f"business_{user_id}", {
+                                        'first_name': user_name,
+                                        'email': f'{user_id}@business.telegram.user'
+                                    })
+                                    await agent.ensure_session_exists(session_id, f"business_{user_id}")
+                                response = await agent.generate_response(text, session_id, user_name)
+                            else:
+                                response = f"Извините, произошла ошибка при обработке MCP запроса.\n\nЕлена, Textile Pro"
                     elif AI_ENABLED:
                         # Используем AI для Business сообщений
                         logger.info(f"🤖 AI включен, генерирую ответ...")
@@ -1588,6 +1840,32 @@ async def process_webhook(request: Request):
                             if SOCIAL_MEDIA_ENABLED and is_admin_user and transcribed_text.startswith("/"):
                                 logger.info(f"🔑 Business voice admin command: {transcribed_text}")
                                 response = await handle_admin_command(transcribed_text, user_id, user_name)
+                            # === MCP ОБРАБОТКА для Business голосовых сообщений ===
+                            elif MCP_AVAILABLE and mcp_agent.can_handle_mcp(transcribed_text, user_id, bus_msg.get("from", {}).get("username")):
+                                logger.info(f"🔌 Business голосовое сообщение передано MCP агенту: {transcribed_text}")
+                                try:
+                                    session_id = f"business_voice_mcp_{user_id}"
+                                    response = await mcp_agent.process_mcp_request(
+                                        transcribed_text, 
+                                        session_id, 
+                                        user_name, 
+                                        user_id
+                                    )
+                                    logger.info(f"✅ MCP Business голосовой ответ получен")
+                                except Exception as mcp_error:
+                                    logger.error(f"❌ Ошибка MCP для Business голоса: {mcp_error}")
+                                    # Fallback на обычный AI
+                                    if AI_ENABLED:
+                                        session_id = f"business_{user_id}"
+                                        if agent.zep_client:
+                                            await agent.ensure_user_exists(f"business_{user_id}", {
+                                                'first_name': user_name,
+                                                'email': f'{user_id}@business.telegram.user'
+                                            })
+                                            await agent.ensure_session_exists(session_id, f"business_{user_id}")
+                                        response = await agent.generate_response(transcribed_text, session_id, user_name)
+                                    else:
+                                        response = f"Извините, произошла ошибка при обработке MCP голосового запроса.\n\nЕлена, Textile Pro"
                             elif AI_ENABLED:
                                 # Используем AI для Business голосовых сообщений
                                 logger.info(f"🤖 AI включен для business voice, генерирую ответ...")
@@ -1699,6 +1977,55 @@ async def startup():
             print(f"📸 Instagram: {'✅' if social_media_service.instagram_enabled else '❌'}")
             print(f"🎵 TikTok: {'✅' if social_media_service.tiktok_enabled else '❌'}")
         
+        # Инициализация MCP
+        if MCP_ENABLED:
+            print("🔌 Инициализация MCP...")
+            try:
+                # Импортируем MCP компоненты
+                from bot.mcp_agent import MCPAgent
+                from bot.mcp_manager import MCPManager
+                
+                # Создаем менеджер
+                global mcp_manager, mcp_agent, MCP_AVAILABLE
+                mcp_manager = MCPManager()
+                
+                # Инициализируем MCP серверы
+                await mcp_manager.initialize()
+                logger.info("✅ MCP Manager инициализирован")
+                print("✅ MCP Manager инициализирован")
+                
+                # Создаем MCP агента
+                mcp_agent = MCPAgent(
+                    openai_key=os.getenv('OPENAI_API_KEY'),
+                    anthropic_key=os.getenv('ANTHROPIC_API_KEY'),
+                    zep_api_key=os.getenv('ZEP_API_KEY'),
+                    instruction_file=agent.instruction if AI_ENABLED and agent else None,
+                    mcp_manager=mcp_manager
+                )
+                logger.info("✅ MCP Agent инициализирован")
+                print("✅ MCP Agent инициализирован")
+                
+                # Обновляем глобальный флаг
+                MCP_AVAILABLE = True
+                print(f"🔌 MCP: ✅ ДОСТУПЕН")
+                
+                # Показываем статус серверов
+                status = await mcp_agent.get_status()
+                if status.get("servers"):
+                    print("📊 MCP серверы:")
+                    for server_name, server_info in status["servers"].items():
+                        if server_info.get("enabled"):
+                            print(f"  ✅ {server_info.get('display_name', server_name)} ({server_info.get('functions_count', 0)} функций)")
+                        else:
+                            print(f"  ❌ {server_info.get('display_name', server_name)}")
+                
+            except Exception as e:
+                logger.error(f"❌ Ошибка инициализации MCP: {e}")
+                print(f"❌ Ошибка инициализации MCP: {e}")
+                MCP_AVAILABLE = False
+        else:
+            print("🔌 MCP: ❌ ОТКЛЮЧЕН")
+        
         print("="*50)
         logger.info("✅ Бот инициализирован успешно")
         
@@ -1745,6 +2072,15 @@ async def startup():
 async def shutdown():
     """Остановка сервера"""
     logger.info("🛑 Остановка Artyom Integrator Webhook Server")
+    
+    # Останавливаем MCP менеджер
+    if MCP_AVAILABLE and 'mcp_manager' in globals():
+        try:
+            await mcp_manager.shutdown()
+            logger.info("✅ MCP Manager остановлен")
+        except Exception as e:
+            logger.error(f"❌ Ошибка остановки MCP Manager: {e}")
+    
     print("🛑 Сервер остановлен")
 
 if __name__ == "__main__":
