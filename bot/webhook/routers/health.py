@@ -33,7 +33,7 @@ async def health_check():
                 "set_webhook": "/webhook/set",
                 "delete_webhook": "/webhook (DELETE method)",
                 "debug": "/debug/*" if config.debug else None,
-                "admin": "/admin/*" if config.admin.enabled else None
+                "admin": "/admin/*" if (config.admin.user_ids or config.admin.usernames) else None
             }
         }
     except Exception as e:
