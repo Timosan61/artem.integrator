@@ -192,7 +192,24 @@ def format_access_denied_message(user_id: int, username: str = None) -> str:
 Для получения доступа обратитесь к администратору системы."""
 
 
-def format_admin_welcome_message(user_id: int, username: str = None, test_mode_override: dict = None) -> str:
+def is_admin_token(token: str) -> bool:
+    """
+    Проверяет, является ли токен админским
+    
+    Args:
+        token: Токен для проверки
+        
+    Returns:
+        bool: True если токен админский
+    """
+    # Можно добавить список админских токенов в конфигурацию
+    # Пока используем простую проверку через переменную окружения
+    import os
+    admin_token = os.getenv('ADMIN_TOKEN', 'secure-admin-token')
+    return token == admin_token
+
+
+def format_admin_welcome_message(user_id: int = None, username: str = None, test_mode_override: dict = None) -> str:
     """
     Форматирует приветственное сообщение для админа
     
@@ -245,7 +262,7 @@ def format_admin_welcome_message(user_id: int, username: str = None, test_mode_o
 📊 Также доступны все базовые функции консультанта."""
 
 
-def format_user_welcome_message(user_name: str, user_id: int = None, test_mode_override: dict = None) -> str:
+def format_user_welcome_message(user_name: str = None, user_id: int = None, test_mode_override: dict = None) -> str:
     """
     Форматирует приветственное сообщение для обычного пользователя
     
@@ -263,7 +280,8 @@ def format_user_welcome_message(user_name: str, user_id: int = None, test_mode_o
         test_mode = test_mode_override[user_id]
         test_mode_info = f"\n🧪 **ТЕСТОВЫЙ РЕЖИМ: {test_mode.upper()}**"
     
-    return f"""👋 Привет, {user_name}!{test_mode_info}
+    greeting_name = user_name or "друг"
+    return f"""👋 Привет, {greeting_name}!{test_mode_info}
 
 Меня зовут Анастасия, я консультант Textile Pro.
 

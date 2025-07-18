@@ -1,13 +1,13 @@
 """
-🤖 Artyom Integrator Webhook Server
+🤖 Artyom Integrator Webhook Server (Refactored)
 
-Использует новую модульную архитектуру из bot/webhook/
-Этот файл обеспечивает обратную совместимость.
+Новая архитектура webhook сервера с модульной структурой
 """
 
 import os
 import sys
 import logging
+import uvicorn
 
 # Добавляем путь для импорта модулей
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -20,7 +20,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Импортируем приложение из новой архитектуры
+# Импортируем создание приложения
 try:
     from bot.webhook import create_app
     from bot.core.config import config
@@ -37,13 +37,10 @@ except Exception as e:
     logger.error(f"❌ Ошибка создания приложения: {e}", exc_info=True)
     raise
 
-# Экспортируем приложение для uvicorn
-__all__ = ['app']
 
 # === MAIN ===
 if __name__ == "__main__":
     """Запуск webhook сервера"""
-    import uvicorn
     
     # Получаем порт из конфигурации или переменных окружения
     port = config.port

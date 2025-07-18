@@ -153,6 +153,36 @@ class ZepConfig:
 
 
 @dataclass
+class WebhookConfig:
+    """Конфигурация webhook"""
+    base_url: str = ""
+    secret_token: str = ""
+    auto_setup: bool = True
+    allowed_updates: List[str] = None
+    max_connections: int = 40
+    
+    def __post_init__(self):
+        if self.allowed_updates is None:
+            self.allowed_updates = [
+                "message", "callback_query", 
+                "business_message", "business_connection"
+            ]
+    
+    @classmethod
+    def from_env(cls) -> 'WebhookConfig':
+        """Создает конфигурацию из переменных окружения"""
+        base_url = os.getenv('BASE_URL', os.getenv('RAILWAY_PUBLIC_DOMAIN', ''))
+        if base_url and not base_url.startswith('http'):
+            base_url = f"https://{base_url}"
+        
+        return cls(
+            base_url=base_url,
+            secret_token=os.getenv('TELEGRAM_WEBHOOK_SECRET', 'default-secret-token'),
+            auto_setup=os.getenv('AUTO_SETUP_WEBHOOK', 'true').lower() == 'true'
+        )
+
+
+@dataclass
 class VoiceConfig:
     """Конфигурация голосовых сообщений"""
     enabled: bool = False
@@ -248,6 +278,7 @@ class AppConfig:
     openai: OpenAIConfig
     anthropic: AnthropicConfig
     zep: ZepConfig
+    webhook: WebhookConfig
     voice: VoiceConfig
     social_media: SocialMediaConfig
     mcp: MCPConfig
@@ -289,6 +320,7 @@ class AppConfig:
             openai=OpenAIConfig.from_env(),
             anthropic=AnthropicConfig.from_env(),
             zep=ZepConfig.from_env(),
+            webhook=WebhookConfig.from_env(),
             voice=VoiceConfig.from_env(),
             social_media=SocialMediaConfig.from_env(),
             mcp=MCPConfig.from_env(),
