@@ -1,357 +1,216 @@
-import json
-import asyncio
+"""
+Agent бота - обертка для обратной совместимости
+
+Использует новую архитектуру, но предоставляет старый интерфейс
+"""
+
 import logging
-from datetime import datetime
 from typing import Optional, Dict, Any
+from datetime import datetime
 
-import openai
-from zep_cloud.client import AsyncZep
-from zep_cloud.types import Message
+from .core.agent import AgentFactory
+from .core.interfaces import Message, User, MessageType, UserRole
+from .core.config import config
+from .agent_legacy import myassistant as LegacyAssistant
 
-from .config import INSTRUCTION_FILE, OPENAI_API_KEY, OPENAI_MODEL, ZEP_API_KEY
 
-# Настройка логирования
 logger = logging.getLogger(__name__)
 
 
 class myassistant:
+    """
+    Класс-обертка для обратной совместимости
+    
+    Использует новую архитектуру под капотом, но предоставляет старый API
+    """
+    
     def __init__(self):
-        # Инициализируем OpenAI клиент если API ключ доступен
-        if OPENAI_API_KEY:
-            self.openai_client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
-            print("✅ OpenAI клиент инициализирован")
-        else:
-            self.openai_client = None
-            print("⚠️ OpenAI API ключ не найден, используется упрощенный режим")
-        
-        # Инициализируем Zep клиент если API ключ доступен
-        if ZEP_API_KEY and ZEP_API_KEY != "test_key":
-            try:
-                self.zep_client = AsyncZep(api_key=ZEP_API_KEY)
-                print(f"✅ Zep клиент инициализирован с ключом длиной {len(ZEP_API_KEY)} символов")
-                print(f"🔑 Zep API Key начинается с: {ZEP_API_KEY[:8]}...")
-            except Exception as e:
-                print(f"❌ Ошибка инициализации Zep клиента: {e}")
-                self.zep_client = None
-        else:
-            self.zep_client = None
-            if not ZEP_API_KEY:
-                print("⚠️ ZEP_API_KEY не установлен, используется локальная память")
-            else:
-                print(f"⚠️ ZEP_API_KEY имеет значение 'test_key', используется локальная память")
-        self.instruction = self._load_instruction()
-        self.user_sessions = {}  # Резервное хранение сессий в памяти
-    
-    def _load_instruction(self) -> Dict[str, Any]:
+        """Инициализация агента"""
         try:
-            with open(INSTRUCTION_FILE, 'r', encoding='utf-8') as f:
-                instruction = json.load(f)
-                logger.info(f"✅ Инструкции успешно загружены из {INSTRUCTION_FILE}")
-                logger.info(f"📝 Последнее обновление: {instruction.get('last_updated', 'неизвестно')}")
-                logger.info(f"📏 Длина системной инструкции: {len(instruction.get('system_instruction', ''))}")
-                print(f"✅ Инструкции успешно загружены из {INSTRUCTION_FILE}")
-                print(f"📝 Последнее обновление: {instruction.get('last_updated', 'неизвестно')}")
-                return instruction
-        except FileNotFoundError:
-            logger.warning(f"⚠️ ВНИМАНИЕ: Файл {INSTRUCTION_FILE} не найден! Используется базовая инструкция.")
-            print(f"⚠️ ВНИМАНИЕ: Файл {INSTRUCTION_FILE} не найден! Используется базовая инструкция.")
-            return {
-                "system_instruction": "Вы - помощник службы поддержки Textil PRO.",
-                "welcome_message": "Добро пожаловать! Чем могу помочь?",
-                "last_updated": datetime.now().isoformat()
-            }
+            # Пробуем использовать новую архитектуру
+            self.agent = AgentFactory.get_agent()
+            self.use_new_architecture = True
+            logger.info("✅ Используется новая архитектура агента")
         except Exception as e:
-            print(f"❌ Ошибка при загрузке инструкций: {e}")
-            return {
-                "system_instruction": "Вы - помощник службы поддержки Textil PRO.",
-                "welcome_message": "Добро пожаловать! Чем могу помочь?",
-                "last_updated": datetime.now().isoformat()
-            }
-    
-    def reload_instruction(self):
-        logger.info("🔄 Перезагрузка инструкций...")
-        print("🔄 Перезагрузка инструкций...")
-        old_updated = self.instruction.get('last_updated', 'неизвестно')
-        self.instruction = self._load_instruction()
-        new_updated = self.instruction.get('last_updated', 'неизвестно')
+            # Fallback на старую реализацию
+            logger.warning(f"⚠️ Не удалось инициализировать новую архитектуру: {e}")
+            logger.info("📦 Используется legacy реализация")
+            self.legacy_agent = LegacyAssistant()
+            self.use_new_architecture = False
         
-        if old_updated != new_updated:
-            logger.info(f"✅ Инструкции обновлены: {old_updated} -> {new_updated}")
-            print(f"✅ Инструкции обновлены: {old_updated} -> {new_updated}")
-        else:
-            logger.info("📝 Инструкции перезагружены (без изменений)")
-            print("📝 Инструкции перезагружены (без изменений)")
+        # Для совместимости
+        self.openai_client = getattr(self, 'legacy_agent', None) or self
+        self.zep_client = getattr(self, 'legacy_agent', None) or self
+        self.instruction = config.data_dir / 'instruction.json' if self.use_new_architecture else {}
+        self.user_sessions = {}
     
-    async def add_to_zep_memory(self, session_id: str, user_message: str, bot_response: str, user_name: str = None):
-        """Добавляет сообщения в Zep Memory с именами пользователей"""
-        if not self.zep_client:
-            print(f"⚠️ Zep клиент не инициализирован, используем локальную память для {session_id}")
-            self.add_to_local_session(session_id, user_message, bot_response)
-            return False
-            
+    async def add_to_zep_memory(self, user_id: int, user_name: str, user_message: str, ai_response: str):
+        """Добавляет сообщение и ответ в память Zep"""
+        if not self.use_new_architecture:
+            return await self.legacy_agent.add_to_zep_memory(user_id, user_name, user_message, ai_response)
+        
+        # Используем новую архитектуру
         try:
-            # Используем имя пользователя или ID для роли
-            user_role = user_name if user_name else f"User_{session_id.split('_')[-1][:6]}"
+            # Создаем объекты Message и User
+            user = User(
+                id=user_id,
+                username=None,
+                first_name=user_name,
+                last_name=None,
+                role=UserRole.USER
+            )
             
-            messages = [
-                Message(
-                    role=user_role,  # Имя пользователя вместо generic "user"
-                    role_type="user",
-                    content=user_message
-                ),
-                Message(
-                    role="Анастасия",  # Имя бота-консультанта
-                    role_type="assistant",
-                    content=bot_response
-                )
-            ]
+            message = Message(
+                id=0,
+                user=user,
+                chat_id=user_id,
+                text=user_message,
+                type=MessageType.TEXT,
+                timestamp=datetime.now()
+            )
             
-            await self.zep_client.memory.add(session_id=session_id, messages=messages)
-            print(f"✅ Сообщения добавлены в Zep Cloud для сессии {session_id}")
-            print(f"   📝 User: {user_message[:50]}...")
-            print(f"   🤖 Bot: {bot_response[:50]}...")
-            return True
+            from .core.interfaces import Response
+            response = Response(text=ai_response)
+            
+            # Сохраняем через новый менеджер памяти
+            await self.agent.memory_manager.add_message(user_id, message, response)
             
         except Exception as e:
-            print(f"❌ Ошибка при добавлении в Zep: {type(e).__name__}: {e}")
-            # Fallback: добавляем в локальную память
-            self.add_to_local_session(session_id, user_message, bot_response)
-            return False
+            logger.error(f"Ошибка сохранения в память: {e}")
     
-    async def get_zep_memory_context(self, session_id: str) -> str:
-        """Получает контекст из Zep Memory"""
-        if not self.zep_client:
-            print(f"⚠️ Zep не доступен, используем локальную историю для {session_id}")
-            return self.get_local_session_history(session_id)
-            
+    async def get_zep_memory_context(self, user_id: int, limit: int = 10) -> str:
+        """Получает контекст разговора из памяти Zep"""
+        if not self.use_new_architecture:
+            return await self.legacy_agent.get_zep_memory_context(user_id, limit)
+        
         try:
-            memory = await self.zep_client.memory.get(session_id=session_id)
-            context = memory.context if memory.context else ""
-            print(f"✅ Получен контекст из Zep для сессии {session_id}, длина: {len(context)}")
-            return context
+            # Получаем контекст через новый менеджер
+            context_list = await self.agent.memory_manager.get_context(user_id, limit)
+            
+            # Форматируем в старый формат
+            context_parts = []
+            for msg in context_list:
+                role = msg.get('role', 'user')
+                content = msg.get('content', '')
+                if role == 'user':
+                    context_parts.append(f"User: {content}")
+                else:
+                    context_parts.append(f"Assistant: {content}")
+            
+            return "\n".join(context_parts)
             
         except Exception as e:
-            print(f"❌ Ошибка при получении контекста из Zep: {type(e).__name__}: {e}")
-            return self.get_local_session_history(session_id)
-    
-    async def get_zep_recent_messages(self, session_id: str, limit: int = 6) -> str:
-        """Получает последние сообщения из Zep Memory"""
-        try:
-            memory = await self.zep_client.memory.get(session_id=session_id)
-            if not memory.messages:
-                return ""
-            
-            recent_messages = memory.messages[-limit:]
-            formatted_messages = []
-            
-            for msg in recent_messages:
-                role = "Пользователь" if msg.role_type == "user" else "Ассистент"
-                formatted_messages.append(f"{role}: {msg.content}")
-            
-            return "\n".join(formatted_messages)
-            
-        except Exception as e:
-            print(f"❌ Ошибка при получении сообщений из Zep: {e}")
-            return self.get_local_session_history(session_id)
-    
-    def add_to_local_session(self, session_id: str, user_message: str, bot_response: str):
-        """Резервное локальное хранение сессий"""
-        if session_id not in self.user_sessions:
-            self.user_sessions[session_id] = []
-        
-        self.user_sessions[session_id].append({
-            "user": user_message,
-            "assistant": bot_response,
-            "timestamp": datetime.now().isoformat()
-        })
-        
-        # Ограничиваем историю 10 последними сообщениями
-        if len(self.user_sessions[session_id]) > 10:
-            self.user_sessions[session_id] = self.user_sessions[session_id][-10:]
-    
-    def get_local_session_history(self, session_id: str) -> str:
-        """Получает историю из локального хранилища"""
-        if session_id not in self.user_sessions:
+            logger.error(f"Ошибка получения контекста: {e}")
             return ""
-        
-        history = []
-        for exchange in self.user_sessions[session_id][-6:]:  # Последние 6 обменов
-            history.append(f"Пользователь: {exchange['user']}")
-            history.append(f"Ассистент: {exchange['assistant']}")
-        
-        return "\n".join(history) if history else ""
     
-    async def detect_social_media_intent(self, user_message: str) -> dict:
-        """
-        Определяет намерение пользователя связанное с социальными медиа
+    def detect_social_media_intent(self, text: str) -> dict:
+        """Определяет намерение пользователя относительно социальных медиа"""
+        if not self.use_new_architecture:
+            return self.legacy_agent.detect_social_media_intent(text)
         
-        Args:
-            user_message: Сообщение пользователя
-            
-        Returns:
-            dict: Информация о намерении
-        """
-        # Ключевые слова для определения платформы
-        youtube_keywords = ['youtube', 'ютуб', 'видео youtube', 'канал youtube', 'yt']
-        instagram_keywords = ['instagram', 'инстаграм', 'insta', 'реелс', 'reels']
-        tiktok_keywords = ['tiktok', 'тикток', 'tt', 'тик ток']
+        # Для новой архитектуры возвращаем упрощенный результат
+        # (детекция намерений теперь в IntentDetector)
+        text_lower = text.lower()
+        platforms = []
         
-        # Ключевые слова для определения типа действия
-        search_keywords = ['найди', 'найти', 'поиск', 'покажи', 'show', 'search', 'find']
-        channel_keywords = ['канал', 'channel', 'профиль', 'profile', 'пользователь', 'user']
-        
-        message_lower = user_message.lower()
-        
-        # Определяем платформу
-        platform = None
-        if any(keyword in message_lower for keyword in youtube_keywords):
-            platform = 'youtube'
-        elif any(keyword in message_lower for keyword in instagram_keywords):
-            platform = 'instagram'
-        elif any(keyword in message_lower for keyword in tiktok_keywords):
-            platform = 'tiktok'
-        
-        # Определяем тип действия
-        is_search = any(keyword in message_lower for keyword in search_keywords)
-        is_channel = any(keyword in message_lower for keyword in channel_keywords)
-        
-        # Извлекаем поисковый запрос
-        query = user_message
-        for keyword in youtube_keywords + instagram_keywords + tiktok_keywords + search_keywords:
-            query = query.replace(keyword, '').strip()
-        
-        # Очищаем от лишних символов
-        query = ' '.join(query.split())
+        if 'youtube' in text_lower or 'ютуб' in text_lower:
+            platforms.append('youtube')
+        if 'instagram' in text_lower or 'инста' in text_lower:
+            platforms.append('instagram')
+        if 'tiktok' in text_lower or 'тикток' in text_lower:
+            platforms.append('tiktok')
         
         return {
-            'platform': platform,
-            'is_search': is_search,
-            'is_channel': is_channel,
-            'query': query,
-            'has_social_intent': platform is not None and (is_search or is_channel),
-            'original_message': user_message
+            'has_social_media_intent': len(platforms) > 0,
+            'platforms': platforms,
+            'actions': [],
+            'confidence': 1.0 if platforms else 0.0
         }
     
-    async def generate_response(self, user_message: str, session_id: str, user_name: str = None) -> str:
-        try:
-            system_prompt = self.instruction.get("system_instruction", "")
-            
-            # Пытаемся получить контекст из Zep Memory
-            zep_context = await self.get_zep_memory_context(session_id)
-            zep_history = await self.get_zep_recent_messages(session_id)
-            
-            # Добавляем контекст и историю в системный промпт
-            if zep_context:
-                system_prompt += f"\n\nКонтекст предыдущих разговоров:\n{zep_context}"
-            
-            if zep_history:
-                system_prompt += f"\n\nПоследние сообщения:\n{zep_history}"
-            
-            # Дополнительное напоминание о форматировании и приветствии
-            system_prompt += "\n\n⚠️ КРИТИЧЕСКИ ВАЖНО: Форматируй ответы с абзацами! Используй двойные переносы строк между смысловыми блоками. НЕ пиши сплошным текстом!"
-            system_prompt += "\n\n⚠️ ПРАВИЛО ПРИВЕТСТВИЯ: НЕ начинай каждый ответ с 'Здравствуйте!' Приветствуй только при первом сообщении или /start. В продолжении диалога сразу переходи к сути!"
-            
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ]
-            
-            # Временная заглушка для тестирования
-            if self.openai_client is None:
-                # Простая логика ответов без OpenAI
-                user_message_lower = user_message.lower()
-                
-                if any(word in user_message_lower for word in ['привет', 'hello', 'hi', 'здравствуй']):
-                    bot_response = "👋 Привет! Меня зовут Анастасия, я консультант Textile Pro. Чем могу помочь?"
-                elif any(word in user_message_lower for word in ['цена', 'стоимость', 'сколько']):
-                    bot_response = "💰 Цены зависят от объема и типа продукции. Расскажите подробнее о ваших потребностях - количество, тип одежды, материалы."
-                elif any(word in user_message_lower for word in ['ткань', 'материал', 'хлопок', 'полиэстер']):
-                    bot_response = "🧵 У нас широкий выбор тканей и материалов! Расскажите какой именно материал вас интересует - хлопок, полиэстер, смесовые ткани?"
-                elif any(word in user_message_lower for word in ['китай', 'china', 'производство']):
-                    bot_response = "🏭 Мы работаем с проверенными фабриками в Китае, Индии и Бангладеш. Обеспечиваем полный цикл производства с контролем качества."
-                elif any(word in user_message_lower for word in ['доставка', 'логистика', 'shipping']):
-                    bot_response = "🚢 Организуем доставку морским, авиа и железнодорожным транспортом. Время доставки 15-45 дней в зависимости от способа."
-                elif any(word in user_message_lower for word in ['качество', 'контроль', 'проверка']):
-                    bot_response = "✅ У нас строгий контроль качества на всех этапах. Предоставляем фото отчеты, можем организовать инспекцию третьей стороной."
-                else:
-                    bot_response = f"Поняла ваш вопрос! Отличный вопрос о текстильном производстве.\n\nПодготовлю детальный ответ специально для вас. Минуточку!\n\nАнастасия, Textil PRO"
-            else:
-                response = await self.openai_client.chat.completions.create(
-                    model=OPENAI_MODEL,
-                    messages=messages,
-                    max_tokens=1000,
-                    temperature=0.7
-                )
-                bot_response = response.choices[0].message.content
-            
-            # Сохраняем в Zep Memory (с fallback на локальное хранилище)
-            await self.add_to_zep_memory(session_id, user_message, bot_response, user_name)
-            
-            return bot_response
-            
-        except Exception as e:
-            print(f"Ошибка при генерации ответа: {e}")
-            return "Извините, произошла техническая ошибка. Попробуйте написать снова или обратитесь ко мне напрямую.\n\nАнастасия, Textil PRO"
-    
-    async def ensure_user_exists(self, user_id: str, user_data: Dict[str, Any] = None):
-        """Создает пользователя в Zep если его еще нет"""
-        if not self.zep_client:
-            return False
-            
-        try:
-            # Пытаемся получить пользователя
-            try:
-                user = await self.zep_client.user.get(user_id=user_id)
-                print(f"✅ Пользователь {user_id} уже существует в Zep")
-                return True
-            except:
-                # Пользователь не существует, создаем
-                pass
-            
-            # Создаем нового пользователя
-            user_info = user_data or {}
-            await self.zep_client.user.add(
-                user_id=user_id,
-                first_name=user_info.get('first_name', 'User'),
-                last_name=user_info.get('last_name', ''),
-                email=user_info.get('email', f'{user_id}@telegram.user'),
-                metadata={
-                    'source': 'telegram',
-                    'created_at': datetime.now().isoformat()
-                }
+    async def generate_response(self, user_message: str, user_id: int, user_name: str, 
+                              is_admin: bool = False, social_media_response: Optional[str] = None) -> str:
+        """Генерирует ответ на сообщение пользователя"""
+        if not self.use_new_architecture:
+            return await self.legacy_agent.generate_response(
+                user_message, user_id, user_name, is_admin, social_media_response
             )
-            print(f"✅ Создан новый пользователь в Zep: {user_id}")
-            return True
-            
-        except Exception as e:
-            print(f"❌ Ошибка при создании пользователя в Zep: {e}")
-            return False
-    
-    async def ensure_session_exists(self, session_id: str, user_id: str):
-        """Создает сессию в Zep если ее еще нет"""
-        if not self.zep_client:
-            return False
-            
+        
+        # Если есть готовый ответ от Social Media сервиса
+        if social_media_response:
+            return social_media_response
+        
         try:
-            # Создаем сессию
-            await self.zep_client.memory.add_session(
-                session_id=session_id,
-                user_id=user_id,
-                metadata={
-                    'channel': 'telegram',
-                    'created_at': datetime.now().isoformat()
-                }
+            # Создаем объекты для новой архитектуры
+            user = User(
+                id=user_id,
+                username=None,
+                first_name=user_name,
+                last_name=None,
+                role=UserRole.ADMIN if is_admin else UserRole.USER
             )
-            print(f"✅ Создана сессия в Zep: {session_id} для пользователя {user_id}")
-            return True
+            
+            message = Message(
+                id=0,
+                user=user,
+                chat_id=user_id,
+                text=user_message,
+                type=MessageType.TEXT,
+                timestamp=datetime.now()
+            )
+            
+            # Обрабатываем через новый агент
+            response = await self.agent.process_message(message)
+            
+            # Сохраняем в память (уже сделано в process_message)
+            
+            return response.text
             
         except Exception as e:
-            # Сессия может уже существовать или будет создана автоматически
-            print(f"ℹ️ Сессия {session_id} возможно уже существует или будет создана автоматически")
-            return True
+            logger.error(f"Ошибка генерации ответа: {e}")
+            return "Извините, произошла ошибка при обработке вашего сообщения. Попробуйте ещё раз."
     
-    def get_welcome_message(self) -> str:
-        return self.instruction.get("welcome_message", "Добро пожаловать!")
+    def _load_instruction(self) -> Dict[str, Any]:
+        """Загружает инструкции"""
+        if not self.use_new_architecture:
+            return self.legacy_agent._load_instruction()
+        
+        # Для новой архитектуры инструкции загружаются автоматически
+        return {}
+    
+    def _create_system_message(self, user_name: str, is_admin: bool, intent: dict) -> str:
+        """Создает системное сообщение для OpenAI"""
+        if not self.use_new_architecture:
+            return self.legacy_agent._create_system_message(user_name, is_admin, intent)
+        
+        # Для новой архитектуры это делается в ResponseGenerator
+        return ""
+    
+    def _get_fallback_response(self, user_message: str, intent: dict) -> str:
+        """Возвращает ответ когда OpenAI недоступен"""
+        if not self.use_new_architecture:
+            return self.legacy_agent._get_fallback_response(user_message, intent)
+        
+        return "Извините, сервис временно недоступен. Попробуйте позже."
+    
+    async def ensure_user_exists(self, user_id: int, user_name: str) -> None:
+        """Проверяет существование пользователя в Zep и создает если нужно"""
+        if not self.use_new_architecture:
+            return await self.legacy_agent.ensure_user_exists(user_id, user_name)
+        
+        # В новой архитектуре это делается автоматически в MemoryManager
+        pass
+    
+    async def clear_user_memory(self, user_id: int) -> bool:
+        """Очищает память пользователя"""
+        if not self.use_new_architecture:
+            return await self.legacy_agent.clear_user_memory(user_id)
+        
+        try:
+            return await self.agent.clear_user_memory(user_id)
+        except Exception as e:
+            logger.error(f"Ошибка очистки памяти: {e}")
+            return False
 
 
-agent = myassistant()
+# Для обратной совместимости экспортируем старое имя класса
+MyAssistant = myassistant
