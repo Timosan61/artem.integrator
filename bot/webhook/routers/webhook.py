@@ -24,8 +24,14 @@ async def webhook_endpoint(request: Request):
         # Получаем данные
         update = await request.json()
         
+        # Логируем входящий update
+        logger.info(f"📥 Received update: {update}")
+        
         # Обрабатываем update
         result = await webhook_handler.handle_update(update)
+        
+        # Логируем результат
+        logger.info(f"📤 Response: {result}")
         
         # Telegram требует всегда возвращать 200 OK
         return result
