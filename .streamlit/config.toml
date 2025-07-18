@@ -8,7 +8,7 @@ enableXsrfProtection = false
 port = 8501
 address = "0.0.0.0"
 maxUploadSize = 200
-enableStaticServing = true
+enableStaticServing = false
 
 [browser]
 gatherUsageStats = false
@@ -24,7 +24,6 @@ font = "sans serif"
 
 [global]
 developmentMode = false
-showErrorDetails = false
 
 [logger]
 level = "info"
