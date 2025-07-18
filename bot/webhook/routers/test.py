@@ -2,8 +2,9 @@
 Test endpoints для тестирования функциональности
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from typing import Optional
+from datetime import datetime
 
 from ...core.config import config
 from ..services import TestService
@@ -142,3 +143,40 @@ async def echo(message: str = "Hello, World!"):
         "length": len(message),
         "config_ok": bool(config.telegram.bot_token)
     }
+
+
+@router.post("/echo")
+async def echo_post(request: Request):
+    """POST echo endpoint для диагностики webhook"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Получаем сырое тело запроса
+        body = await request.body()
+        logger.info(f"📥 Echo received body size: {len(body)}")
+        
+        # Пытаемся распарсить как JSON
+        try:
+            json_data = await request.json()
+            logger.info(f"📥 Echo received JSON: {json_data}")
+        except:
+            json_data = None
+            logger.warning("📥 Echo: Unable to parse JSON")
+            
+        return {
+            "success": True,
+            "headers": dict(request.headers),
+            "method": request.method,
+            "url": str(request.url),
+            "body_size": len(body),
+            "json_data": json_data,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Echo endpoint error: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }

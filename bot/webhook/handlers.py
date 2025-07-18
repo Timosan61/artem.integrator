@@ -48,12 +48,16 @@ class WebhookHandler:
         Returns:
             Dict[str, Any]: Результат обработки
         """
+        logger.info(f"📥 Received update: {update}")
+        
         self.update_counter += 1
         update_id = update.get('update_id', self.update_counter)
         
-        # Сохраняем для отладки
-        if config.debug:
-            self._save_update_for_debug(update)
+        logger.info(f"📨 Processing update #{update_id}, total: {self.update_counter}")
+        
+        # Всегда сохраняем для отладки (не только в debug режиме)
+        self._save_update_for_debug(update)
+        logger.info(f"💾 Saved to debug. Total updates in memory: {len(self.last_updates)}")
         
         try:
             # Определяем тип update
@@ -76,11 +80,17 @@ class WebhookHandler:
     async def _handle_message(self, telegram_message: Dict[str, Any]) -> Dict[str, Any]:
         """Обрабатывает обычное сообщение"""
         try:
+            logger.info(f"📩 Processing message: {telegram_message}")
+            
             # Извлекаем данные
             user_data = telegram_message.get('from', {})
             chat_id = telegram_message.get('chat', {}).get('id')
             text = telegram_message.get('text')
             voice = telegram_message.get('voice')
+            
+            logger.info(f"👤 User: {user_data.get('username', 'Unknown')} ({user_data.get('id', 'Unknown')})")
+            logger.info(f"💬 Text: {text}")
+            logger.info(f"🎤 Voice: {bool(voice)}")
             
             # Создаем объект пользователя
             user = User(
