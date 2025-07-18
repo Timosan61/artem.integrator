@@ -248,10 +248,10 @@ class WebhookHandler:
         """Генерирует приветственное сообщение"""
         if user.role == UserRole.ADMIN:
             from ..auth import format_admin_welcome_message
-            return format_admin_welcome_message()
+            return format_admin_welcome_message(user.id, user.username)
         else:
             from ..auth import format_user_welcome_message
-            return format_user_welcome_message()
+            return format_user_welcome_message(user.full_name, user.id)
     
     def _get_help_message(self, user: User) -> str:
         """Генерирует help сообщение"""
