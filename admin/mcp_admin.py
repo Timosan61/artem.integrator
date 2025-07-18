@@ -23,6 +23,11 @@ import os
 # Добавляем путь к корню проекта
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Загружаем переменные окружения из Streamlit secrets
+if hasattr(st, 'secrets'):
+    for key, value in st.secrets.items():
+        os.environ[key] = str(value)
+
 # Проверяем доступность MCP
 try:
     from bot.mcp_agent import MCPAgent

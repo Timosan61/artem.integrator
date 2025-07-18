@@ -5,6 +5,7 @@
 """
 
 import os
+import sys
 import logging
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field
@@ -45,14 +46,24 @@ class TelegramConfig:
     def from_env(cls) -> 'TelegramConfig':
         """Создает конфигурацию из переменных окружения"""
         token = os.getenv('TELEGRAM_BOT_TOKEN', '')
-        if not token:
+        
+        # Проверка, запущен ли код в Streamlit Cloud
+        if os.getenv('STREAMLIT_RUNTIME_ENV') == 'cloud' or 'streamlit' in sys.modules:
+            # Используем заглушку для Streamlit Cloud
+            if not token:
+                token = 'dummy:token_for_streamlit_cloud'
+        elif not token:
             raise ValueError("TELEGRAM_BOT_TOKEN не установлен")
             
         # Извлекаем bot_id из токена
         try:
             bot_id = int(token.split(':')[0])
         except (IndexError, ValueError):
-            raise ValueError("Неверный формат TELEGRAM_BOT_TOKEN")
+            # Для Streamlit Cloud используем заглушку
+            if os.getenv('STREAMLIT_RUNTIME_ENV') == 'cloud' or 'streamlit' in sys.modules:
+                bot_id = 123456789
+            else:
+                raise ValueError("Неверный формат TELEGRAM_BOT_TOKEN")
             
         return cls(
             token=token,
