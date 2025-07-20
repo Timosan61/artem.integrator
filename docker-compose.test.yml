@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+  # Основной сервис бота
+  artem-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: artem-bot-test
+    environment:
+      # Telegram конфигурация
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL:-https://localhost:8000/webhook}
+      
+      # OpenAI конфигурация
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4}
+      
+      # Anthropic конфигурация (для MCP)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      
+      # MCP включение
+      MCP_ENABLED: "true"
+      
+      # Режим отладки
+      DEBUG: "true"
+      ENVIRONMENT: "development"
+      
+      # База данных
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/artem_test
+      
+      # Redis
+      REDIS_URL: redis://redis:6379
+      
+      # Voice сервис
+      VOICE_ENABLED: ${VOICE_ENABLED:-true}
+      
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./bot:/app/bot
+    command: python webhook.py
+    networks:
+      - artem-network
+  
+  # PostgreSQL для локального тестирования
+  postgres:
+    image: postgres:15-alpine
+    container_name: artem-postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: artem_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - artem-network
+  
+  # Redis для кеширования
+  redis:
+    image: redis:7-alpine
+    container_name: artem-redis-test
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - artem-network
+  
+  # Ngrok для внешнего доступа к webhook
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: artem-ngrok-test
+    command: http artem-bot:8000 --authtoken ${NGROK_AUTH_TOKEN}
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTH_TOKEN}
+    ports:
+      - "4040:4040"  # Ngrok web interface
+    depends_on:
+      - artem-bot
+    networks:
+      - artem-network
+  
+  # Adminer для управления БД
+  adminer:
+    image: adminer:latest
+    container_name: artem-adminer-test
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - artem-network
+  
+  # MCP Mock Server для тестирования
+  mcp-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp-mock
+    container_name: artem-mcp-mock
+    environment:
+      MCP_MODE: "mock"
+      LOG_LEVEL: "DEBUG"
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./mcp-mock:/app
+    networks:
+      - artem-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  artem-network:
+    driver: bridge

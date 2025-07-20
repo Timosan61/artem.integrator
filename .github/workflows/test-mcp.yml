@@ -1,0 +1,208 @@
+name: Test MCP Integration
+
+on:
+  push:
+    branches: [ MCP, develop ]
+    paths:
+      - 'bot/mcp_*.py'
+      - 'bot/services/mcp_*.py'
+      - 'data/mcp_config.json'
+      - 'test_telegram_mcp.py'
+      - '.github/workflows/test-mcp.yml'
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      test_environment:
+        description: 'Test environment'
+        required: true
+        default: 'mock'
+        type: choice
+        options:
+          - mock
+          - staging
+          - production
+
+jobs:
+  test-mcp-unit:
+    name: Unit Tests - MCP Components
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio pytest-cov
+    
+    - name: Run MCP unit tests
+      run: |
+        python -m pytest tests/mcp/ -v --cov=bot --cov-report=xml
+      env:
+        MCP_ENABLED: true
+        PYTHONPATH: ${{ github.workspace }}
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: mcp-unit-tests
+
+  test-mcp-integration:
+    name: Integration Tests - MCP Mock
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: artem_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install httpx aiohttp colorama
+    
+    - name: Start MCP Mock Server
+      run: |
+        cd mcp-mock
+        python server.py &
+        sleep 5
+        curl http://localhost:9000/health || exit 1
+      
+    - name: Run integration tests
+      run: |
+        python test_telegram_mcp.py
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TEST_BOT_TOKEN }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        MCP_ENABLED: true
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artem_test
+        REDIS_URL: redis://localhost:6379
+        TEST_WEBHOOK_URL: http://localhost:8000/webhook
+        ADMIN_USER_IDS: "123456789"
+    
+    - name: Upload test reports
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-reports
+        path: test_report_*.json
+
+  test-mcp-docker:
+    name: Docker Compose Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Create test env file
+      run: |
+        cat > .env.test <<EOF
+        TELEGRAM_BOT_TOKEN=${{ secrets.TEST_BOT_TOKEN }}
+        OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+        ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+        MCP_ENABLED=true
+        DEBUG=true
+        ENVIRONMENT=test
+        EOF
+    
+    - name: Build Docker images
+      run: |
+        docker-compose -f docker-compose.test.yml build
+    
+    - name: Start services
+      run: |
+        docker-compose -f docker-compose.test.yml up -d
+        sleep 30
+    
+    - name: Check service health
+      run: |
+        docker-compose -f docker-compose.test.yml ps
+        curl http://localhost:8000/health || exit 1
+        curl http://localhost:9000/health || exit 1
+    
+    - name: Run MCP tests
+      run: |
+        docker-compose -f docker-compose.test.yml exec -T artem-bot python test_telegram_mcp.py
+    
+    - name: Show logs on failure
+      if: failure()
+      run: |
+        docker-compose -f docker-compose.test.yml logs
+    
+    - name: Stop services
+      if: always()
+      run: |
+        docker-compose -f docker-compose.test.yml down
+
+  notify-results:
+    name: Notify Test Results
+    needs: [test-mcp-unit, test-mcp-integration, test-mcp-docker]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Check test results
+      run: |
+        if [[ "${{ needs.test-mcp-unit.result }}" == "failure" || 
+              "${{ needs.test-mcp-integration.result }}" == "failure" || 
+              "${{ needs.test-mcp-docker.result }}" == "failure" ]]; then
+          echo "❌ Tests failed!"
+          exit 1
+        else
+          echo "✅ All tests passed!"
+        fi
+    
+    - name: Send Telegram notification
+      if: failure() && github.event_name == 'push'
+      run: |
+        MESSAGE="❌ MCP Tests Failed!%0A%0ABranch: ${{ github.ref_name }}%0ACommit: ${{ github.sha }}%0AAuthor: ${{ github.actor }}%0A%0ACheck: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        curl -X POST "https://api.telegram.org/bot${{ secrets.NOTIFICATION_BOT_TOKEN }}/sendMessage" \
+          -d "chat_id=${{ secrets.NOTIFICATION_CHAT_ID }}" \
+          -d "text=$MESSAGE" \
+          -d "parse_mode=HTML"

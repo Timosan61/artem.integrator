@@ -144,9 +144,14 @@ class WebhookHandler:
             
             # Отправляем ответ
             from ..telegram_bot import bot
-            bot.send_message(chat_id, response.text)
-            
-            return {"ok": True, "response_sent": True}
+            try:
+                logger.info(f"📤 Sending response to {chat_id}: {response.text[:100]}...")
+                result = bot.send_message(chat_id, response.text)
+                logger.info(f"✅ Response sent successfully. Message ID: {result.message_id if hasattr(result, 'message_id') else 'Unknown'}")
+                return {"ok": True, "response_sent": True, "message_id": result.message_id if hasattr(result, 'message_id') else None}
+            except Exception as e:
+                logger.error(f"❌ Failed to send response: {e}", exc_info=True)
+                return {"ok": True, "response_sent": False, "error": str(e)}
             
         except Exception as e:
             logger.error(f"❌ Ошибка обработки сообщения: {e}", exc_info=True)
@@ -210,13 +215,21 @@ class WebhookHandler:
         if command == '/start':
             from ..telegram_bot import bot
             welcome_text = self._get_welcome_message(message.user)
-            bot.send_message(message.chat_id, welcome_text, parse_mode='HTML')
+            try:
+                bot.send_message(message.chat_id, welcome_text, parse_mode='HTML')
+                logger.info(f"✅ Welcome message sent to {message.chat_id}")
+            except Exception as e:
+                logger.error(f"❌ Failed to send welcome message: {e}", exc_info=True)
             return {"ok": True, "command": "start"}
         
         elif command == '/help':
             from ..telegram_bot import bot
             help_text = self._get_help_message(message.user)
-            bot.send_message(message.chat_id, help_text, parse_mode='HTML')
+            try:
+                bot.send_message(message.chat_id, help_text, parse_mode='HTML')
+                logger.info(f"✅ Help message sent to {message.chat_id}")
+            except Exception as e:
+                logger.error(f"❌ Failed to send help message: {e}", exc_info=True)
             return {"ok": True, "command": "help"}
         
         # Админские команды
@@ -224,10 +237,14 @@ class WebhookHandler:
             if command == '/clear':
                 success = await self.agent.clear_user_memory(message.user.id)
                 from ..telegram_bot import bot
-                if success:
-                    bot.send_message(message.chat_id, "✅ Память очищена")
-                else:
-                    bot.send_message(message.chat_id, "❌ Ошибка очистки памяти")
+                try:
+                    if success:
+                        bot.send_message(message.chat_id, "✅ Память очищена")
+                    else:
+                        bot.send_message(message.chat_id, "❌ Ошибка очистки памяти")
+                    logger.info(f"✅ Clear memory response sent to {message.chat_id}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to send clear memory response: {e}", exc_info=True)
                 return {"ok": True, "command": "clear"}
         
         return None
@@ -249,7 +266,11 @@ class WebhookHandler:
             
             if result and result.get('success'):
                 from ..telegram_bot import bot
-                bot.send_message(message.chat_id, result.get('response'), parse_mode='HTML')
+                try:
+                    bot.send_message(message.chat_id, result.get('response'), parse_mode='HTML')
+                    logger.info(f"✅ Social media response sent to {message.chat_id}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to send social media response: {e}", exc_info=True)
                 return {"ok": True, "social_media": True}
         
         return None
