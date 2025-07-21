@@ -31,9 +31,9 @@ INSTAGRAM_API_KEY = config.social_media.instagram_api_key
 TIKTOK_API_KEY = config.social_media.tiktok_api_key
 
 # MCP серверы
-MCP_SUPABASE_ENABLED = config.mcp.servers.get('supabase', {}).get('enabled', False)
-MCP_DIGITALOCEAN_ENABLED = config.mcp.servers.get('digitalocean', {}).get('enabled', False)
-MCP_CONTEXT7_ENABLED = config.mcp.servers.get('context7', {}).get('enabled', False)
+MCP_SUPABASE_ENABLED = config.mcp.servers.get('supabase', None) and config.mcp.servers['supabase'].enabled
+MCP_DIGITALOCEAN_ENABLED = config.mcp.servers.get('digitalocean', None) and config.mcp.servers['digitalocean'].enabled
+MCP_CONTEXT7_ENABLED = config.mcp.servers.get('context7', None) and config.mcp.servers['context7'].enabled
 
 # Пути
 import os

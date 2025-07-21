@@ -249,6 +249,21 @@ class MCPConfig:
     enabled: bool = False
     servers: Dict[str, MCPServerConfig] = field(default_factory=dict)
     
+    @property
+    def supabase_enabled(self) -> bool:
+        """Проверяет, включен ли Supabase MCP"""
+        return self.servers.get('supabase', MCPServerConfig()).enabled
+    
+    @property
+    def digitalocean_enabled(self) -> bool:
+        """Проверяет, включен ли DigitalOcean MCP"""
+        return self.servers.get('digitalocean', MCPServerConfig()).enabled
+    
+    @property
+    def context7_enabled(self) -> bool:
+        """Проверяет, включен ли Context7 MCP"""
+        return self.servers.get('context7', MCPServerConfig()).enabled
+    
     @classmethod
     def from_env(cls) -> 'MCPConfig':
         """Создает конфигурацию из переменных окружения"""

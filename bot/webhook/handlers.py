@@ -24,6 +24,12 @@ try:
     from ..services.youtube_transcript_service import youtube_transcript_service
 except ImportError:
     youtube_transcript_service = None
+
+try:
+    from ..services.claude_code_service import claude_code_service
+except ImportError:
+    claude_code_service = None
+
 from ..auth import is_admin, get_user_mode
 
 logger = logging.getLogger(__name__)
@@ -143,12 +149,29 @@ class WebhookHandler:
             response = await self.agent.process_message(message)
             
             # Отправляем ответ
-            from ..telegram_bot import bot
             try:
+                from ..telegram_bot import bot
                 logger.info(f"📤 Sending response to {chat_id}: {response.text[:100]}...")
                 result = bot.send_message(chat_id, response.text)
                 logger.info(f"✅ Response sent successfully. Message ID: {result.message_id if hasattr(result, 'message_id') else 'Unknown'}")
                 return {"ok": True, "response_sent": True, "message_id": result.message_id if hasattr(result, 'message_id') else None}
+            except ImportError as e:
+                logger.error(f"❌ Failed to import telegram bot: {e}", exc_info=True)
+                # Fallback: используем requests для отправки
+                import requests
+                url = f"https://api.telegram.org/bot{config.telegram.token}/sendMessage"
+                data = {"chat_id": chat_id, "text": response.text}
+                try:
+                    resp = requests.post(url, json=data)
+                    if resp.ok:
+                        logger.info(f"✅ Response sent via API")
+                        return {"ok": True, "response_sent": True}
+                    else:
+                        logger.error(f"❌ API error: {resp.text}")
+                        return {"ok": True, "response_sent": False, "error": resp.text}
+                except Exception as api_error:
+                    logger.error(f"❌ Failed to send via API: {api_error}")
+                    return {"ok": True, "response_sent": False, "error": str(api_error)}
             except Exception as e:
                 logger.error(f"❌ Failed to send response: {e}", exc_info=True)
                 return {"ok": True, "response_sent": False, "error": str(e)}
@@ -216,7 +239,8 @@ class WebhookHandler:
             from ..telegram_bot import bot
             welcome_text = self._get_welcome_message(message.user)
             try:
-                bot.send_message(message.chat_id, welcome_text, parse_mode='HTML')
+                # Временно отключаем HTML форматирование для отладки
+                bot.send_message(message.chat_id, "👋 Добро пожаловать! Бот работает корректно.")
                 logger.info(f"✅ Welcome message sent to {message.chat_id}")
             except Exception as e:
                 logger.error(f"❌ Failed to send welcome message: {e}", exc_info=True)
@@ -246,6 +270,53 @@ class WebhookHandler:
                 except Exception as e:
                     logger.error(f"❌ Failed to send clear memory response: {e}", exc_info=True)
                 return {"ok": True, "command": "clear"}
+            
+            # MCP команды (только для админов)
+            elif claude_code_service and (
+                command.startswith('/mcp') or 
+                command == '/db' or 
+                command == '/docs' or
+                message.text.startswith('/mcp ') or
+                message.text.startswith('/db ') or
+                message.text.startswith('/docs ')
+            ):
+                logger.info(f"🔌 Processing MCP command: {message.text}")
+                from ..telegram_bot import bot
+                
+                try:
+                    # Отправляем сообщение о начале обработки
+                    bot.send_message(message.chat_id, "⏳ Выполняю MCP команду...")
+                    
+                    # Выполняем команду через Claude Code
+                    result = await claude_code_service.execute_mcp_command(
+                        message.text, 
+                        str(message.user.id)
+                    )
+                    
+                    # Форматируем ответ
+                    if result.get("success"):
+                        response_text = result.get("response", "Команда выполнена")
+                        # Ограничиваем длину сообщения
+                        if len(response_text) > 4000:
+                            response_text = response_text[:3997] + "..."
+                    else:
+                        response_text = f"❌ Ошибка: {result.get('error', 'Неизвестная ошибка')}"
+                    
+                    # Отправляем результат
+                    bot.send_message(message.chat_id, response_text, parse_mode='Markdown')
+                    logger.info(f"✅ MCP response sent to {message.chat_id}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Failed to execute MCP command: {e}", exc_info=True)
+                    try:
+                        bot.send_message(
+                            message.chat_id, 
+                            f"❌ Ошибка выполнения MCP команды: {str(e)}"
+                        )
+                    except:
+                        pass
+                
+                return {"ok": True, "command": "mcp", "mcp_command": message.text}
         
         return None
     
@@ -292,7 +363,7 @@ class WebhookHandler:
 
 /help - Показать это сообщение
 /clear - Очистить память бота
-/youtube <url> - Анализ YouTube видео
+/youtube &lt;url&gt; - Анализ YouTube видео
 /status - Статус всех сервисов
 /test - Тестовый режим
 

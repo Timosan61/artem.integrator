@@ -25,9 +25,11 @@ youtube-transcript-api==0.6.2
 
 # MCP (Model Context Protocol) Dependencies
 anthropic==0.34.2
+claude-code-sdk==0.0.14  # Claude Code SDK for MCP integration
 httpx-sse==0.3.1  # For SSE support in MCP
 typing-extensions>=4.0.0  # For better type hints
 asyncio-throttle==1.0.2  # For rate limiting MCP calls
+anyio>=3.7.0  # Required for claude-code-sdk
 
 # Testing Dependencies (optional)
 pytest==7.4.3

@@ -24,14 +24,14 @@ init(autoreset=True)
 # Конфигурация тестирования
 TEST_CONFIG = {
     # Railway webhook URL
-    "webhook_url": "https://web-production-84d8.up.railway.app/webhook",
+    # "webhook_url": "https://web-production-84d8.up.railway.app/webhook",
     
     # Локальный webhook для тестирования (через ngrok)
-    # "webhook_url": "https://your-ngrok-url.ngrok.io/webhook",
+    "webhook_url": "https://16bf5c25554f.ngrok-free.app/webhook",
     
     # Тестовый пользователь (администратор)
-    "admin_user_id": 123456789,
-    "admin_username": "test_admin",
+    "admin_user_id": 229838448,
+    "admin_username": "aaatema",
     
     # Задержка между командами (секунды)
     "command_delay": 2,
