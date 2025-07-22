@@ -85,11 +85,29 @@ class ClaudeCodeService:
             
             # Опции для SDK
             if CLAUDE_CODE_SDK_AVAILABLE:
+                # Загружаем конфигурацию MCP серверов
+                mcp_servers = {}
+                if self.mcp_config_path.exists():
+                    try:
+                        with open(self.mcp_config_path) as f:
+                            mcp_config = json.load(f)
+                            # Преобразуем конфигурацию в формат SDK
+                            for server_name, server_config in mcp_config.get("mcpServers", {}).items():
+                                mcp_servers[server_name] = {
+                                    "command": server_config.get("command", ""),
+                                    "args": server_config.get("args", []),
+                                    "env": server_config.get("env", {})
+                                }
+                    except Exception as e:
+                        logger.warning(f"Не удалось загрузить MCP конфигурацию: {e}")
+                
                 options = ClaudeCodeOptions(
                     max_turns=1,  # Одна итерация для команды
                     system_prompt=self._get_system_prompt(),
                     cwd=Path.cwd(),
                     allowed_tools=self._get_allowed_tools(command),
+                    mcp_servers=mcp_servers,  # Передаем конфигурацию серверов
+                    mcp_tools=["*"],  # Разрешаем все MCP инструменты
                     permission_mode="acceptEdits"  # Автоматически принимаем использование инструментов
                 )
             else:
@@ -104,7 +122,11 @@ class ClaudeCodeService:
                     
                     async for message in query(prompt=prompt, options=options):
                         messages.append(message)
-                        logger.debug(f"📨 Получено сообщение: {message.role} - {message.content[:100]}...")
+                        # Безопасный вывод для отладки
+                        msg_type = type(message).__name__
+                        msg_role = getattr(message, 'role', 'No role')
+                        msg_content = str(getattr(message, 'content', ''))[:100] if hasattr(message, 'content') else 'No content'
+                        logger.debug(f"📨 Получено сообщение: {msg_type} - {msg_role} - {msg_content}...")
                         
                     # Обрабатываем результат
                     result = self._process_messages(messages, command)
@@ -248,13 +270,14 @@ Important: Execute the requested MCP operation and return the result."""
                         result_data = tool_call.get('result')
                         
             # Проверяем текстовые сообщения на ошибки
-            if message.role == "assistant" and message.content:
+            # Проверяем наличие атрибута role (может быть SystemMessage без role)
+            if hasattr(message, 'role') and message.role == "assistant" and hasattr(message, 'content') and message.content:
                 content_lower = message.content.lower()
                 if "error" in content_lower or "failed" in content_lower:
                     error_message = message.content
         
         # Получаем последнее сообщение ассистента как основной ответ
-        assistant_messages = [m for m in messages if m.role == "assistant" and m.content]
+        assistant_messages = [m for m in messages if hasattr(m, 'role') and m.role == "assistant" and hasattr(m, 'content') and m.content]
         response_text = assistant_messages[-1].content if assistant_messages else "Команда выполнена"
         
         return {

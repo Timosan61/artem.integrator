@@ -5,6 +5,12 @@
       "username": "testuser",
       "first_name": "Test",
       "added_at": "2025-07-21T17:05:05Z"
+    },
+    {
+      "user_id": 987654321,
+      "username": "test_user",
+      "first_name": "Test",
+      "added_at": "2025-07-22T17:16:59Z"
     }
   ]
 }
