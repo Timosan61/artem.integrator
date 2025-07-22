@@ -44,7 +44,10 @@ class ClaudeCodeService:
         """Инициализация сервиса"""
         self.enabled = config.mcp.enabled and config.anthropic.enabled
         self.api_key = config.anthropic.api_key
-        self.mcp_config_path = Path(__file__).parent.parent.parent / "data" / "mcp-servers.json"
+        # Используем локальную конфигурацию если она существует
+        local_config = Path(__file__).parent.parent.parent / "data" / "mcp-servers-local.json"
+        default_config = Path(__file__).parent.parent.parent / "data" / "mcp-servers.json"
+        self.mcp_config_path = local_config if local_config.exists() else default_config
         
         if not self.enabled:
             logger.warning("⚠️ Claude Code Service отключен: MCP или Anthropic не настроены")
@@ -120,13 +123,24 @@ class ClaudeCodeService:
                     logger.info("🚀 Используем реальный Claude Code SDK")
                     messages: List[Message] = []
                     
-                    async for message in query(prompt=prompt, options=options):
-                        messages.append(message)
-                        # Безопасный вывод для отладки
-                        msg_type = type(message).__name__
-                        msg_role = getattr(message, 'role', 'No role')
-                        msg_content = str(getattr(message, 'content', ''))[:100] if hasattr(message, 'content') else 'No content'
-                        logger.debug(f"📨 Получено сообщение: {msg_type} - {msg_role} - {msg_content}...")
+                    try:
+                        async for message in query(prompt=prompt, options=options):
+                            messages.append(message)
+                            # Безопасный вывод для отладки
+                            msg_type = type(message).__name__
+                            msg_role = getattr(message, 'role', 'No role')
+                            msg_content = str(getattr(message, 'content', ''))[:100] if hasattr(message, 'content') else 'No content'
+                            logger.debug(f"📨 Получено сообщение: {msg_type} - {msg_role} - {msg_content}...")
+                            
+                            # Ограничиваем количество сообщений для предотвращения переполнения
+                            if len(messages) > 50:
+                                logger.warning("⚠️ Слишком много сообщений от SDK, прерываем")
+                                break
+                                
+                    except json.JSONDecodeError as e:
+                        logger.error(f"❌ Ошибка декодирования JSON от SDK: {e}")
+                        logger.warning("⚠️ Используем частичный результат")
+                        # Продолжаем с тем, что успели получить
                         
                     # Обрабатываем результат
                     result = self._process_messages(messages, command)
@@ -278,7 +292,27 @@ Important: Execute the requested MCP operation and return the result."""
         
         # Получаем последнее сообщение ассистента как основной ответ
         assistant_messages = [m for m in messages if hasattr(m, 'role') and m.role == "assistant" and hasattr(m, 'content') and m.content]
-        response_text = assistant_messages[-1].content if assistant_messages else "Команда выполнена"
+        
+        # Обрабатываем content, который может быть строкой или списком блоков
+        response_text = "Команда выполнена"
+        if assistant_messages:
+            last_msg = assistant_messages[-1]
+            if isinstance(last_msg.content, str):
+                response_text = last_msg.content
+            elif isinstance(last_msg.content, list):
+                # Собираем текст из всех текстовых блоков
+                text_parts = []
+                for block in last_msg.content:
+                    if hasattr(block, 'text'):
+                        text_parts.append(block.text)
+                    elif isinstance(block, dict) and block.get('text'):
+                        text_parts.append(block['text'])
+                response_text = '\n'.join(text_parts) if text_parts else "Команда выполнена"
+        
+        # Ограничиваем размер ответа для предотвращения проблем с большими JSON
+        MAX_RESPONSE_LENGTH = 4000  # Telegram limit
+        if len(response_text) > MAX_RESPONSE_LENGTH:
+            response_text = response_text[:MAX_RESPONSE_LENGTH-100] + "\n\n... (ответ обрезан)"
         
         return {
             "success": True if not error_message else False,

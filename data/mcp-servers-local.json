@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "mock": {
+      "command": "python",
+      "args": ["mcp-mock/server.py"],
+      "env": {}
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+      "env": {}
+    }
+  }
+}
