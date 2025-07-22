@@ -92,6 +92,10 @@ class SimpleConfig:
         self.digitalocean_token = env_str("DIGITALOCEAN_API_TOKEN", "")
         self.context7_api_key = env_str("CONTEXT7_API_KEY", "")
         
+        # MCP конфигурация
+        self.mcp_config_path = env_str("MCP_CONFIG_PATH", "data/mcp-servers.json")
+        self.mcp_use_official = env_bool("MCP_USE_OFFICIAL", False)
+        
         # Проверка конфигурации
         self._validate()
     

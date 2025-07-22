@@ -30,6 +30,11 @@ try:
 except ImportError:
     claude_code_service = None
 
+try:
+    from ..services.mcp_docker_manager import mcp_docker_manager
+except ImportError:
+    mcp_docker_manager = None
+
 from ..auth import is_admin, get_user_mode
 from ..core.auto_admin import auto_admin_manager
 
@@ -319,7 +324,20 @@ class WebhookHandler:
                     logger.error(f"❌ Failed to send clear memory response: {e}", exc_info=True)
                 return {"ok": True, "command": "clear"}
             
-            # MCP команды (только для админов)
+            # MCP управление Docker (только для админов)
+            elif mcp_docker_manager and message.text.startswith('/mcp '):
+                parts = message.text.split()
+                if len(parts) >= 2:
+                    mcp_command = parts[1].lower()
+                    server_name = parts[2] if len(parts) > 2 else None
+                    
+                    # Обрабатываем команды управления
+                    if mcp_command in ['start', 'stop', 'restart', 'status', 'logs', 'health']:
+                        return await self._handle_mcp_docker_command(
+                            message, mcp_command, server_name
+                        )
+            
+            # MCP команды через Claude Code (только для админов)
             elif claude_code_service and (
                 command.startswith('/mcp') or 
                 command == '/db' or 
@@ -415,6 +433,19 @@ class WebhookHandler:
 /docs &lt;query&gt; - Поиск документации
 
 """
+                if mcp_docker_manager:
+                    mcp_section += """<b>🐳 Управление MCP серверами:</b>
+/mcp status - Статус всех серверов
+/mcp status &lt;server&gt; - Статус сервера
+/mcp start &lt;server&gt; - Запустить сервер
+/mcp stop &lt;server&gt; - Остановить сервер
+/mcp restart &lt;server&gt; - Перезапустить
+/mcp logs &lt;server&gt; - Просмотр логов
+/mcp health - Проверка здоровья
+
+Серверы: supabase, digitalocean, context7, cloudflare
+
+"""
             return f"""
 <b>📋 Команды администратора:</b>
 
@@ -450,6 +481,113 @@ class WebhookHandler:
 <b>🎤 Голосовые сообщения:</b>
 Вы можете отправлять голосовые сообщения - я их расшифрую
 """
+    
+    async def _handle_mcp_docker_command(
+        self, 
+        message: Message, 
+        command: str, 
+        server_name: Optional[str]
+    ) -> Dict[str, Any]:
+        """
+        Обрабатывает команды управления MCP Docker
+        
+        Args:
+            message: Сообщение
+            command: Команда (start, stop, restart, status, logs, health)
+            server_name: Имя сервера или None
+            
+        Returns:
+            Dict с результатом
+        """
+        from ..telegram_bot import bot
+        logger.info(f"🐳 MCP Docker command: {command} {server_name}")
+        
+        try:
+            # Выполняем команду
+            if command == "status":
+                result = await mcp_docker_manager.get_server_status(server_name)
+                
+                if result["success"]:
+                    if "servers" in result:
+                        # Статус всех серверов
+                        text = "📊 **Статус MCP серверов:**\n\n"
+                        for name, status in result["servers"].items():
+                            emoji = "🟢" if status["running"] else "🔴"
+                            text += f"{emoji} **{name}**: {status['status']}\n"
+                    else:
+                        # Статус одного сервера
+                        emoji = "🟢" if result["running"] else "🔴"
+                        text = f"{emoji} **{result['server']}**: {result['status']}"
+                else:
+                    text = f"❌ Ошибка: {result['error']}"
+                    
+            elif command == "start":
+                if not server_name:
+                    text = "❌ Укажите имя сервера: /mcp start <server>"
+                else:
+                    result = await mcp_docker_manager.start_server(server_name)
+                    text = result["message"] if result["success"] else f"❌ {result['error']}"
+                    
+            elif command == "stop":
+                if not server_name:
+                    text = "❌ Укажите имя сервера: /mcp stop <server>"
+                else:
+                    result = await mcp_docker_manager.stop_server(server_name)
+                    text = result["message"] if result["success"] else f"❌ {result['error']}"
+                    
+            elif command == "restart":
+                if not server_name:
+                    text = "❌ Укажите имя сервера: /mcp restart <server>"
+                else:
+                    result = await mcp_docker_manager.restart_server(server_name)
+                    text = result["message"] if result["success"] else f"❌ {result['error']}"
+                    
+            elif command == "logs":
+                if not server_name:
+                    text = "❌ Укажите имя сервера: /mcp logs <server>"
+                else:
+                    result = await mcp_docker_manager.get_server_logs(server_name, lines=20)
+                    if result["success"]:
+                        logs = result["logs"]
+                        if len(logs) > 3000:
+                            logs = logs[-3000:]
+                        text = f"📋 **Логи {server_name}:**\n```\n{logs}\n```"
+                    else:
+                        text = f"❌ {result['error']}"
+                        
+            elif command == "health":
+                result = await mcp_docker_manager.run_health_check()
+                if result["success"]:
+                    emoji = "✅" if result["healthy"] else "⚠️"
+                    text = f"{emoji} **Health Check:**\n\n"
+                    for name, health in result["servers"].items():
+                        status_emoji = "🟢" if health["healthy"] else "🔴"
+                        text += f"{status_emoji} **{name}**: "
+                        if health.get("error"):
+                            text += f"Error - {health['error']}\n"
+                        else:
+                            text += f"{health['status']}\n"
+                else:
+                    text = f"❌ {result['error']}"
+            else:
+                text = f"❌ Неизвестная команда: {command}"
+                
+            # Отправляем ответ
+            bot.send_message(message.chat_id, text, parse_mode='Markdown')
+            logger.info(f"✅ MCP Docker response sent")
+            
+            return {"ok": True, "command": f"mcp_{command}", "server": server_name}
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to handle MCP Docker command: {e}", exc_info=True)
+            try:
+                bot.send_message(
+                    message.chat_id,
+                    f"❌ Ошибка выполнения команды: {str(e)}"
+                )
+            except:
+                pass
+            return {"ok": False, "error": str(e)}
     
     def _save_update_for_debug(self, update: Dict[str, Any]):
         """Сохраняет update для отладки"""

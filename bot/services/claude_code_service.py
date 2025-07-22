@@ -95,22 +95,27 @@ class ClaudeCodeService:
             else:
                 options = None
             
-            # Временно всегда используем эмуляцию для тестирования
-            # TODO: Вернуть SDK когда будет правильная версия
-            if True:  # CLAUDE_CODE_SDK_AVAILABLE:
-                # Режим эмуляции без SDK
-                logger.warning("⚠️ Работаем в режиме эмуляции MCP")
-                result = await self._emulate_mcp_command(command)
-            else:
-                # Используем настоящий SDK
-                messages: List[Message] = []
-                
-                async for message in query(prompt=prompt, options=options):
-                    messages.append(message)
-                    logger.debug(f"📨 Получено сообщение: {message.role} - {message.content[:100]}...")
+            # Используем реальный SDK если доступен
+            if CLAUDE_CODE_SDK_AVAILABLE:
+                try:
+                    # Используем настоящий SDK
+                    logger.info("🚀 Используем реальный Claude Code SDK")
+                    messages: List[Message] = []
                     
-                # Обрабатываем результат
-                result = self._process_messages(messages, command)
+                    async for message in query(prompt=prompt, options=options):
+                        messages.append(message)
+                        logger.debug(f"📨 Получено сообщение: {message.role} - {message.content[:100]}...")
+                        
+                    # Обрабатываем результат
+                    result = self._process_messages(messages, command)
+                except Exception as sdk_error:
+                    logger.error(f"❌ Ошибка SDK: {sdk_error}")
+                    logger.warning("⚠️ Переключаемся на эмуляцию")
+                    result = await self._emulate_mcp_command(command)
+            else:
+                # Режим эмуляции без SDK
+                logger.warning("⚠️ SDK недоступен, работаем в режиме эмуляции MCP")
+                result = await self._emulate_mcp_command(command)
             
             logger.info(f"✅ MCP команда выполнена успешно: {command}")
             return result
