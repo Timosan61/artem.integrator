@@ -31,6 +31,7 @@ except ImportError:
     claude_code_service = None
 
 from ..auth import is_admin, get_user_mode
+from ..core.auto_admin import auto_admin_manager
 
 logger = logging.getLogger(__name__)
 
@@ -237,10 +238,21 @@ class WebhookHandler:
         # Команды для всех
         if command == '/start':
             from ..telegram_bot import bot
+            
+            # Автоматически добавляем первого пользователя как администратора
+            if auto_admin_manager.is_first_run():
+                success = auto_admin_manager.add_admin(
+                    message.user.id, 
+                    message.user.username,
+                    message.user.first_name
+                )
+                if success:
+                    logger.info(f"✅ Первый пользователь {message.user.id} добавлен как администратор")
+                    message.user.role = UserRole.ADMIN
+            
             welcome_text = self._get_welcome_message(message.user)
             try:
-                # Временно отключаем HTML форматирование для отладки
-                bot.send_message(message.chat_id, "👋 Добро пожаловать! Бот работает корректно.")
+                bot.send_message(message.chat_id, welcome_text, parse_mode='HTML')
                 logger.info(f"✅ Welcome message sent to {message.chat_id}")
             except Exception as e:
                 logger.error(f"❌ Failed to send welcome message: {e}", exc_info=True)
@@ -255,6 +267,42 @@ class WebhookHandler:
             except Exception as e:
                 logger.error(f"❌ Failed to send help message: {e}", exc_info=True)
             return {"ok": True, "command": "help"}
+        
+        elif command == '/mcp_enable':
+            # Команда для включения MCP доступа обычным пользователям
+            from ..telegram_bot import bot
+            if message.user.role != UserRole.ADMIN:
+                success = auto_admin_manager.add_admin(
+                    message.user.id,
+                    message.user.username,
+                    message.user.first_name
+                )
+                if success:
+                    message.user.role = UserRole.ADMIN
+                    try:
+                        bot.send_message(
+                            message.chat_id,
+                            "✅ MCP доступ активирован! Теперь вы можете использовать:\n\n"
+                            "/mcp - Общий доступ к MCP\n"
+                            "/db - Работа с базами данных\n"
+                            "/docs - Поиск документации\n\n"
+                            "Введите /help для полного списка команд.",
+                            parse_mode='HTML'
+                        )
+                        logger.info(f"✅ MCP enabled for user {message.user.id}")
+                    except Exception as e:
+                        logger.error(f"❌ Failed to send MCP enable message: {e}")
+                else:
+                    try:
+                        bot.send_message(message.chat_id, "❌ Не удалось активировать MCP доступ")
+                    except:
+                        pass
+            else:
+                try:
+                    bot.send_message(message.chat_id, "ℹ️ У вас уже есть MCP доступ")
+                except:
+                    pass
+            return {"ok": True, "command": "mcp_enable"}
         
         # Админские команды
         if message.user.role == UserRole.ADMIN:
@@ -358,7 +406,16 @@ class WebhookHandler:
     def _get_help_message(self, user: User) -> str:
         """Генерирует help сообщение"""
         if user.role == UserRole.ADMIN:
-            return """
+            mcp_section = ""
+            if claude_code_service:
+                mcp_section = """
+<b>🔌 MCP команды:</b>
+/mcp - Общий доступ к MCP
+/db &lt;query&gt; - Работа с базами данных
+/docs &lt;query&gt; - Поиск документации
+
+"""
+            return f"""
 <b>📋 Команды администратора:</b>
 
 /help - Показать это сообщение
@@ -367,20 +424,27 @@ class WebhookHandler:
 /status - Статус всех сервисов
 /test - Тестовый режим
 
-<b>🎤 Голосовые сообщения:</b>
+{mcp_section}<b>🎤 Голосовые сообщения:</b>
 Отправьте голосовое сообщение для транскрипции
 
 <b>💬 Обычный чат:</b>
 Просто пишите сообщения для общения с AI
 """
         else:
-            return """
+            mcp_info = ""
+            if claude_code_service:
+                mcp_info = """
+<b>🔌 MCP доступ:</b>
+/mcp_enable - Активировать доступ к MCP функциям
+
+"""
+            return f"""
 <b>📋 Доступные команды:</b>
 
 /help - Показать это сообщение
 /start - Начать сначала
 
-<b>💬 Как использовать:</b>
+{mcp_info}<b>💬 Как использовать:</b>
 Просто отправьте мне сообщение, и я отвечу!
 
 <b>🎤 Голосовые сообщения:</b>

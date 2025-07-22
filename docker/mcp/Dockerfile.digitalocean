@@ -1,0 +1,14 @@
+FROM artem-mcp-base:latest
+
+# Копируем конфигурацию MCP сервера
+COPY docker/mcp/servers/digitalocean/ /app/
+
+# Установка зависимостей для DigitalOcean MCP
+RUN npm install axios
+
+# Переменные окружения
+ENV MCP_SERVER_NAME=digitalocean
+ENV MCP_SERVER_PORT=3002
+
+# Запуск MCP сервера
+CMD ["node", "server.js"]

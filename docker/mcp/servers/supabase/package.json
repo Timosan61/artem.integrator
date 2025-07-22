@@ -1,0 +1,13 @@
+{
+  "name": "mcp-supabase-server",
+  "version": "1.0.0",
+  "description": "Supabase MCP Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "@supabase/supabase-js": "^2.38.0"
+  }
+}

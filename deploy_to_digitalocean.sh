@@ -13,9 +13,9 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Конфигурация
-DROPLET_IP="129.212.141.72"
-DROPLET_USER="root"
-APP_PATH="/opt/artem-integrator"
+DROPLET_IP="104.248.39.106"
+DROPLET_USER="coder"
+APP_PATH="/home/coder/artem-integrator"
 SERVICE_NAME="artem-integrator"
 GITHUB_REPO="https://github.com/anetov/artem.integrator.git"
 DOMAIN="artem.example.com"  # Измените на ваш домен
@@ -69,21 +69,21 @@ install_dependencies() {
     
     remote_exec << 'EOF'
     # Обновление системы
-    apt-get update
-    apt-get upgrade -y
+    sudo apt-get update
+    sudo apt-get upgrade -y
     
     # Установка Python 3.10+
-    apt-get install -y python3.10 python3.10-venv python3-pip
+    sudo apt-get install -y python3.10 python3.10-venv python3-pip
     
     # Установка Node.js для MCP
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-    apt-get install -y nodejs
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs
     
     # Установка дополнительных инструментов
-    apt-get install -y git nginx certbot python3-certbot-nginx supervisor
+    sudo apt-get install -y git nginx certbot python3-certbot-nginx supervisor
     
     # Установка Claude Code CLI
-    npm install -g @anthropic/claude-code-cli
+    sudo npm install -g @anthropic/claude-code-cli
 EOF
     
     print_success "Зависимости установлены"
@@ -183,14 +183,14 @@ setup_systemd() {
     print_status "Настройка systemd сервиса..."
     
     remote_exec << EOF
-    cat > /etc/systemd/system/${SERVICE_NAME}.service << 'SERVICE'
+    sudo tee /etc/systemd/system/${SERVICE_NAME}.service > /dev/null << 'SERVICE'
 [Unit]
 Description=Artem Integrator Telegram Bot
 After=network.target
 
 [Service]
 Type=simple
-User=root
+User=coder
 WorkingDirectory=${APP_PATH}
 Environment="PATH=${APP_PATH}/venv/bin:/usr/local/bin:/usr/bin:/bin"
 ExecStart=${APP_PATH}/venv/bin/python -m uvicorn bot.webhook:app --host 0.0.0.0 --port 8000
@@ -210,9 +210,9 @@ WantedBy=multi-user.target
 SERVICE
 
     # Перезагрузка systemd и запуск сервиса
-    systemctl daemon-reload
-    systemctl enable ${SERVICE_NAME}
-    systemctl restart ${SERVICE_NAME}
+    sudo systemctl daemon-reload
+    sudo systemctl enable ${SERVICE_NAME}
+    sudo systemctl restart ${SERVICE_NAME}
 EOF
     
     print_success "Systemd сервис настроен"
@@ -224,7 +224,7 @@ setup_nginx() {
     
     remote_exec << EOF
     # Создание конфигурации Nginx
-    cat > /etc/nginx/sites-available/${SERVICE_NAME} << 'NGINX'
+    sudo tee /etc/nginx/sites-available/${SERVICE_NAME} > /dev/null << 'NGINX'
 server {
     listen 80;
     server_name ${DOMAIN} ${DROPLET_IP};
@@ -258,9 +258,9 @@ server {
 NGINX
 
     # Активация конфигурации
-    ln -sf /etc/nginx/sites-available/${SERVICE_NAME} /etc/nginx/sites-enabled/
-    nginx -t
-    systemctl restart nginx
+    sudo ln -sf /etc/nginx/sites-available/${SERVICE_NAME} /etc/nginx/sites-enabled/
+    sudo nginx -t
+    sudo systemctl restart nginx
 EOF
     
     print_success "Nginx настроен"
@@ -271,7 +271,7 @@ setup_ssl() {
     print_status "Настройка SSL сертификата..."
     
     if [ "$DOMAIN" != "artem.example.com" ]; then
-        remote_exec "certbot --nginx -d ${DOMAIN} --non-interactive --agree-tos -m admin@${DOMAIN}"
+        remote_exec "sudo certbot --nginx -d ${DOMAIN} --non-interactive --agree-tos -m admin@${DOMAIN}"
         print_success "SSL сертификат получен"
     else
         print_warning "Пропускаем SSL настройку - используется тестовый домен"
@@ -336,23 +336,25 @@ create_monitoring_script() {
 
 # Мониторинг статуса бота
 
-DROPLET_IP="129.212.141.72"
+DROPLET_IP="104.248.39.106"
 SERVICE_NAME="artem-integrator"
+DROPLET_USER="coder"
+APP_PATH="/home/coder/artem-integrator"
 
 echo "📊 Статус бота Artem Integrator"
 echo "================================"
 
 # Проверка статуса сервиса
 echo -e "\n🔧 Статус systemd сервиса:"
-ssh root@${DROPLET_IP} "systemctl status ${SERVICE_NAME} --no-pager"
+ssh ${DROPLET_USER}@${DROPLET_IP} "sudo systemctl status ${SERVICE_NAME} --no-pager"
 
 # Проверка логов
 echo -e "\n📝 Последние логи:"
-ssh root@${DROPLET_IP} "tail -n 20 /opt/artem-integrator/logs/bot.log"
+ssh ${DROPLET_USER}@${DROPLET_IP} "tail -n 20 ${APP_PATH}/logs/bot.log"
 
 # Проверка webhook
 echo -e "\n🌐 Проверка webhook:"
-ssh root@${DROPLET_IP} "cd /opt/artem-integrator && source venv/bin/activate && python -c \"
+ssh ${DROPLET_USER}@${DROPLET_IP} "cd ${APP_PATH} && source venv/bin/activate && python -c \"
 import os, requests
 from dotenv import load_dotenv
 load_dotenv()
@@ -366,7 +368,7 @@ print(f'Last error: {info.get(\"last_error_message\", \"None\")}')
 
 # Проверка MCP статуса
 echo -e "\n🔌 MCP статус:"
-ssh root@${DROPLET_IP} "cd /opt/artem-integrator && source venv/bin/activate && python -c \"
+ssh ${DROPLET_USER}@${DROPLET_IP} "cd ${APP_PATH} && source venv/bin/activate && python -c \"
 from bot.core.config import config
 print(f'MCP enabled: {config.mcp.enabled}')
 print(f'Supabase: {config.mcp.supabase_enabled}')
@@ -409,7 +411,7 @@ main() {
     echo "   ssh ${DROPLET_USER}@${DROPLET_IP} 'nano ${APP_PATH}/.env'"
     echo ""
     echo "2. Перезапустите сервис после обновления конфигурации:"
-    echo "   ssh ${DROPLET_USER}@${DROPLET_IP} 'systemctl restart ${SERVICE_NAME}'"
+    echo "   ssh ${DROPLET_USER}@${DROPLET_IP} 'sudo systemctl restart ${SERVICE_NAME}'"
     echo ""
     echo "3. Проверьте статус бота:"
     echo "   ./monitor_bot.sh"
@@ -420,8 +422,8 @@ main() {
     echo ""
     echo "📊 Полезные команды:"
     echo "   Логи: ssh ${DROPLET_USER}@${DROPLET_IP} 'tail -f ${APP_PATH}/logs/bot.log'"
-    echo "   Статус: ssh ${DROPLET_USER}@${DROPLET_IP} 'systemctl status ${SERVICE_NAME}'"
-    echo "   Рестарт: ssh ${DROPLET_USER}@${DROPLET_IP} 'systemctl restart ${SERVICE_NAME}'"
+    echo "   Статус: ssh ${DROPLET_USER}@${DROPLET_IP} 'sudo systemctl status ${SERVICE_NAME}'"
+    echo "   Рестарт: ssh ${DROPLET_USER}@${DROPLET_IP} 'sudo systemctl restart ${SERVICE_NAME}'"
 }
 
 # Запуск скрипта

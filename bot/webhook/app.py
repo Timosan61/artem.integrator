@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from ..core.config import config
+from ..core import config
 from .middleware import SecurityMiddleware, LoggingMiddleware, ErrorHandlerMiddleware
 from .routers import health, webhook, debug, admin, test
 
@@ -56,13 +56,32 @@ def create_app(title: Optional[str] = None, description: Optional[str] = None) -
     app.include_router(admin.router, prefix="/admin", tags=["Admin"])
     app.include_router(test.router, prefix="/test", tags=["Test"])
     
+    # Добавляем маршруты настройки
+    from .setup_routes import register_setup_routes
+    register_setup_routes(app)
+    
     # События жизненного цикла
     @app.on_event("startup")
     async def startup_event():
         logger.info("🚀 Webhook server starting...")
         
-        # Автоматическая установка webhook при старте
-        if config.webhook.auto_setup:
+        # Проверяем, используется ли Cloudflare Tunnel
+        if config.cloudflare_tunnel_token:
+            logger.info("🌐 Используется Cloudflare Tunnel")
+            from ..services.cloudflare_tunnel import cloudflare_tunnel
+            
+            # Устанавливаем webhook через Cloudflare
+            success = await cloudflare_tunnel.setup_webhook(
+                config.telegram_bot_token,
+                config.webhook_secret_token
+            )
+            if success:
+                logger.info("✅ Webhook установлен через Cloudflare Tunnel")
+            else:
+                logger.error("❌ Ошибка установки webhook через Cloudflare")
+        
+        # Fallback на обычную установку webhook
+        elif hasattr(config, 'webhook') and config.webhook.auto_setup:
             from .services import WebhookService
             webhook_service = WebhookService()
             result = await webhook_service.setup_webhook()

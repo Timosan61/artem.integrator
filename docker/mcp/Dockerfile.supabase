@@ -1,0 +1,14 @@
+FROM artem-mcp-base:latest
+
+# Копируем конфигурацию MCP сервера
+COPY docker/mcp/servers/supabase/ /app/
+
+# Установка зависимостей для Supabase MCP
+RUN npm install @supabase/supabase-js
+
+# Переменные окружения
+ENV MCP_SERVER_NAME=supabase
+ENV MCP_SERVER_PORT=3001
+
+# Запуск MCP сервера
+CMD ["node", "server.js"]
