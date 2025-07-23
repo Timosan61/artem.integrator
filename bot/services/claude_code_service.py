@@ -373,13 +373,43 @@ Important: Execute the requested MCP operation and return the result."""
         # Ищем результат выполнения MCP
         result_data = None
         error_message = None
+        mcp_result_text = None
         
         for message in messages:
-            # Проверяем tool_use сообщения
-            if hasattr(message, 'tool_calls') and message.tool_calls:
-                for tool_call in message.tool_calls:
-                    if tool_call.get('type') == 'tool_result':
-                        result_data = tool_call.get('result')
+            # Проверяем tool_result в UserMessage
+            if hasattr(message, 'content') and isinstance(message.content, list):
+                for item in message.content:
+                    if isinstance(item, dict) and item.get('type') == 'tool_result':
+                        content = item.get('content', '')
+                        logger.debug(f"🔧 Tool result: content='{content[:100]}...', is_error={item.get('is_error')}")
+                        
+                        if item.get('is_error'):
+                            # Особый случай для "No apps found" - это не ошибка
+                            if "No apps found" in content:
+                                mcp_result_text = "📁 **DigitalOcean Apps**\n\nℹ️ Нет приложений в вашем аккаунте DigitalOcean."
+                                logger.debug(f"🎯 Установлен mcp_result_text: {mcp_result_text}")
+                            else:
+                                error_message = content
+                        else:
+                            result_data = content
+                            if isinstance(content, str) and len(content) > 0:
+                                try:
+                                    # Пытаемся распарсить JSON результат
+                                    import json
+                                    data = json.loads(content)
+                                    if isinstance(data, dict) and 'apps' in data:
+                                        apps = data['apps']
+                                        if apps:
+                                            mcp_result_text = "📁 **DigitalOcean Apps**\n\n"
+                                            for app in apps:
+                                                mcp_result_text += f"📦 **{app.get('spec', {}).get('name', 'Unknown')}**\n"
+                                                mcp_result_text += f"  🆔 ID: `{app.get('id', 'N/A')}`\n"
+                                                mcp_result_text += f"  🌍 Регион: {app.get('spec', {}).get('region', 'N/A')}\n"
+                                                mcp_result_text += f"  ✅ Статус: {app.get('active_deployment', {}).get('phase', 'Unknown')}\n\n"
+                                        else:
+                                            mcp_result_text = "📁 **DigitalOcean Apps**\n\nℹ️ Нет приложений в вашем аккаунте."
+                                except:
+                                    pass
                         
             # Проверяем текстовые сообщения на ошибки
             # Проверяем наличие атрибута role (может быть SystemMessage без role)
@@ -393,7 +423,12 @@ Important: Execute the requested MCP operation and return the result."""
         
         # Обрабатываем content, который может быть строкой или списком блоков
         response_text = "Команда выполнена"
-        if assistant_messages:
+        
+        # Если есть результат MCP, используем его
+        if mcp_result_text:
+            logger.debug(f"🎯 Используем MCP результат: {mcp_result_text[:100]}...")
+            response_text = mcp_result_text
+        elif assistant_messages:
             last_msg = assistant_messages[-1]
             if isinstance(last_msg.content, str):
                 response_text = last_msg.content
@@ -412,12 +447,15 @@ Important: Execute the requested MCP operation and return the result."""
         if len(response_text) > MAX_RESPONSE_LENGTH:
             response_text = response_text[:MAX_RESPONSE_LENGTH-100] + "\n\n... (ответ обрезан)"
         
+        # Определяем успешность - если есть mcp_result_text, это успех
+        success = bool(mcp_result_text) or (not error_message)
+        
         return {
-            "success": True if not error_message else False,
+            "success": success,
             "command": command,
             "response": response_text,
             "data": result_data,
-            "error": error_message,
+            "error": error_message if not mcp_result_text else None,
             "message_count": len(messages)
         }
     
