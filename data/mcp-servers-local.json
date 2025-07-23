@@ -1,23 +1,11 @@
 {
   "mcpServers": {
-    "supabase": {
-      "command": "npx",
-      "args": ["-y", "@anysphere/supabase-mcp"],
-      "env": {
-        "SUPABASE_URL": "${SUPABASE_URL}",
-        "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
-      }
-    },
     "digitalocean": {
       "command": "npx",
-      "args": ["-y", "@anysphere/digitalocean-mcp"],
+      "args": ["-y", "@digitalocean/mcp"],
       "env": {
         "DIGITALOCEAN_API_TOKEN": "${DIGITALOCEAN_API_TOKEN}"
       }
-    },
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@anysphere/context7-mcp"]
     }
   }
 }

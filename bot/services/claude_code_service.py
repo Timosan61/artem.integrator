@@ -57,6 +57,10 @@ class ClaudeCodeService:
         if self.api_key:
             os.environ["ANTHROPIC_API_KEY"] = self.api_key
             
+        # Настройка Moonshot API для обхода ограничений
+        os.environ["ANTHROPIC_BASE_URL"] = "https://api.moonshot.ai/anthropic"
+        os.environ["ANTHROPIC_AUTH_TOKEN"] = "sk-QNnXEpPxnV9OCIhr6IMUcXQu2b4Vsuq2biZVAFce0KIoUTsx"
+            
         logger.info("✅ Claude Code Service инициализирован")
         
     async def execute_mcp_command(
@@ -104,13 +108,84 @@ class ClaudeCodeService:
                     except Exception as e:
                         logger.warning(f"Не удалось загрузить MCP конфигурацию: {e}")
                 
+                # Добавляем более явные инструкции для MCP
+                system_prompt = self._get_system_prompt()
+                if "apps" in command.lower() or "digitalocean" in command.lower():
+                    system_prompt = f"""Execute user command: {command}
+
+IMPORTANT: Call mcp__digitalocean__list_apps with parameter {{"query": {{}}}} immediately.
+
+DO NOT:
+- Use TodoWrite or any todo management tools
+- Use Task tool
+- Plan or organize tasks
+- Use any Cloudflare functions
+
+JUST execute mcp__digitalocean__list_apps directly and return the results.
+
+USE ONLY THESE FUNCTIONS. NO EXCEPTIONS."""
+                
+                # Определяем разрешенные инструменты на основе команды
+                allowed_tools = []
+                if "apps" in command.lower() or "digitalocean" in command.lower():
+                    # Только DigitalOcean инструменты
+                    allowed_tools = [
+                        "mcp__digitalocean__list_apps", 
+                        "mcp__digitalocean__get_app", 
+                        "mcp__digitalocean__create_app", 
+                        "mcp__digitalocean__list_deployments",
+                        "mcp__digitalocean__get_deployment",
+                        "mcp__digitalocean__list_databases_cluster"
+                    ]
+                elif "project" in command.lower() or "supabase" in command.lower() or "/db" in command:
+                    # Только Supabase инструменты
+                    allowed_tools = [
+                        "mcp__supabase__list_projects", 
+                        "mcp__supabase__get_project",
+                        "mcp__supabase__execute_sql", 
+                        "mcp__supabase__list_tables",
+                        "mcp__supabase__list_organizations"
+                    ]
+                elif "doc" in command.lower() or "context7" in command.lower():
+                    # Только Context7 инструменты
+                    allowed_tools = [
+                        "mcp__context7__resolve-library-id", 
+                        "mcp__context7__get-library-docs"
+                    ]
+                else:
+                    # Если не уверены - используем стандартный набор
+                    allowed_tools = self._get_allowed_tools(command)
+                
+                # Список запрещенных инструментов (все Cloudflare функции)
+                disallowed_tools = [
+                    "mcp__cloudflare__*",  # Блокируем все Cloudflare функции
+                    "mcp__cloudflare__worker_list",
+                    "mcp__cloudflare__ai_inference",
+                    "mcp__cloudflare__kv_get",
+                    "mcp__cloudflare__r2_list_buckets",
+                    "mcp__cloudflare__d1_list_databases",
+                    "mcp__cloudflare__analytics_get",
+                    "mcp__cloudflare__zones_list"
+                ]
+                
+                # Добавляем все возможные инструменты управления задачами в запрещенные
+                task_management_tools = [
+                    "TodoWrite", "Task", "ExitPlanMode", "WebSearch", "WebFetch",
+                    "Read", "Write", "Edit", "MultiEdit", "Bash", "LS", "Grep", "Glob"
+                ]
+                
+                if "apps" in command.lower():
+                    # Для команды apps разрешаем ТОЛЬКО list_apps
+                    allowed_tools = ["mcp__digitalocean__list_apps"]
+                    disallowed_tools.extend(task_management_tools)
+                
                 options = ClaudeCodeOptions(
                     max_turns=1,  # Одна итерация для команды
-                    system_prompt=self._get_system_prompt(),
+                    system_prompt=system_prompt,
                     cwd=Path.cwd(),
-                    allowed_tools=self._get_allowed_tools(command),
+                    allowed_tools=allowed_tools,  # Ограничиваем доступные инструменты
+                    disallowed_tools=disallowed_tools,  # Блокируем Cloudflare и task management
                     mcp_servers=mcp_servers,  # Передаем конфигурацию серверов
-                    mcp_tools=["*"],  # Разрешаем все MCP инструменты
                     permission_mode="acceptEdits"  # Автоматически принимаем использование инструментов
                 )
             else:
@@ -199,7 +274,17 @@ class ClaudeCodeService:
             return f"Execute SQL query using Supabase MCP: {sql_query}"
             
         elif command.startswith("/mcp apps"):
-            return "List all DigitalOcean apps using MCP"
+            return "List all DigitalOcean apps. You MUST use the mcp__digitalocean__list_apps function. This is a DigitalOcean operation, not Cloudflare. Return the full list of apps with their names, status, and other details."
+        
+        elif command.startswith("/mcp digitalocean"):
+            # Обрабатываем разные команды DigitalOcean
+            sub_command = command[17:].strip()
+            if sub_command == "list apps" or sub_command == "apps":
+                return "Use mcp__digitalocean__list_apps to get all DigitalOcean applications."
+            elif sub_command.startswith("deployments"):
+                return "Use mcp__digitalocean__list_deployments to get deployment history."
+            else:
+                return f"Execute DigitalOcean MCP command: {sub_command}"
             
         elif command.startswith("/docs "):
             parts = command[6:].strip().split(maxsplit=1)
@@ -222,9 +307,14 @@ class ClaudeCodeService:
         return """You are an MCP assistant that helps execute commands through Model Context Protocol servers.
 
 Available MCP servers:
-1. Supabase - for database operations and project management
-2. DigitalOcean - for app management and deployments  
-3. Context7 - for documentation search
+1. DigitalOcean - for app management and deployments (mcp__digitalocean__*)
+2. Supabase - for database operations and project management (mcp__supabase__*)
+3. Context7 - for documentation search (mcp__context7__*)
+
+IMPORTANT RULES:
+- NEVER use mcp__cloudflare__* functions - they are NOT available
+- Only use functions from the three servers listed above
+- Match the server to the task (apps = DigitalOcean, database = Supabase, docs = Context7)
 
 When executing commands:
 - Use the appropriate MCP tool based on the command
