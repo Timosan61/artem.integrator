@@ -146,12 +146,20 @@ class ClaudeCodeService:
                     result = self._process_messages(messages, command)
                 except Exception as sdk_error:
                     logger.error(f"❌ Ошибка SDK: {sdk_error}")
-                    logger.warning("⚠️ Переключаемся на эмуляцию")
-                    result = await self._emulate_mcp_command(command)
+                    # Больше не переключаемся на эмуляцию - возвращаем ошибку
+                    result = {
+                        "success": False,
+                        "command": command,
+                        "error": f"Ошибка выполнения MCP: {str(sdk_error)}"
+                    }
             else:
-                # Режим эмуляции без SDK
-                logger.warning("⚠️ SDK недоступен, работаем в режиме эмуляции MCP")
-                result = await self._emulate_mcp_command(command)
+                # SDK недоступен - возвращаем ошибку
+                logger.error("❌ Claude Code SDK недоступен")
+                result = {
+                    "success": False,
+                    "command": command,
+                    "error": "Claude Code SDK не установлен или недоступен"
+                }
             
             logger.info(f"✅ MCP команда выполнена успешно: {command}")
             return result
