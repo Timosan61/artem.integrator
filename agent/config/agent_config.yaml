@@ -1,9 +1,14 @@
 # Конфигурация Intelligent Agent
 
 agent:
-  model: gpt-4-turbo-preview
+  model: gpt-4o
   temperature: 0.7
   max_tokens: 2000
+
+# API ключи (также можно задать через переменные окружения)
+api_keys:
+  # YOUTUBE_API_KEY - для YouTube Data API v3
+  # OPENAI_API_KEY - для GPT-4o
   
 # Настройки подтверждения действий
 confirmation:
@@ -62,25 +67,18 @@ tools:
       - "изобрази"
     confidence_threshold: 0.9
     
-  - name: vision_analyzer
+  - name: youtube_analyzer
     enabled: true
-    description: "Анализ видео и изображений через GPT-4 Vision"
+    description: "Анализ YouTube видео: информация, субтитры, статистика"
     triggers:
-      - "проанализируй видео"
-      - "что на картинке"
-      - "распознай"
-      - "опиши изображение"
+      - "youtube"
+      - "ютуб"
+      - "видео"
+      - "субтитры"
+      - "анализ видео"
+      - "youtube.com"
+      - "youtu.be"
     confidence_threshold: 0.85
-    
-  - name: apify_instagram
-    enabled: true
-    description: "Анализ Instagram контента через Apify"
-    triggers:
-      - "instagram"
-      - "reels"
-      - "рилс"
-      - "инстаграм"
-    confidence_threshold: 0.9
 
 # Настройки маршрутизации
 routing:

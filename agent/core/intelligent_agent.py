@@ -10,7 +10,7 @@ from datetime import datetime
 from .models import (
     AgentResponse, ToolResponse, BaseToolParams,
     EchoToolParams, MCPCommandParams, ImageGenerationParams,
-    VisionAnalysisParams, ToolType
+    YouTubeAnalysisParams, ToolType
 )
 
 logger = logging.getLogger(__name__)
@@ -130,24 +130,29 @@ class IntelligentAgent:
             {
                 "type": "function",
                 "function": {
-                    "name": "analyze_visual_content",
-                    "description": "Проанализировать видео или изображение",
+                    "name": "analyze_youtube_video",
+                    "description": "Проанализировать YouTube видео, получить субтитры и статистику",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "url": {
                                 "type": "string",
-                                "description": "URL видео или изображения"
+                                "description": "URL YouTube видео"
                             },
-                            "analysis_type": {
+                            "extract_subtitles": {
+                                "type": "boolean",
+                                "description": "Извлечь субтитры видео",
+                                "default": true
+                            },
+                            "subtitle_language": {
                                 "type": "string",
-                                "description": "Тип анализа: general, detailed, objects, text, emotions",
-                                "default": "general"
+                                "description": "Язык субтитров (ru, en, auto)",
+                                "default": "ru"
                             },
-                            "frame_interval": {
-                                "type": "integer",
-                                "description": "Для видео: каждый N-й кадр",
-                                "default": 30
+                            "include_metadata": {
+                                "type": "boolean",
+                                "description": "Включить метаданные видео",
+                                "default": true
                             },
                             "user_id": {
                                 "type": "string",
@@ -242,7 +247,7 @@ class IntelligentAgent:
 Анализируй запросы пользователя и используй подходящие инструменты:
 - Для вопросов об инфраструктуре (приложения, базы данных, серверы) - используй execute_mcp_command
 - Для генерации изображений - используй generate_image
-- Для анализа видео/изображений - используй analyze_visual_content
+- Для анализа YouTube видео - используй analyze_youtube_video
 - Для тестирования - используй echo_tool
 
 Отвечай на русском языке, кратко и по существу."""
@@ -282,8 +287,8 @@ class IntelligentAgent:
             return await self._execute_mcp_command(MCPCommandParams(**function_args))
         elif function_name == "generate_image":
             return await self._execute_image_generation(ImageGenerationParams(**function_args))
-        elif function_name == "analyze_visual_content":
-            return await self._execute_vision_analysis(VisionAnalysisParams(**function_args))
+        elif function_name == "analyze_youtube_video":
+            return await self._execute_youtube_analysis(YouTubeAnalysisParams(**function_args))
         else:
             return ToolResponse(
                 success=False,
@@ -331,16 +336,17 @@ class IntelligentAgent:
             metadata={"tool_type": ToolType.IMAGE_GENERATOR}
         )
     
-    async def _execute_vision_analysis(self, params: VisionAnalysisParams) -> ToolResponse:
-        """Заглушка для анализа видео"""
-        # TODO: Интегрировать с GPT-4 Vision
+    async def _execute_youtube_analysis(self, params: YouTubeAnalysisParams) -> ToolResponse:
+        """Заглушка для анализа YouTube видео"""
+        # TODO: Интегрировать с YouTube API
         return ToolResponse(
             success=True,
             data={
-                "message": f"Анализ {params.url} будет выполнен",
-                "type": params.analysis_type
+                "message": f"Анализ YouTube видео {params.url} будет выполнен",
+                "video_url": params.url,
+                "extract_subtitles": params.extract_subtitles
             },
-            metadata={"tool_type": ToolType.VISION_ANALYZER}
+            metadata={"tool_type": ToolType.YOUTUBE_ANALYZER}
         )
     
     async def _get_final_response(

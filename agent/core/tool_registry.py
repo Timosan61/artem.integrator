@@ -2,14 +2,16 @@
 Реестр инструментов для динамического управления
 """
 import logging
-from typing import Dict, List, Any, Optional, Type
+from typing import Dict, List, Any, Optional, Type, TYPE_CHECKING
 from pathlib import Path
 import importlib
 import inspect
 import yaml
 
-from ..tools.base import BaseTool
 from ..core.models import ToolResponse
+
+if TYPE_CHECKING:
+    from ..tools.base import BaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +20,11 @@ class ToolRegistry:
     """Реестр для управления инструментами"""
     
     def __init__(self):
-        self._tools: Dict[str, BaseTool] = {}
+        self._tools: Dict[str, 'BaseTool'] = {}
         self._enabled_tools: Dict[str, bool] = {}
         logger.info("📚 ToolRegistry инициализирован")
     
-    def register_tool(self, tool: BaseTool, enabled: bool = True) -> None:
+    def register_tool(self, tool: 'BaseTool', enabled: bool = True) -> None:
         """
         Регистрирует инструмент
         
@@ -58,7 +60,7 @@ class ToolRegistry:
             return True
         return False
     
-    def get_tool(self, tool_name: str) -> Optional[BaseTool]:
+    def get_tool(self, tool_name: str) -> Optional['BaseTool']:
         """
         Получает инструмент по имени
         
@@ -90,7 +92,7 @@ class ToolRegistry:
             return True
         return False
     
-    def get_all_tools(self, only_enabled: bool = False) -> Dict[str, BaseTool]:
+    def get_all_tools(self, only_enabled: bool = False) -> Dict[str, 'BaseTool']:
         """
         Возвращает все инструменты
         
@@ -202,7 +204,7 @@ class ToolRegistry:
             logger.error(f"❌ Ошибка загрузки конфигурации инструментов: {e}")
             return 0
     
-    def _import_tool_class(self, tool_name: str) -> Optional[Type[BaseTool]]:
+    def _import_tool_class(self, tool_name: str) -> Optional[Type['BaseTool']]:
         """
         Импортирует класс инструмента по имени
         
@@ -216,8 +218,7 @@ class ToolRegistry:
         tool_modules = {
             "echo_tool": "agent.tools.echo_tool.EchoTool",
             "mcp_executor": "agent.tools.mcp_tool.MCPTool",
-            "image_generator": "agent.tools.image_tool.ImageGeneratorTool",
-            "vision_analyzer": "agent.tools.vision_tool.VisionAnalyzerTool"
+            "youtube_analyzer": "agent.tools.youtube_tool.YouTubeAnalyzerTool"
         }
         
         if tool_name not in tool_modules:
@@ -232,7 +233,9 @@ class ToolRegistry:
             tool_class = getattr(module, class_name)
             
             # Проверяем, что это подкласс BaseTool
-            if not issubclass(tool_class, BaseTool):
+            # Импортируем BaseTool локально чтобы избежать циклического импорта
+            from ..tools.base import BaseTool as BaseToolClass
+            if not issubclass(tool_class, BaseToolClass):
                 logger.error(f"❌ {class_name} не является подклассом BaseTool")
                 return None
             

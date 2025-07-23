@@ -1,11 +1,13 @@
 """
 Confirmation Formatter - форматирование сообщений подтверждения
 """
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, TYPE_CHECKING
 from datetime import datetime
 
 from ..core.models import ToolType, BaseToolParams
-from ..tools.base import BaseTool
+
+if TYPE_CHECKING:
+    from ..tools.base import BaseTool
 
 
 class ConfirmationFormatter:
@@ -14,8 +16,7 @@ class ConfirmationFormatter:
     # Эмодзи для разных типов инструментов
     TOOL_EMOJIS = {
         ToolType.MCP: "🔧",
-        ToolType.IMAGE_GENERATOR: "🎨",
-        ToolType.VISION_ANALYZER: "📹",
+        ToolType.YOUTUBE_ANALYZER: "🎥",
         ToolType.ECHO: "🔊"
     }
     
@@ -34,7 +35,7 @@ class ConfirmationFormatter:
     @classmethod
     def format_confirmation_message(
         cls,
-        tool: BaseTool,
+        tool: 'BaseTool',
         params: BaseToolParams,
         session_id: str,
         expires_at: datetime,
@@ -222,15 +223,14 @@ class ConfirmationFormatter:
         return f"⏰ Время подтверждения операции **{operation}** истекло."
     
     @classmethod
-    def _get_tool_type(cls, tool: BaseTool) -> Optional[ToolType]:
+    def _get_tool_type(cls, tool: 'BaseTool') -> Optional[ToolType]:
         """Определяет тип инструмента"""
         name = tool.metadata.name
         
         # Мапинг имен на типы
         name_to_type = {
             "mcp_executor": ToolType.MCP,
-            "image_generator": ToolType.IMAGE_GENERATOR,
-            "vision_analyzer": ToolType.VISION_ANALYZER,
+            "youtube_analyzer": ToolType.YOUTUBE_ANALYZER,
             "echo_tool": ToolType.ECHO
         }
         

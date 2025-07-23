@@ -3,7 +3,7 @@ Confirmation Manager - управление подтверждениями де�
 """
 import asyncio
 import logging
-from typing import Dict, Optional, List, Any, Callable
+from typing import Dict, Optional, List, Any, Callable, TYPE_CHECKING
 from datetime import datetime, timedelta
 from enum import Enum
 import uuid
@@ -14,7 +14,9 @@ from ..core.models import (
     ToolType,
     BaseToolParams
 )
-from ..tools.base import BaseTool
+
+if TYPE_CHECKING:
+    from ..tools.base import BaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ class ConfirmationSession:
         self,
         session_id: str,
         user_id: str,
-        tool: BaseTool,
+        tool: 'BaseTool',
         params: BaseToolParams,
         expires_at: datetime,
         message: str
@@ -71,7 +73,7 @@ class ConfirmationManager:
     async def request_confirmation(
         self,
         user_id: str,
-        tool: BaseTool,
+        tool: 'BaseTool',
         params: BaseToolParams,
         custom_message: Optional[str] = None,
         timeout: Optional[int] = None
@@ -259,7 +261,7 @@ class ConfirmationManager:
         if on_response:
             self._on_confirmation_response = on_response
     
-    def _generate_default_message(self, tool: BaseTool, params: BaseToolParams) -> str:
+    def _generate_default_message(self, tool: 'BaseTool', params: BaseToolParams) -> str:
         """Генерирует стандартное сообщение подтверждения"""
         metadata = tool.metadata
         

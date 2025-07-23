@@ -10,8 +10,7 @@ from datetime import datetime
 class ToolType(str, Enum):
     """Типы доступных инструментов"""
     MCP = "mcp_executor"
-    IMAGE_GENERATOR = "image_generator"
-    VISION_ANALYZER = "vision_analyzer"
+    YOUTUBE_ANALYZER = "youtube_analyzer"
     ECHO = "echo_tool"  # для тестирования
 
 
@@ -57,16 +56,20 @@ class ImageGenerationParams(BaseToolParams):
     )
 
 
-class VisionAnalysisParams(BaseToolParams):
-    """Параметры для анализа видео/изображения"""
-    url: str = Field(description="URL видео или изображения для анализа")
-    analysis_type: str = Field(
-        default="general",
-        description="Тип анализа: general, detailed, objects, text, emotions"
+class YouTubeAnalysisParams(BaseToolParams):
+    """Параметры для анализа YouTube видео"""
+    url: str = Field(description="URL YouTube видео для анализа")
+    extract_subtitles: bool = Field(
+        default=True,
+        description="Извлечь субтитры видео (если доступны)"
     )
-    frame_interval: Optional[int] = Field(
-        default=30,
-        description="Для видео: анализировать каждый N-й кадр (30 = раз в секунду)"
+    subtitle_language: Optional[str] = Field(
+        default="ru",
+        description="Предпочитаемый язык субтитров (ru, en, auto)"
+    )
+    include_metadata: bool = Field(
+        default=True,
+        description="Включить метаданные видео (название, описание, статистика)"
     )
 
 

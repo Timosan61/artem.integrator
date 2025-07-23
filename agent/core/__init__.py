@@ -27,7 +27,7 @@ __all__ = [
     "EchoToolParams", 
     "MCPCommandParams",
     "ImageGenerationParams",
-    "VisionAnalysisParams",
+    "YouTubeAnalysisParams",
     "ToolResponse",
     "AgentResponse",
     "ConfirmationRequest",
