@@ -213,8 +213,8 @@ class ServiceManager:
     def _check_voice(self) -> str:
         """Проверяет Voice Service"""
         try:
-            from ..services.voice_service import voice_service
-            return "✅ ENABLED" if voice_service else "❌ DISABLED"
+            from voice.voice_service import VoiceService
+            return "✅ ENABLED" if config.voice.enabled else "❌ DISABLED"
         except:
             return "❌ NOT AVAILABLE"
     

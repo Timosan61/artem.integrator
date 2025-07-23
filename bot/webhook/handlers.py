@@ -9,11 +9,20 @@ from datetime import datetime
 from ..core.interfaces import Message, User, MessageType, UserRole
 from ..core.agent import AgentFactory
 from ..core.config import config
+
+logger = logging.getLogger(__name__)
+
 # Опциональные импорты сервисов
 try:
-    from ..services.voice_service import voice_service
-except ImportError:
+    from voice.voice_service import VoiceService
+    voice_service = VoiceService(
+        telegram_bot_token=config.telegram.token,
+        openai_api_key=config.openai.api_key
+    )
+    logger.info("✅ Voice service инициализирован")
+except ImportError as e:
     voice_service = None
+    logger.warning(f"⚠️ Voice service не доступен: {e}")
 
 try:
     from ..services.social_media_service import social_media_service
@@ -37,8 +46,6 @@ except ImportError:
 
 from ..auth import is_admin, get_user_mode
 from ..core.auto_admin import auto_admin_manager
-
-logger = logging.getLogger(__name__)
 
 
 class WebhookHandler:
@@ -105,22 +112,51 @@ class WebhookHandler:
             logger.info(f"🎤 Voice: {bool(voice)}")
             
             # Создаем объект пользователя
+            user_id = user_data.get('id')
+            username = user_data.get('username')
+            is_user_admin = is_admin(user_id, username)
+            
+            logger.info(f"🔑 User {user_id} (@{username}) admin check: {is_user_admin}")
+            
             user = User(
-                id=user_data.get('id'),
-                username=user_data.get('username'),
+                id=user_id,
+                username=username,
                 first_name=user_data.get('first_name'),
                 last_name=user_data.get('last_name'),
-                role=UserRole.ADMIN if is_admin(user_data.get('id')) else UserRole.USER
+                role=UserRole.ADMIN if is_user_admin else UserRole.USER
             )
+            
+            logger.info(f"👤 Created user object with role: {user.role.value}")
             
             # Определяем тип сообщения
             if voice:
                 message_type = MessageType.VOICE
-                # Обрабатываем голос через Voice Service
+                # Обрабатываем голос через Voice Service с MCP интеграцией
                 if voice_service and config.voice.enabled:
-                    text = await self._process_voice(voice, user.id)
-                    if not text:
-                        return {"ok": True, "description": "Voice processing failed"}
+                    mcp_result = await self._process_voice_to_mcp(voice, user.id)
+                    if mcp_result and mcp_result.get('success'):
+                        # Отправляем MCP результат напрямую
+                        try:
+                            from ..telegram_bot import bot
+                            response_text = mcp_result.get('mcp_response', 'Не удалось обработать запрос')
+                            logger.info(f"📤 Sending MCP voice response to {chat_id}")
+                            result = bot.send_message(chat_id, response_text)
+                            return {"ok": True, "response_sent": True, "message_id": result.message_id}
+                        except ImportError:
+                            # Fallback через requests
+                            import requests
+                            url = f"https://api.telegram.org/bot{config.telegram.token}/sendMessage"
+                            data = {"chat_id": chat_id, "text": mcp_result.get('mcp_response', 'Ошибка обработки')}
+                            resp = requests.post(url, json=data)
+                            return {"ok": True, "response_sent": resp.ok}
+                    else:
+                        error_msg = mcp_result.get('error', 'Ошибка обработки голоса')
+                        try:
+                            from ..telegram_bot import bot
+                            bot.send_message(chat_id, f"❌ {error_msg}")
+                        except ImportError:
+                            pass
+                        return {"ok": True, "description": "Voice MCP processing failed"}
                 else:
                     return {"ok": True, "description": "Voice service disabled"}
             elif text:
@@ -217,28 +253,30 @@ class WebhookHandler:
         
         return {"ok": True, "description": f"Business connection {'enabled' if is_enabled else 'disabled'}"}
     
-    async def _process_voice(self, voice_data: Dict[str, Any], user_id: int) -> Optional[str]:
-        """Обрабатывает голосовое сообщение"""
+    async def _process_voice_to_mcp(self, voice_data: Dict[str, Any], user_id: int) -> Dict[str, Any]:
+        """Обрабатывает голосовое сообщение через MCP"""
         try:
             file_id = voice_data.get('file_id')
             if not file_id:
-                return None
+                return {"success": False, "error": "No file_id in voice data"}
             
-            # Транскрибируем через Voice Service
-            result = await voice_service.process_voice_message(file_id, user_id)
+            # Обрабатываем через Voice Service с MCP интеграцией
+            result = await voice_service.process_voice_to_mcp(
+                voice_data, 
+                str(user_id), 
+                str(voice_data.get('file_id', 'unknown'))
+            )
             
-            if result and result.get('success'):
-                return result.get('text')
-            
-            return None
+            return result or {"success": False, "error": "Voice processing failed"}
             
         except Exception as e:
             logger.error(f"❌ Ошибка обработки голоса: {e}")
-            return None
+            return {"success": False, "error": f"Ошибка обработки голоса: {str(e)}"}
     
     async def _handle_special_command(self, message: Message) -> Optional[Dict[str, Any]]:
         """Обрабатывает специальные команды"""
         command = message.text.split()[0].lower()
+        logger.info(f"🎯 Handling special command: {command} for user {message.user.id} (role: {message.user.role.value})")
         
         # Команды для всех
         if command == '/start':
@@ -310,6 +348,7 @@ class WebhookHandler:
             return {"ok": True, "command": "mcp_enable"}
         
         # Админские команды
+        logger.info(f"🔐 Checking admin commands. User role: {message.user.role.value}, is ADMIN: {message.user.role == UserRole.ADMIN}")
         if message.user.role == UserRole.ADMIN:
             if command == '/clear':
                 success = await self.agent.clear_user_memory(message.user.id)
@@ -338,7 +377,8 @@ class WebhookHandler:
                         )
             
             # MCP команды через Claude Code (только для админов)
-            elif claude_code_service and (
+            logger.info(f"🔌 Checking MCP commands. Command: {command}, claude_code_service: {claude_code_service is not None}")
+            if claude_code_service and (
                 command.startswith('/mcp') or 
                 command == '/db' or 
                 command == '/docs' or
@@ -358,6 +398,7 @@ class WebhookHandler:
                         message.text, 
                         str(message.user.id)
                     )
+                    logger.info(f"🔧 MCP result: success={result.get('success')}, has_response={bool(result.get('response'))}")
                     
                     # Форматируем ответ
                     if result.get("success"):
@@ -369,6 +410,7 @@ class WebhookHandler:
                         response_text = f"❌ Ошибка: {result.get('error', 'Неизвестная ошибка')}"
                     
                     # Отправляем результат
+                    logger.info(f"📤 Sending MCP response to {message.chat_id}: {response_text[:100]}...")
                     bot.send_message(message.chat_id, response_text, parse_mode='Markdown')
                     logger.info(f"✅ MCP response sent to {message.chat_id}")
                     

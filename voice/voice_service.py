@@ -241,3 +241,84 @@ class VoiceService:
             TelegramAudioDownloader.cleanup_temp_files(older_than_hours=2)
         except Exception as e:
             logger.error(f"❌ Ошибка очистки временных файлов: {e}")
+
+    async def process_voice_to_mcp(
+        self, 
+        voice_data: Dict[str, Any], 
+        user_id: str, 
+        message_id: str,
+        language: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Обрабатывает голосовое сообщение и выполняет MCP команду через Claude Code SDK
+        
+        Args:
+            voice_data: Данные голосового сообщения от Telegram
+            user_id: ID пользователя
+            message_id: ID сообщения
+            language: Язык для транскрипции (опционально)
+        
+        Returns:
+            Dict с результатом MCP команды
+        """
+        # Сначала обрабатываем голосовое сообщение и получаем транскрипцию
+        voice_result = await self.process_voice_message(voice_data, user_id, message_id, language)
+        
+        if not voice_result["success"]:
+            return {
+                "success": False,
+                "error": voice_result["error"],
+                "voice_text": None,
+                "mcp_response": None
+            }
+        
+        voice_text = voice_result["text"]
+        
+        try:
+            # Импортируем ClaudeCodeService
+            from bot.services.claude_code_service import claude_code_service
+            
+            # Формируем команду для Claude Code SDK
+            mcp_command = f"/voice {voice_text}"
+            
+            logger.info(f"🎤 Выполнение MCP команды из голоса: {voice_text}")
+            
+            # Выполняем команду через Claude Code SDK
+            mcp_result = await claude_code_service.execute_mcp_command(
+                command=mcp_command,
+                user_id=user_id
+            )
+            
+            if mcp_result["success"]:
+                logger.info("✅ MCP команда успешно выполнена из голосового запроса")
+                return {
+                    "success": True,
+                    "voice_text": voice_text,
+                    "mcp_response": mcp_result["response"],
+                    "processing_time": voice_result.get("processing_time", 0)
+                }
+            else:
+                logger.error(f"❌ Ошибка MCP команды: {mcp_result.get('error', 'Unknown error')}")
+                return {
+                    "success": False,
+                    "error": f"Ошибка обработки запроса: {mcp_result.get('error', 'Неизвестная ошибка')}",
+                    "voice_text": voice_text,
+                    "mcp_response": None
+                }
+                
+        except ImportError:
+            logger.error("❌ ClaudeCodeService не доступен")
+            return {
+                "success": False,
+                "error": "Сервис управления инфраструктурой временно недоступен",
+                "voice_text": voice_text,
+                "mcp_response": None
+            }
+        except Exception as e:
+            logger.error(f"❌ Ошибка при выполнении MCP команды из голоса: {e}")
+            return {
+                "success": False,
+                "error": f"Ошибка обработки запроса: {str(e)}",
+                "voice_text": voice_text,
+                "mcp_response": None
+            }

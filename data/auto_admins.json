@@ -11,6 +11,12 @@
       "username": "test_user",
       "first_name": "Test",
       "added_at": "2025-07-22T17:16:59Z"
+    },
+    {
+      "user_id": 229838448,
+      "username": "aaatema",
+      "first_name": "Artem",
+      "added_at": "2025-07-23T04:20:35Z"
     }
   ]
 }

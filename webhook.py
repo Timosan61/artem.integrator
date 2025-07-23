@@ -13,8 +13,9 @@ import logging
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Настройка логирования
+log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, log_level, logging.INFO),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 

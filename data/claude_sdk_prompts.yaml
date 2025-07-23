@@ -1,0 +1,181 @@
+# Конфигурация промптов для Claude Code SDK
+# Этот файл определяет системные промпты и маппинги команд для MCP
+
+# Основной системный промпт для Claude Code SDK
+system_prompt: |
+  You are an MCP assistant that helps execute commands through Model Context Protocol servers.
+  
+  Available MCP servers:
+  1. DigitalOcean - for app management, deployments, databases, and infrastructure
+  2. Supabase - for database operations and project management  
+  3. Context7 - for documentation search and library references
+  
+  IMPORTANT RULES:
+  - NEVER use mcp__cloudflare__* functions - they are NOT available
+  - Only use functions from the three servers listed above
+  - Match the server to the task (apps/infrastructure = DigitalOcean, database operations = Supabase, docs = Context7)
+  - When a user asks about droplets, explain that this functionality is not yet available
+  
+  When executing commands:
+  - Use the appropriate MCP tool based on the command
+  - Format responses clearly and concisely
+  - Include relevant data from the MCP response
+  - Handle errors gracefully
+  - Return structured data when possible
+  
+  For voice commands (/voice prefix), understand natural language and execute the appropriate MCP operation.
+  
+  Important: Execute the requested MCP operation and return the result.
+
+# Доступные инструменты по категориям
+allowed_tools:
+  digitalocean:
+    apps:
+      - mcp__digitalocean__list_apps
+      - mcp__digitalocean__get_app
+      - mcp__digitalocean__create_app
+      - mcp__digitalocean__update_app
+      - mcp__digitalocean__delete_app
+      - mcp__digitalocean__validate_app_spec
+    deployments:
+      - mcp__digitalocean__list_deployments
+      - mcp__digitalocean__create_deployment
+      - mcp__digitalocean__get_deployment
+      - mcp__digitalocean__cancel_deployment
+      - mcp__digitalocean__get_deployment_logs_url
+      - mcp__digitalocean__download_logs
+    rollback:
+      - mcp__digitalocean__rollback_app
+      - mcp__digitalocean__validate_app_rollback
+      - mcp__digitalocean__commit_app_rollback
+      - mcp__digitalocean__revert_app_rollback
+    databases:
+      - mcp__digitalocean__list_databases_cluster
+      - mcp__digitalocean__create_database_cluster
+      - mcp__digitalocean__get_database_cluster
+      - mcp__digitalocean__list_database_cluster_users
+      - mcp__digitalocean__list_database_cluster_databases
+      - mcp__digitalocean__get_database_cluster_certificate
+      - mcp__digitalocean__list_database_connection_pools
+      - mcp__digitalocean__list_database_topics
+      - mcp__digitalocean__list_database_firewall_rules
+      - mcp__digitalocean__update_database_firewall_rules
+      - mcp__digitalocean__get_database_options
+    alerts:
+      - mcp__digitalocean__list_app_alerts
+      - mcp__digitalocean__update_app_alert_destinations
+    infrastructure:
+      - mcp__digitalocean__list_instance_sizes
+      - mcp__digitalocean__get_instance_size_by_slug
+      - mcp__digitalocean__list_app_regions
+    # Будущие функции для дроплетов
+    droplets_future:
+      - mcp__digitalocean__list_droplets
+      - mcp__digitalocean__create_droplet
+      - mcp__digitalocean__get_droplet
+      - mcp__digitalocean__delete_droplet
+      - mcp__digitalocean__droplet_resize
+      - mcp__digitalocean__droplet_enable_backups
+      
+  supabase:
+    projects:
+      - mcp__supabase__list_projects
+      - mcp__supabase__list_organizations
+    documentation:
+      - mcp__supabase__search_docs
+      
+  context7:
+    documentation:
+      - mcp__context7__resolve-library-id
+      - mcp__context7__get-library-docs
+
+# Маппинг команд на промпты и инструменты
+command_mappings:
+  # DigitalOcean команды
+  "/mcp apps": 
+    prompt: "List all DigitalOcean apps. Return the full list with names, IDs, regions, and status."
+    tools: ["mcp__digitalocean__list_apps"]
+    
+  "/mcp droplets":
+    prompt: "Droplet management is not yet available. Inform the user about available alternatives."
+    fallback_response: |
+      Управление дроплетами пока не доступно в MCP.
+      
+      Доступные команды DigitalOcean:
+      - /mcp apps - список приложений
+      - /mcp databases - список баз данных
+      - /mcp deployments - история деплойментов
+    
+  "/mcp databases":
+    prompt: "List all DigitalOcean database clusters with details."
+    tools: ["mcp__digitalocean__list_databases_cluster"]
+    
+  "/mcp deployments":
+    prompt: "List recent deployments. If app_id is provided, show deployments for that app."
+    tools: ["mcp__digitalocean__list_deployments"]
+    requires_context: true
+    
+  "/mcp app":
+    prompt: "Get details about a specific app. Extract app name or ID from the command."
+    tools: ["mcp__digitalocean__get_app"]
+    requires_context: true
+    
+  # Supabase команды
+  "/mcp projects":
+    prompt: "List all Supabase projects with their details."
+    tools: ["mcp__supabase__list_projects"]
+    
+  "/mcp organizations":
+    prompt: "List all Supabase organizations."
+    tools: ["mcp__supabase__list_organizations"]
+    
+  "/db":
+    prompt: "Execute SQL query on Supabase database."
+    tools: ["mcp__supabase__execute_sql"]
+    requires_context: true
+    
+  # Context7 команды
+  "/docs":
+    prompt: "Search documentation for the specified library and query."
+    tools: ["mcp__context7__resolve-library-id", "mcp__context7__get-library-docs"]
+    requires_context: true
+    
+  "/mcp context7":
+    prompt: "Search Context7 documentation for the specified topic."
+    tools: ["mcp__context7__get-library-docs"]
+    requires_context: true
+
+# Специальные промпты для разных контекстов
+context_prompts:
+  # Когда пользователь спрашивает про недоступные функции
+  unavailable_feature: |
+    This feature is not yet available in the current MCP implementation.
+    Please use one of the available commands or wait for future updates.
+    
+  # Когда нужно уточнение
+  clarification_needed: |
+    I need more information to execute this command.
+    Please provide: {missing_info}
+    
+  # Обработка ошибок
+  error_handling: |
+    An error occurred while executing the MCP command.
+    Error: {error_message}
+    Please check the command syntax and try again.
+
+# Настройки форматирования ответов
+response_formatting:
+  use_emojis: true
+  max_items_in_list: 10
+  truncate_long_values: true
+  max_value_length: 100
+  include_ids: true
+  include_timestamps: true
+  date_format: "%d.%m.%Y %H:%M"
+  
+# Настройки логирования
+logging:
+  log_prompts: true
+  log_responses: true
+  log_errors: true
+  max_log_length: 1000

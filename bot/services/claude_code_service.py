@@ -7,10 +7,12 @@ Claude Code Service - интеграция с Claude Code SDK для выпол�
 import logging
 import json
 import os
+import yaml
 from typing import Optional, Dict, Any, List, AsyncIterator
 from pathlib import Path
 import asyncio
 import anyio
+from datetime import datetime
 
 try:
     from claude_code_sdk import query, ClaudeCodeOptions, Message
@@ -49,6 +51,10 @@ class ClaudeCodeService:
         default_config = Path(__file__).parent.parent.parent / "data" / "mcp-servers.json"
         self.mcp_config_path = local_config if local_config.exists() else default_config
         
+        # Загружаем промпты из YAML файлов
+        self.voice_prompts = self._load_yaml_config("mcp_voice_prompts.yaml")
+        self.sdk_prompts = self._load_yaml_config("claude_sdk_prompts.yaml")
+        
         if not self.enabled:
             logger.warning("⚠️ Claude Code Service отключен: MCP или Anthropic не настроены")
             return
@@ -62,6 +68,40 @@ class ClaudeCodeService:
         os.environ["ANTHROPIC_AUTH_TOKEN"] = "sk-QNnXEpPxnV9OCIhr6IMUcXQu2b4Vsuq2biZVAFce0KIoUTsx"
             
         logger.info("✅ Claude Code Service инициализирован")
+    
+    def reload_prompts(self) -> None:
+        """
+        Перезагружает промпты из YAML файлов
+        Можно вызывать для обновления промптов без перезапуска сервиса
+        """
+        try:
+            self.voice_prompts = self._load_yaml_config("mcp_voice_prompts.yaml")
+            self.sdk_prompts = self._load_yaml_config("claude_sdk_prompts.yaml")
+            logger.info("✅ Промпты успешно перезагружены")
+        except Exception as e:
+            logger.error(f"❌ Ошибка перезагрузки промптов: {e}")
+    
+    def _load_yaml_config(self, filename: str) -> Dict[str, Any]:
+        """
+        Загружает конфигурацию из YAML файла
+        
+        Args:
+            filename: Имя файла в папке data
+            
+        Returns:
+            Словарь с конфигурацией или пустой словарь при ошибке
+        """
+        try:
+            yaml_path = Path(__file__).parent.parent.parent / "data" / filename
+            if yaml_path.exists():
+                with open(yaml_path, 'r', encoding='utf-8') as f:
+                    return yaml.safe_load(f) or {}
+            else:
+                logger.warning(f"⚠️ YAML файл не найден: {yaml_path}")
+                return {}
+        except Exception as e:
+            logger.error(f"❌ Ошибка загрузки YAML {filename}: {e}")
+            return {}
         
     async def execute_mcp_command(
         self, 
@@ -236,7 +276,6 @@ USE ONLY THESE FUNCTIONS. NO EXCEPTIONS."""
                     "error": "Claude Code SDK не установлен или недоступен"
                 }
             
-            logger.info(f"✅ MCP команда выполнена успешно: {command}")
             return result
             
         except Exception as e:
@@ -248,7 +287,7 @@ USE ONLY THESE FUNCTIONS. NO EXCEPTIONS."""
     
     def _format_mcp_prompt(self, command: str) -> str:
         """
-        Форматирует команду в промпт для Claude Code
+        Форматирует команду в промпт для Claude Code используя YAML конфигурацию
         
         Args:
             command: Исходная команда
@@ -256,6 +295,24 @@ USE ONLY THESE FUNCTIONS. NO EXCEPTIONS."""
         Returns:
             Промпт для SDK
         """
+        # Сначала проверяем маппинги из YAML
+        if self.sdk_prompts and 'command_mappings' in self.sdk_prompts:
+            mappings = self.sdk_prompts['command_mappings']
+            
+            # Ищем точное совпадение или префикс команды
+            for cmd_pattern, cmd_config in mappings.items():
+                if command.startswith(cmd_pattern):
+                    # Проверяем fallback для недоступных функций
+                    if 'fallback_response' in cmd_config:
+                        return cmd_config['fallback_response']
+                    else:
+                        return cmd_config.get('prompt', f"Execute MCP command: {command}")
+        
+        # Fallback на старую логику
+        return self._get_legacy_mcp_prompt(command)
+    
+    def _get_legacy_mcp_prompt(self, command: str) -> str:
+        """Старая логика форматирования промптов для обратной совместимости"""
         # Парсим команду
         parts = command.strip().split()
         
@@ -298,13 +355,97 @@ USE ONLY THESE FUNCTIONS. NO EXCEPTIONS."""
             query = command[13:].strip()
             return f"Search Context7 documentation: {query}"
             
+        elif command.startswith("/voice"):
+            # Обработка голосовых команд
+            voice_text = command[6:].strip()
+            return self._format_voice_mcp_prompt(voice_text)
+            
         else:
             # Общий случай
             return f"Execute MCP command: {command}"
     
+    def _format_voice_mcp_prompt(self, voice_text: str) -> str:
+        """
+        Форматирует голосовой текст в промпт для Claude Code используя YAML конфигурацию
+        
+        Args:
+            voice_text: Транскрибированный голосовой текст
+            
+        Returns:
+            Промпт для SDK с инструкциями для обработки
+        """
+        # Используем конфигурацию из YAML или fallback на старый промпт
+        if self.voice_prompts and 'voice_commands' in self.voice_prompts:
+            voice_config = self.voice_prompts['voice_commands']
+            system_prompt = voice_config.get('system_prompt', '')
+            scenarios = voice_config.get('scenarios', [])
+            default_response = voice_config.get('default_response', '')
+            
+            # Формируем промпт из YAML конфигурации
+            prompt_parts = [system_prompt]
+            prompt_parts.append(f'\nПользователь сказал: "{voice_text}"\n')
+            prompt_parts.append("Определи намерение пользователя и выполни соответствующее действие:\n")
+            
+            for i, scenario in enumerate(scenarios, 1):
+                triggers = ", ".join([f'"{t}"' for t in scenario.get('triggers', [])])
+                action = scenario.get('action', '')
+                fallback = scenario.get('fallback_message', '')
+                
+                prompt_parts.append(f"{i}. **{scenario.get('name', '')}** - триггеры: {triggers}")
+                if action and not fallback:
+                    prompt_parts.append(f"   - Используй {action}")
+                elif fallback:
+                    prompt_parts.append(f"   - Верни сообщение: {fallback}")
+                prompt_parts.append("")
+            
+            prompt_parts.append(default_response)
+            
+            return "\n".join(prompt_parts)
+        else:
+            # Fallback на старый промпт если YAML не загружен
+            return self._get_legacy_voice_prompt(voice_text)
+    
+    def _get_legacy_voice_prompt(self, voice_text: str) -> str:
+        """Старый промпт для обратной совместимости"""
+        return f"""Ты голосовой ассистент для управления инфраструктурой через естественный язык.
+
+Пользователь сказал: "{voice_text}"
+
+Определи намерение пользователя и выполни соответствующее действие:
+
+1. **Если спрашивает о приложениях** (например: "посмотри мои приложения", "какие у меня приложения в DigitalOcean", "список приложений"):
+   - Используй mcp__digitalocean__list_apps
+   - Верни список всех приложений с названиями, ID и регионами
+
+2. **Если спрашивает о конкретном приложении** (например: "информация о приложении sample-aspnetapp"):
+   - Извлеки имя приложения из текста
+   - Используй mcp__digitalocean__get_app чтобы получить детали
+
+3. **Если спрашивает о деплойментах** (например: "посмотри деплойменты", "история развертываний"):
+   - Используй mcp__digitalocean__list_deployments
+   - Покажи последние деплойменты
+
+4. **Если спрашивает о базах данных** (например: "посмотри базы данных", "какие у меня базы в DigitalOcean"):
+   - Используй mcp__digitalocean__list_databases_cluster
+
+ВАЖНО: Верни ответ в дружелюбном формате для Telegram с использованием эмодзи и понятного языка.
+
+Примеры хороших ответов:
+📁 **Ваши DigitalOcean приложения:**
+📦 **sample-aspnetapp**
+  🆔 ID: `6eb5ebe0-c0aa-4b98-9ee1-a4e471069702`
+  🌍 Регион: ams
+
+Если не понял запрос - вежливо попроси уточнить."""
+
     def _get_system_prompt(self) -> str:
-        """Возвращает системный промпт для Claude Code"""
-        return """You are an MCP assistant that helps execute commands through Model Context Protocol servers.
+        """Возвращает системный промпт для Claude Code из YAML конфигурации"""
+        # Используем промпт из YAML или fallback
+        if self.sdk_prompts and 'system_prompt' in self.sdk_prompts:
+            return self.sdk_prompts['system_prompt']
+        else:
+            # Fallback на старый промпт
+            return """You are an MCP assistant that helps execute commands through Model Context Protocol servers.
 
 Available MCP servers:
 1. DigitalOcean - for app management and deployments (mcp__digitalocean__*)
@@ -323,11 +464,13 @@ When executing commands:
 - Handle errors gracefully
 - Return structured data when possible
 
+For voice commands (/voice prefix), understand natural language and execute the appropriate MCP operation.
+
 Important: Execute the requested MCP operation and return the result."""
     
     def _get_allowed_tools(self, command: str) -> List[str]:
         """
-        Возвращает список разрешенных инструментов для команды
+        Возвращает список разрешенных инструментов для команды используя YAML конфигурацию
         
         Args:
             command: Команда для выполнения
@@ -335,6 +478,50 @@ Important: Execute the requested MCP operation and return the result."""
         Returns:
             Список разрешенных инструментов
         """
+        tools = []
+        
+        # Сначала проверяем маппинги команд из YAML
+        if self.sdk_prompts and 'command_mappings' in self.sdk_prompts:
+            mappings = self.sdk_prompts['command_mappings']
+            
+            # Ищем подходящую команду
+            for cmd_pattern, cmd_config in mappings.items():
+                if command.startswith(cmd_pattern):
+                    cmd_tools = cmd_config.get('tools', [])
+                    tools.extend(cmd_tools)
+                    break
+        
+        # Если не нашли в маппингах, используем allowed_tools из YAML
+        if not tools and self.sdk_prompts and 'allowed_tools' in self.sdk_prompts:
+            allowed = self.sdk_prompts['allowed_tools']
+            
+            # Определяем какой сервер использовать по ключевым словам
+            if any(word in command.lower() for word in ['app', 'deploy', 'droplet', 'database', 'digitalocean', 'do']):
+                # Добавляем все инструменты DigitalOcean
+                for category in allowed.get('digitalocean', {}).values():
+                    if isinstance(category, list):
+                        tools.extend(category)
+            
+            if any(word in command.lower() for word in ['project', 'supabase', 'sql', 'db']):
+                # Добавляем инструменты Supabase
+                for category in allowed.get('supabase', {}).values():
+                    if isinstance(category, list):
+                        tools.extend(category)
+            
+            if any(word in command.lower() for word in ['doc', 'context7', 'library']):
+                # Добавляем инструменты Context7
+                for category in allowed.get('context7', {}).values():
+                    if isinstance(category, list):
+                        tools.extend(category)
+        
+        # Fallback на старую логику если YAML не помог
+        if not tools:
+            return self._get_legacy_allowed_tools(command)
+            
+        return list(set(tools))  # Убираем дубликаты
+    
+    def _get_legacy_allowed_tools(self, command: str) -> List[str]:
+        """Старая логика определения инструментов для обратной совместимости"""
         # Базовые инструменты для всех команд
         tools = ["mcp"]
         
@@ -392,24 +579,96 @@ Important: Execute the requested MCP operation and return the result."""
                                 error_message = content
                         else:
                             result_data = content
-                            if isinstance(content, str) and len(content) > 0:
-                                try:
-                                    # Пытаемся распарсить JSON результат
-                                    import json
-                                    data = json.loads(content)
-                                    if isinstance(data, dict) and 'apps' in data:
-                                        apps = data['apps']
-                                        if apps:
+                            logger.debug(f"🔧 Processing result_data: {type(content)} - {content}")
+                            
+                            if isinstance(content, list) and content:
+                                # Обработка списка результатов от MCP
+                                for item in content:
+                                    if isinstance(item, dict) and item.get('type') == 'text' and item.get('text'):
+                                        text_content = item['text']
+                                        logger.debug(f"🔧 Processing text content: {text_content}")
+                                        
+                                        # Парсим текстовый формат
+                                        lines = text_content.strip().split('\n')
+                                        apps_list = []
+                                        
+                                        for line in lines:
+                                            line = line.strip()
+                                            if line and 'App ID:' in line and 'Name:' in line:
+                                                # Формат: "App ID: 6eb5ebe0-c0aa-4b98-9ee1-a4e471069702 Name: sample-aspnetapp Region: ams"
+                                                try:
+                                                    # Ищем ключевые слова
+                                                    app_id = None
+                                                    name = None
+                                                    region = None
+                                                    
+                                                    if 'App ID:' in line:
+                                                        app_id_part = line.split('App ID:')[1].split('Name:')[0].strip()
+                                                        app_id = app_id_part.strip()
+                                                    if 'Name:' in line:
+                                                        name_part = line.split('Name:')[1].split('Region:')[0].strip()
+                                                        name = name_part.strip()
+                                                    if 'Region:' in line:
+                                                        region_part = line.split('Region:')[1].strip()
+                                                        region = region_part.strip()
+                                                    
+                                                    if app_id and name:
+                                                        apps_list.append({
+                                                            'id': app_id,
+                                                            'name': name,
+                                                            'region': region or 'N/A'
+                                                        })
+                                                except Exception as e:
+                                                    logger.debug(f"⚠️ Ошибка парсинга строки '{line}': {e}")
+                                        
+                                        if apps_list:
                                             mcp_result_text = "📁 **DigitalOcean Apps**\n\n"
-                                            for app in apps:
-                                                mcp_result_text += f"📦 **{app.get('spec', {}).get('name', 'Unknown')}**\n"
-                                                mcp_result_text += f"  🆔 ID: `{app.get('id', 'N/A')}`\n"
-                                                mcp_result_text += f"  🌍 Регион: {app.get('spec', {}).get('region', 'N/A')}\n"
-                                                mcp_result_text += f"  ✅ Статус: {app.get('active_deployment', {}).get('phase', 'Unknown')}\n\n"
+                                            for app in apps_list:
+                                                mcp_result_text += f"📦 **{app['name']}**\n"
+                                                mcp_result_text += f"  🆔 ID: `{app['id']}`\n"
+                                                mcp_result_text += f"  🌍 Регион: {app['region']}\n\n"
+                                            logger.debug(f"✅ Сформирован результат: {mcp_result_text[:100]}...")
+                                        elif "No apps found" in text_content:
+                                            mcp_result_text = "📁 **DigitalOcean Apps**\n\nℹ️ Нет приложений в вашем аккаунте DigitalOcean."
                                         else:
-                                            mcp_result_text = "📁 **DigitalOcean Apps**\n\nℹ️ Нет приложений в вашем аккаунте."
-                                except:
-                                    pass
+                                            mcp_result_text = text_content
+                                        
+                                        break  # Используем первый элемент
+                            elif isinstance(content, str) and content:
+                                # Обрабатываем текстовый ответ напрямую
+                                lines = content.strip().split('\n')
+                                apps_list = []
+                                
+                                # Парсим текстовый формат
+                                current_app = {}
+                                for line in lines:
+                                    line = line.strip()
+                                    if line.startswith('App ID:') and 'Name:' in line:
+                                        # Формат: "App ID: 6eb5ebe0-c0aa-4b98-9ee1-a4e471069702 Name: sample-aspnetapp Region: ams"
+                                        parts = line.split()
+                                        if len(parts) >= 6:
+                                            app_id = parts[2] if len(parts) > 2 else 'N/A'
+                                            name = parts[4] if len(parts) > 4 else 'Unknown'
+                                            region = parts[6] if len(parts) > 6 else 'N/A'
+                                            apps_list.append({
+                                                'id': app_id,
+                                                'name': name,
+                                                'region': region
+                                            })
+                                
+                                if apps_list:
+                                    mcp_result_text = "📁 **DigitalOcean Apps**\n\n"
+                                    for app in apps_list:
+                                        mcp_result_text += f"📦 **{app['name']}**\n"
+                                        mcp_result_text += f"  🆔 ID: `{app['id']}`\n"
+                                        mcp_result_text += f"  🌍 Регион: {app['region']}\n\n"
+                                else:
+                                    # Если нет приложений
+                                    if "No apps found" in content or "нет приложений" in content.lower():
+                                        mcp_result_text = "📁 **DigitalOcean Apps**\n\nℹ️ Нет приложений в вашем аккаунте DigitalOcean."
+                                    else:
+                                        # Используем оригинальный текст
+                                        mcp_result_text = content
                         
             # Проверяем текстовые сообщения на ошибки
             # Проверяем наличие атрибута role (может быть SystemMessage без role)
@@ -422,7 +681,7 @@ Important: Execute the requested MCP operation and return the result."""
         assistant_messages = [m for m in messages if hasattr(m, 'role') and m.role == "assistant" and hasattr(m, 'content') and m.content]
         
         # Обрабатываем content, который может быть строкой или списком блоков
-        response_text = "Команда выполнена"
+        response_text = None
         
         # Если есть результат MCP, используем его
         if mcp_result_text:
@@ -430,17 +689,21 @@ Important: Execute the requested MCP operation and return the result."""
             response_text = mcp_result_text
         elif assistant_messages:
             last_msg = assistant_messages[-1]
-            if isinstance(last_msg.content, str):
-                response_text = last_msg.content
+            if isinstance(last_msg.content, str) and last_msg.content.strip():
+                response_text = last_msg.content.strip()
             elif isinstance(last_msg.content, list):
                 # Собираем текст из всех текстовых блоков
                 text_parts = []
                 for block in last_msg.content:
-                    if hasattr(block, 'text'):
+                    if hasattr(block, 'text') and block.text:
                         text_parts.append(block.text)
                     elif isinstance(block, dict) and block.get('text'):
                         text_parts.append(block['text'])
-                response_text = '\n'.join(text_parts) if text_parts else "Команда выполнена"
+                response_text = '\n'.join(text_parts) if text_parts else None
+        
+        # Если ничего не найдено, используем стандартное сообщение
+        if not response_text:
+            response_text = "Команда выполнена"
         
         # Ограничиваем размер ответа для предотвращения проблем с большими JSON
         MAX_RESPONSE_LENGTH = 4000  # Telegram limit
@@ -450,12 +713,15 @@ Important: Execute the requested MCP operation and return the result."""
         # Определяем успешность - если есть mcp_result_text, это успех
         success = bool(mcp_result_text) or (not error_message)
         
+        # Используем response_text как финальный ответ
+        logger.debug(f"📊 Final response: {response_text[:200]}...")
+        
         return {
             "success": success,
             "command": command,
             "response": response_text,
             "data": result_data,
-            "error": error_message if not mcp_result_text else None,
+            "error": error_message if not response_text or response_text == "Команда выполнена" else None,
             "message_count": len(messages)
         }
     

@@ -11,6 +11,7 @@ from functools import wraps
 from typing import Optional, Dict, Any, List
 
 from .config import ADMIN_USER_ID, ADMIN_USERNAMES
+from .core.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -26,17 +27,28 @@ def is_admin(user_id: int, username: str = None) -> bool:
     Returns:
         bool: True если пользователь админ
     """
-    # Проверка по User ID
-    if ADMIN_USER_ID and user_id == ADMIN_USER_ID:
-        return True
-    
-    # Проверка по username
-    if username and ADMIN_USERNAMES:
-        clean_username = username.lower().replace('@', '')
-        admin_usernames = [u.lower().strip() for u in ADMIN_USERNAMES if u.strip()]
-        if clean_username in admin_usernames:
+    # Проверка по User ID из списка
+    if user_id and config.admin.user_ids:
+        if user_id in config.admin.user_ids:
+            logger.debug(f"✅ User {user_id} is admin (found in ID list)")
             return True
     
+    # Проверка по username
+    if username and config.admin.usernames:
+        clean_username = username.lower().replace('@', '')
+        admin_usernames = [u.lower().strip() for u in config.admin.usernames if u.strip()]
+        if clean_username in admin_usernames:
+            logger.debug(f"✅ User @{username} is admin (found in username list)")
+            return True
+    
+    # Проверка auto-admin manager
+    from .core.auto_admin import auto_admin_manager
+    admins = auto_admin_manager.get_all_admins()
+    if user_id and str(user_id) in admins:
+        logger.debug(f"✅ User {user_id} is admin (found in auto-admin)")
+        return True
+    
+    logger.debug(f"❌ User {user_id} (@{username}) is NOT admin")
     return False
 
 
