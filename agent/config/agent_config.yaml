@@ -1,0 +1,100 @@
+# Конфигурация Intelligent Agent
+
+agent:
+  model: gpt-4-turbo-preview
+  temperature: 0.7
+  max_tokens: 2000
+  
+# Настройки подтверждения действий
+confirmation:
+  always_confirm: true  # Всегда запрашивать подтверждение
+  
+  confidence_thresholds:
+    auto_execute: 0.95  # Выполнять без подтверждения при высокой уверенности
+    request_confirmation: 0.7  # Запрашивать подтверждение
+    request_clarification: 0.0  # Запрашивать уточнение
+  
+  # Ключевые слова для определения типа анализа
+  tool_preferences:
+    statistics_keywords: 
+      - "просмотры"
+      - "лайки" 
+      - "статистика"
+      - "метрики"
+      - "вовлеченность"
+      - "engagement"
+    
+    content_keywords:
+      - "контент"
+      - "что в видео"
+      - "о чем"
+      - "покажи"
+      - "анализ видео"
+      - "что происходит"
+    
+    both_keywords:
+      - "полный анализ"
+      - "все данные"
+      - "подробно"
+      - "почему вирусное"
+      - "комплексный"
+
+# Доступные инструменты
+tools:
+  - name: mcp_executor
+    enabled: true
+    description: "Выполнение MCP команд через Claude SDK"
+    triggers:
+      - "приложения"
+      - "базы данных"
+      - "сервера"
+      - "деплой"
+      - "digitalocean"
+    confidence_threshold: 0.8
+    
+  - name: image_generator
+    enabled: true
+    description: "Генерация изображений через DALL-E"
+    triggers:
+      - "нарисуй"
+      - "создай изображение"
+      - "сгенерируй картинку"
+      - "изобрази"
+    confidence_threshold: 0.9
+    
+  - name: vision_analyzer
+    enabled: true
+    description: "Анализ видео и изображений через GPT-4 Vision"
+    triggers:
+      - "проанализируй видео"
+      - "что на картинке"
+      - "распознай"
+      - "опиши изображение"
+    confidence_threshold: 0.85
+    
+  - name: apify_instagram
+    enabled: true
+    description: "Анализ Instagram контента через Apify"
+    triggers:
+      - "instagram"
+      - "reels"
+      - "рилс"
+      - "инстаграм"
+    confidence_threshold: 0.9
+
+# Настройки маршрутизации
+routing:
+  fallback_to_chat: true  # Использовать обычный чат если инструмент не найден
+  require_confirmation: true  # Требовать подтверждение перед выполнением
+  
+# Настройки памяти
+memory:
+  provider: zep  # zep, in_memory, supabase
+  context_window: 10  # Количество сообщений в контексте
+  summarize_after: 20  # Суммаризировать после N сообщений
+  
+# Настройки обучения на предпочтениях пользователя
+learning:
+  enabled: true
+  min_patterns_to_learn: 3  # Минимум повторений для запоминания
+  preference_ttl_days: 30  # Срок хранения предпочтений
