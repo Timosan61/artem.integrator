@@ -46,8 +46,8 @@ class IntelligentAgentService:
         # Создаем агента
         self.agent = IntelligentAgent(api_key=api_key, model="gpt-4o")
         
-        # Создаем реестр инструментов
-        self.tool_registry = ToolRegistry()
+        # Используем реестр инструментов агента
+        self.tool_registry = self.agent.tool_registry
         
         # Регистрируем инструменты
         self._register_tools()

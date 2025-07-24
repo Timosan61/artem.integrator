@@ -130,6 +130,8 @@ class MCPTool(BaseTool):
             "list apps": "/mcp apps",
             "show apps": "/mcp apps",
             "приложения": "/mcp apps",
+            "help": "/mcp help",
+            "list tools": "/mcp help",
             "show databases": "/db SELECT datname FROM pg_database",
             "list databases": "/db SELECT datname FROM pg_database", 
             "базы данных": "/db SELECT datname FROM pg_database",

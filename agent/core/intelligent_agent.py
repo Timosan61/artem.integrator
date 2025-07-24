@@ -42,6 +42,7 @@ class IntelligentAgent:
         self.intent_classifier = IntentClassifier()
         self.tool_registry = ToolRegistry()
         self.preference_manager = preference_manager
+        self.logger = logger
         
         # Доступные функции
         self.available_functions = self._get_available_functions()
@@ -199,6 +200,11 @@ class IntelligentAgent:
             intent, confidence, metadata = self.intent_classifier.classify(message)
             logger.info(f"🎯 Классифицировано намерение: {intent.value} (confidence: {confidence:.2f})")
             
+            # Дополнительное логирование для вопросов об инструментах
+            message_lower = message.lower()
+            if any(word in message_lower for word in ["инструмент", "tool", "mcp", "умеешь", "можешь"]):
+                logger.info(f"📝 Обнаружен вопрос об инструментах/возможностях")
+            
             # Проверяем предпочтения пользователя
             available_tools = self._get_available_tool_types(intent)
             preferred_tool = self.preference_manager.get_preferred_tool(
@@ -290,6 +296,10 @@ class IntelligentAgent:
 - Для анализа YouTube видео - используй analyze_youtube_video
 - Для тестирования - используй echo_tool
 
+ВАЖНО: Когда пользователь спрашивает о доступных инструментах, MCP инструментах или что ты умеешь делать, 
+ОБЯЗАТЕЛЬНО используй execute_mcp_command с командой "help" или "list tools" для получения актуального списка возможностей.
+НЕ отвечай про инструменты без их вызова!
+
 Отвечай на русском языке, кратко и по существу."""
         
         messages = [{"role": "system", "content": system_prompt}]
@@ -319,6 +329,10 @@ class IntelligentAgent:
             function_args["user_id"] = user_id
         
         logger.info(f"🔧 Вызов функции: {function_name} с параметрами: {function_args}")
+        
+        # Логируем для MCP команд
+        if function_name == "execute_mcp_command":
+            logger.info(f"🔌 MCP команда обнаружена: {function_args.get('command')}")
         
         # Выполняем функцию
         if function_name == "echo_tool":
@@ -351,17 +365,26 @@ class IntelligentAgent:
             return ToolResponse(success=False, error=str(e))
     
     async def _execute_mcp_command(self, params: MCPCommandParams) -> ToolResponse:
-        """Заглушка для MCP команд"""
-        # TODO: Интегрировать с реальным ClaudeCodeService
-        return ToolResponse(
-            success=True,
-            data={
-                "message": f"MCP команда '{params.command}' будет выполнена",
-                "command": params.command,
-                "user": params.user_id
-            },
-            metadata={"tool_type": ToolType.MCP}
-        )
+        """Выполняет MCP команду через реальный инструмент"""
+        # Получаем MCP tool из реестра
+        mcp_tool = self.tool_registry.get_tool("mcp_executor")
+        
+        if mcp_tool:
+            logger.info(f"🔧 Выполнение MCP команды через tool: {params.command}")
+            result = await mcp_tool.execute(params)
+            return result
+        else:
+            # Fallback на заглушку
+            logger.warning("⚠️ MCP tool не найден в реестре, используем заглушку")
+            return ToolResponse(
+                success=True,
+                data={
+                    "message": f"MCP команда '{params.command}' будет выполнена",
+                    "command": params.command,
+                    "user": params.user_id
+                },
+                metadata={"tool_type": ToolType.MCP}
+            )
     
     async def _execute_image_generation(self, params: ImageGenerationParams) -> ToolResponse:
         """Заглушка для генерации изображений"""

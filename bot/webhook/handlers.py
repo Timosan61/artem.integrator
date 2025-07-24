@@ -46,8 +46,10 @@ except ImportError:
 
 try:
     from ..services.intelligent_agent_service import intelligent_agent_service
-except ImportError:
+    logger.info(f"✅ Intelligent Agent Service импортирован: {intelligent_agent_service is not None}")
+except ImportError as e:
     intelligent_agent_service = None
+    logger.error(f"❌ Не удалось импортировать Intelligent Agent Service: {e}")
 
 from ..auth import is_admin, get_user_mode
 from ..core.auto_admin import auto_admin_manager
@@ -136,32 +138,26 @@ class WebhookHandler:
             # Определяем тип сообщения
             if voice:
                 message_type = MessageType.VOICE
-                # Обрабатываем голос через Voice Service с MCP интеграцией
+                # Сначала транскрибируем голос
                 if voice_service and config.voice.enabled:
-                    mcp_result = await self._process_voice_to_mcp(voice, user.id)
-                    if mcp_result and mcp_result.get('success'):
-                        # Отправляем MCP результат напрямую
-                        try:
-                            from ..telegram_bot import bot
-                            response_text = mcp_result.get('mcp_response', 'Не удалось обработать запрос')
-                            logger.info(f"📤 Sending MCP voice response to {chat_id}")
-                            result = bot.send_message(chat_id, response_text)
-                            return {"ok": True, "response_sent": True, "message_id": result.message_id}
-                        except ImportError:
-                            # Fallback через requests
-                            import requests
-                            url = f"https://api.telegram.org/bot{config.telegram.token}/sendMessage"
-                            data = {"chat_id": chat_id, "text": mcp_result.get('mcp_response', 'Ошибка обработки')}
-                            resp = requests.post(url, json=data)
-                            return {"ok": True, "response_sent": resp.ok}
+                    logger.info("🎤 Транскрибируем голосовое сообщение...")
+                    transcription_result = await self._process_voice_transcription(voice, user.id)
+                    
+                    if transcription_result and transcription_result.get('success'):
+                        # Получаем транскрибированный текст
+                        text = transcription_result.get('text')
+                        logger.info(f"✅ Транскрипция: {text}")
+                        
+                        # Теперь обрабатываем как обычное текстовое сообщение
+                        message_type = MessageType.TEXT
                     else:
-                        error_msg = mcp_result.get('error', 'Ошибка обработки голоса')
+                        error_msg = transcription_result.get('error', 'Ошибка транскрипции')
                         try:
                             from ..telegram_bot import bot
                             bot.send_message(chat_id, f"❌ {error_msg}")
                         except ImportError:
                             pass
-                        return {"ok": True, "description": "Voice MCP processing failed"}
+                        return {"ok": True, "description": "Voice transcription failed"}
                 else:
                     return {"ok": True, "description": "Voice service disabled"}
             elif text:
@@ -194,6 +190,10 @@ class WebhookHandler:
                     return social_response
             
             # Проверяем доступность Intelligent Agent для админов
+            logger.info(f"🔍 Проверка Intelligent Agent: service={intelligent_agent_service is not None}, "
+                       f"available={intelligent_agent_service.is_available() if intelligent_agent_service else False}, "
+                       f"user_role={message.user.role.value}")
+            
             if intelligent_agent_service and intelligent_agent_service.is_available() and message.user.role == UserRole.ADMIN:
                 # Используем Intelligent Agent для обработки
                 logger.info(f"🧠 Using Intelligent Agent for user {message.user.id}")
@@ -201,6 +201,9 @@ class WebhookHandler:
             else:
                 # Обрабатываем через обычного AI агента
                 logger.info(f"🤖 Using standard agent for user {message.user.id}")
+                logger.info(f"   Причина: service={intelligent_agent_service is not None}, "
+                           f"available={intelligent_agent_service.is_available() if intelligent_agent_service else 'N/A'}, "
+                           f"is_admin={message.user.role == UserRole.ADMIN}")
                 response = await self.agent.process_message(message)
             
             # Отправляем ответ
@@ -266,8 +269,28 @@ class WebhookHandler:
         
         return {"ok": True, "description": f"Business connection {'enabled' if is_enabled else 'disabled'}"}
     
+    async def _process_voice_transcription(self, voice_data: Dict[str, Any], user_id: int) -> Dict[str, Any]:
+        """Транскрибирует голосовое сообщение без MCP"""
+        try:
+            file_id = voice_data.get('file_id')
+            if not file_id:
+                return {"success": False, "error": "No file_id in voice data"}
+            
+            # Используем базовый метод транскрипции
+            result = await voice_service.process_voice(
+                voice_data, 
+                str(user_id), 
+                str(voice_data.get('file_id', 'unknown'))
+            )
+            
+            return result or {"success": False, "error": "Voice processing failed"}
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка транскрипции голоса: {e}")
+            return {"success": False, "error": f"Ошибка транскрипции: {str(e)}"}
+    
     async def _process_voice_to_mcp(self, voice_data: Dict[str, Any], user_id: int) -> Dict[str, Any]:
-        """Обрабатывает голосовое сообщение через MCP"""
+        """Обрабатывает голосовое сообщение через MCP (старый метод, оставлен для совместимости)"""
         try:
             file_id = voice_data.get('file_id')
             if not file_id:

@@ -20,6 +20,17 @@ webhook_service = WebhookService()
 @router.post("")
 async def webhook_endpoint(request: Request):
     """Основной webhook endpoint для приема updates от Telegram"""
+    return await _handle_webhook_request(request)
+
+
+@router.post("/telegram")
+async def webhook_telegram_endpoint(request: Request):
+    """Webhook endpoint для приема updates от Telegram (альтернативный путь)"""
+    return await _handle_webhook_request(request)
+
+
+async def _handle_webhook_request(request: Request):
+    """Общая логика обработки webhook запросов"""
     try:
         # Получаем данные
         update = await request.json()
