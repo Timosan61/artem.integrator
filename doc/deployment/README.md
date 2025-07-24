@@ -367,6 +367,36 @@ curl https://your-app.up.railway.app/
 curl https://your-app.up.railway.app/webhook/info
 ```
 
+## Локальная разработка с Cloudflare Tunnel
+
+### Быстрый старт
+
+Для локальной разработки с публичным webhook используйте Cloudflare Tunnel:
+
+1. **Установка cloudflared:**
+```bash
+curl -L -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+chmod +x cloudflared
+```
+
+2. **Запуск туннеля:**
+```bash
+./cloudflared tunnel --url http://localhost:8000
+```
+
+3. **Установка webhook:**
+```bash
+# Используйте URL из вывода cloudflared
+curl -X POST https://api.telegram.org/bot<TOKEN>/setWebhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-tunnel.trycloudflare.com/webhook",
+    "secret_token": "your-secret-token"
+  }'
+```
+
+Подробнее см. [Cloudflare Webhook Setup Guide](../CLOUDFLARE_WEBHOOK_SETUP.md)
+
 ## Troubleshooting
 
 ### Webhook не работает
@@ -380,6 +410,8 @@ curl https://api.telegram.org/bot<TOKEN>/getWebhookInfo
 ```bash
 curl https://your-app.up.railway.app/webhook/set
 ```
+
+3. Для локальной разработки используйте Cloudflare Tunnel (см. выше)
 
 ### Ошибки памяти
 

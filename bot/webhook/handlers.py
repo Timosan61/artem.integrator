@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 
 from ..core.interfaces import Message, User, MessageType, UserRole
-from ..core.agent import AgentFactory
+from ..core.unified_agent import unified_agent
 from ..core.config import config
 
 logger = logging.getLogger(__name__)
@@ -35,21 +35,10 @@ except ImportError:
     ytdlp_service = None
 
 try:
-    from ..services.claude_code_service import claude_code_service
+    from ..services.unified_mcp_service import unified_mcp_service
 except ImportError:
-    claude_code_service = None
+    unified_mcp_service = None
 
-try:
-    from ..services.mcp_docker_manager import mcp_docker_manager
-except ImportError:
-    mcp_docker_manager = None
-
-try:
-    from ..services.intelligent_agent_service import intelligent_agent_service
-    logger.info(f"✅ Intelligent Agent Service импортирован: {intelligent_agent_service is not None}")
-except ImportError as e:
-    intelligent_agent_service = None
-    logger.error(f"❌ Не удалось импортировать Intelligent Agent Service: {e}")
 
 from ..auth import is_admin, get_user_mode
 from ..core.auto_admin import auto_admin_manager
@@ -60,7 +49,7 @@ class WebhookHandler:
     
     def __init__(self):
         """Инициализация обработчика"""
-        self.agent = AgentFactory.get_agent()
+        self.agent = unified_agent
         self.update_counter = 0
         self.last_updates = []
     
@@ -189,22 +178,9 @@ class WebhookHandler:
                 if social_response:
                     return social_response
             
-            # Проверяем доступность Intelligent Agent для админов
-            logger.info(f"🔍 Проверка Intelligent Agent: service={intelligent_agent_service is not None}, "
-                       f"available={intelligent_agent_service.is_available() if intelligent_agent_service else False}, "
-                       f"user_role={message.user.role.value}")
-            
-            if intelligent_agent_service and intelligent_agent_service.is_available() and message.user.role == UserRole.ADMIN:
-                # Используем Intelligent Agent для обработки
-                logger.info(f"🧠 Using Intelligent Agent for user {message.user.id}")
-                response = await intelligent_agent_service.process_message(message)
-            else:
-                # Обрабатываем через обычного AI агента
-                logger.info(f"🤖 Using standard agent for user {message.user.id}")
-                logger.info(f"   Причина: service={intelligent_agent_service is not None}, "
-                           f"available={intelligent_agent_service.is_available() if intelligent_agent_service else 'N/A'}, "
-                           f"is_admin={message.user.role == UserRole.ADMIN}")
-                response = await self.agent.process_message(message)
+            # Обрабатываем через унифицированный агент
+            logger.info(f"🔗 Processing message through UnifiedAgent")
+            response = await self.agent.process_message(message)
             
             # Отправляем ответ
             try:
@@ -423,29 +399,9 @@ class WebhookHandler:
                     logger.error(f"❌ Failed to send clear memory response: {e}", exc_info=True)
                 return {"ok": True, "command": "clear"}
             
-            # MCP управление Docker (только для админов)
-            elif mcp_docker_manager and message.text.startswith('/mcp '):
-                parts = message.text.split()
-                if len(parts) >= 2:
-                    mcp_command = parts[1].lower()
-                    server_name = parts[2] if len(parts) > 2 else None
-                    
-                    # Обрабатываем команды управления
-                    if mcp_command in ['start', 'stop', 'restart', 'status', 'logs', 'health']:
-                        return await self._handle_mcp_docker_command(
-                            message, mcp_command, server_name
-                        )
-            
-            # MCP команды через Claude Code (только для админов)
-            logger.info(f"🔌 Checking MCP commands. Command: {command}, claude_code_service: {claude_code_service is not None}")
-            if claude_code_service and (
-                command.startswith('/mcp') or 
-                command == '/db' or 
-                command == '/docs' or
-                message.text.startswith('/mcp ') or
-                message.text.startswith('/db ') or
-                message.text.startswith('/docs ')
-            ):
+            # MCP команды через унифицированный сервис (только для админов)
+            logger.info(f"🔌 Checking MCP commands. Command: {command}, unified_mcp_service: {unified_mcp_service is not None}")
+            if unified_mcp_service and unified_mcp_service.is_mcp_command(message.text):
                 logger.info(f"🔌 Processing MCP command: {message.text}")
                 from ..telegram_bot import bot
                 
@@ -453,26 +409,20 @@ class WebhookHandler:
                     # Отправляем сообщение о начале обработки
                     bot.send_message(message.chat_id, "⏳ Выполняю MCP команду...")
                     
-                    # Выполняем команду через Claude Code
-                    result = await claude_code_service.execute_mcp_command(
-                        message.text, 
-                        str(message.user.id)
-                    )
-                    logger.info(f"🔧 MCP result: success={result.get('success')}, has_response={bool(result.get('response'))}")
+                    # Выполняем команду через унифицированный сервис
+                    response_text = await unified_mcp_service.process_message(message.text)
                     
-                    # Форматируем ответ
-                    if result.get("success"):
-                        response_text = result.get("response", "Команда выполнена")
+                    if response_text:
                         # Ограничиваем длину сообщения
                         if len(response_text) > 4000:
                             response_text = response_text[:3997] + "..."
+                        
+                        # Отправляем результат
+                        logger.info(f"📤 Sending MCP response to {message.chat_id}: {response_text[:100]}...")
+                        bot.send_message(message.chat_id, response_text, parse_mode='Markdown')
+                        logger.info(f"✅ MCP response sent to {message.chat_id}")
                     else:
-                        response_text = f"❌ Ошибка: {result.get('error', 'Неизвестная ошибка')}"
-                    
-                    # Отправляем результат
-                    logger.info(f"📤 Sending MCP response to {message.chat_id}: {response_text[:100]}...")
-                    bot.send_message(message.chat_id, response_text, parse_mode='Markdown')
-                    logger.info(f"✅ MCP response sent to {message.chat_id}")
+                        bot.send_message(message.chat_id, "❌ Не удалось выполнить MCP команду")
                     
                 except Exception as e:
                     logger.error(f"❌ Failed to execute MCP command: {e}", exc_info=True)

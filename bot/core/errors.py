@@ -101,6 +101,13 @@ class RateLimitError(BotError):
         self.window = window
 
 
+class MCPError(ServiceError):
+    """Ошибка MCP сервиса"""
+    
+    def __init__(self, message: str, **kwargs):
+        super().__init__("MCP", message, user_message="Ошибка выполнения MCP команды", **kwargs)
+
+
 class ErrorHandler:
     """
     Централизованный обработчик ошибок

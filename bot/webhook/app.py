@@ -65,23 +65,8 @@ def create_app(title: Optional[str] = None, description: Optional[str] = None) -
     async def startup_event():
         logger.info("🚀 Webhook server starting...")
         
-        # Проверяем, используется ли Cloudflare Tunnel
-        if config.cloudflare_tunnel_token:
-            logger.info("🌐 Используется Cloudflare Tunnel")
-            from ..services.cloudflare_tunnel import cloudflare_tunnel
-            
-            # Устанавливаем webhook через Cloudflare
-            success = await cloudflare_tunnel.setup_webhook(
-                config.telegram_bot_token,
-                config.webhook_secret_token
-            )
-            if success:
-                logger.info("✅ Webhook установлен через Cloudflare Tunnel")
-            else:
-                logger.error("❌ Ошибка установки webhook через Cloudflare")
-        
-        # Fallback на обычную установку webhook
-        elif hasattr(config, 'webhook') and hasattr(config.webhook, 'auto_setup') and config.webhook.auto_setup:
+        # Проверяем настройки webhook
+        if hasattr(config, 'webhook') and hasattr(config.webhook, 'auto_setup') and config.webhook.auto_setup:
             from .services import WebhookService
             webhook_service = WebhookService()
             result = await webhook_service.setup_webhook()

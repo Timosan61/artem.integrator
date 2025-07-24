@@ -182,13 +182,31 @@ ADMIN_PASSWORD = "your_secure_admin_password"
 
 ### ШАГ 7: Установка webhook
 
-#### 7.1 Автоматическая установка
+#### 7.1 Для локальной разработки (Cloudflare Tunnel)
+```bash
+# Установите cloudflared
+curl -L -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+chmod +x cloudflared
+
+# Запустите туннель
+./cloudflared tunnel --url http://localhost:8000
+
+# Установите webhook через полученный URL
+curl -X POST https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-tunnel.trycloudflare.com/webhook",
+    "secret_token": "your_secret_token"
+  }'
+```
+
+#### 7.2 Для production (Railway)
 Перейдите по ссылке (замените на ваш Railway URL):
 ```
 https://your-bot-production-abcd.up.railway.app/webhook/set
 ```
 
-#### 7.2 Проверка статуса
+#### 7.3 Проверка статуса
 ```
 https://your-bot-production-abcd.up.railway.app/
 ```

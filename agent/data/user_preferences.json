@@ -1,0 +1,56 @@
+{
+  "229838448": {
+    "general_chat:mcp_executor": {
+      "user_id": "229838448",
+      "intent": "general_chat",
+      "tool_type": "mcp_executor",
+      "confidence_threshold": 0.8,
+      "usage_count": 3,
+      "success_count": 3,
+      "last_used": "2025-07-24T20:15:28.319918",
+      "created_at": "2025-07-24T20:15:08.408522",
+      "examples": [
+        {
+          "message": "Какие у меня есть mcp?",
+          "success": true,
+          "tool_params": {
+            "command": "/mcp apps",
+            "response": "App ID: 6eb5ebe0-c0aa-4b98-9ee1-a4e471069702\nName: sample-aspnetapp\nRegion: ams\n",
+            "mcp_response": [
+              {
+                "type": "text",
+                "text": "App ID: 6eb5ebe0-c0aa-4b98-9ee1-a4e471069702\nName: sample-aspnetapp\nRegion: ams\n"
+              }
+            ]
+          },
+          "timestamp": "2025-07-24T20:15:08.408527"
+        },
+        {
+          "message": "Какие у меня есть mcp?",
+          "success": true,
+          "tool_params": {
+            "command": "/mcp list mcp",
+            "response": "Web search results for query: \"MCP servers list commands DigitalOcean Supabase Context7\"\n\nSearch results for query: MCP servers list commands DigitalOcean Supabase Context7\n\nLinks: [{\"title\":\"apappascs/mcp-servers-hub - GitHub\",\"url\":\"https://github.com/apappascs/mcp-servers-hub\"},{\"title\":\"Model context protocol (MCP) | Supabase Docs\",\"url\":\"https://supabase.com/docs/guides/getting-started/mcp\"},{\"title\":\"apappascs/mcp-servers-hub - GitHub\",\"url\":\"https://github.com/apappascs/mcp-servers-hub\"},{\"title\":\"modelcontextprotocol/servers: Model Context Protocol ... - GitHub\",\"url\":\"https://github.com/modelcontextprotocol/servers\"},{\"title\":\"apappascs/mcp-servers-hub - GitHub\",\"url\":\"https://github.com/apappascs/mcp-servers-hub\"},{\"title\":\"modelcontextprotocol/servers: Model Context Protocol ... - GitHub\",\"url\":\"https://github.com/modelcontextprotocol/servers\"}]\n\nBelow is a concise “cheat-sheet” of the MCP servers, install commands and example tool calls that surfaced when searching for:\n\n“MCP servers list commands DigitalOcean Supabase Context7”.\n\n────────────────────────────────────────────────────────\n1.  DigitalOcean MCP servers\n   • Official (DigitalOcean Labs)  \n     npx -y @digitalocean/mcp-server-do@latest  \n     Tools: list_droplets, get_droplet, create_droplet, list_domains, list_firewalls … (60+ endpoints)\n\n   • Universal “Cloud manage” multi-cloud  \n     npx -y @rainhan99/cloud-manage-mcp  \n     Tools: do_create_vm, do_list_vms, do_delete_vm, do_list_dns, etc.\n\n   • Database-only  \n     npx -y @oladejibidmus/digitalocean-database-mcp  \n\n────────────────────────────────────────────────────────\n2.  Supabase MCP servers\n   • Official / recommended (read-only by default)  \n     npx -y @supabase/mcp-server-supabase@latest --read-only --project-ref=<ref>\n\n   • Local Postgres bridge (direct DB)  \n     npx -y @modelcontextprotocol/server-postgres <SUPABASE_DB_URL>\n\n   • Clipboard → Supabase uploader (image helper)  \n     npx -y @martinbowling/clipboard-to-supabase\n\n   • Emoji-style style persistence  \n     npx -y @identimoji/emojikey-mcp-supabase\n\n────────────────────────────────────────────────────────\n3.  Context7 (OpenCtx → MCP bridge)\n   • Community build  \n     npx -y @context7/context7-mcp\n\n   Tools:  \n   • search_docs – search package/API docs  \n   • get_snippet – fetch exact code example  \n   • list_packages – enumerate indexed libraries\n\n────────────────────────────────────────────────────────\n4.  How to list available tools once the server is running\nInside any MCP client (Cursor, Claude Desktop, Windsurf, etc.) you will see a hammer/“MCP” icon.  \nClicking it shows the auto-discovered tool names; or ask the assistant:\n\n“List the exact tool names exposed by the <server> server.”\n\n────────────────────────────────────────────────────────\n5.  Quick start snippets\n\nCursor example – `.cursor/mcp.json`\n{\n  \"mcpServers\": {\n    \"digitalocean\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@digitalocean/mcp-server-do@latest\"],\n      \"env\": { \"DO_TOKEN\": \"<your-do-token>\" }\n    },\n    \"supabase\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@supabase/mcp-server-supabase@latest\", \"--read-only\", \"--project-ref=<ref>\"],\n      \"env\": { \"SUPABASE_ACCESS_TOKEN\": \"<pat>\" }\n    },\n    \"context7\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@context7/context7-mcp\"]\n    }\n  }\n}\n\nClaude Code CLI add:\nclaude mcp add digitalocean -s local -e DO_TOKEN=$DO_TOKEN -- npx -y @digitalocean/mcp-server-do@latest\nclaude mcp add supabase -s local -e SUPABASE_ACCESS_TOKEN=$SBT -- npx -y @supabase/mcp-server-supabase@latest --read-only --project-ref=$REF\nclaude mcp add context7 -s local -- npx -y @context7/context7-mcp\n\n────────────────────────────────────────────────────────\nThat is the complete, up-to-date list of install commands and example usage for DigitalOcean, Supabase and Context7 MCP servers.",
+            "mcp_response": "Web search results for query: \"MCP servers list commands DigitalOcean Supabase Context7\"\n\nSearch results for query: MCP servers list commands DigitalOcean Supabase Context7\n\nLinks: [{\"title\":\"apappascs/mcp-servers-hub - GitHub\",\"url\":\"https://github.com/apappascs/mcp-servers-hub\"},{\"title\":\"Model context protocol (MCP) | Supabase Docs\",\"url\":\"https://supabase.com/docs/guides/getting-started/mcp\"},{\"title\":\"apappascs/mcp-servers-hub - GitHub\",\"url\":\"https://github.com/apappascs/mcp-servers-hub\"},{\"title\":\"modelcontextprotocol/servers: Model Context Protocol ... - GitHub\",\"url\":\"https://github.com/modelcontextprotocol/servers\"},{\"title\":\"apappascs/mcp-servers-hub - GitHub\",\"url\":\"https://github.com/apappascs/mcp-servers-hub\"},{\"title\":\"modelcontextprotocol/servers: Model Context Protocol ... - GitHub\",\"url\":\"https://github.com/modelcontextprotocol/servers\"}]\n\nBelow is a concise “cheat-sheet” of the MCP servers, install commands and example tool calls that surfaced when searching for:\n\n“MCP servers list commands DigitalOcean Supabase Context7”.\n\n────────────────────────────────────────────────────────\n1.  DigitalOcean MCP servers\n   • Official (DigitalOcean Labs)  \n     npx -y @digitalocean/mcp-server-do@latest  \n     Tools: list_droplets, get_droplet, create_droplet, list_domains, list_firewalls … (60+ endpoints)\n\n   • Universal “Cloud manage” multi-cloud  \n     npx -y @rainhan99/cloud-manage-mcp  \n     Tools: do_create_vm, do_list_vms, do_delete_vm, do_list_dns, etc.\n\n   • Database-only  \n     npx -y @oladejibidmus/digitalocean-database-mcp  \n\n────────────────────────────────────────────────────────\n2.  Supabase MCP servers\n   • Official / recommended (read-only by default)  \n     npx -y @supabase/mcp-server-supabase@latest --read-only --project-ref=<ref>\n\n   • Local Postgres bridge (direct DB)  \n     npx -y @modelcontextprotocol/server-postgres <SUPABASE_DB_URL>\n\n   • Clipboard → Supabase uploader (image helper)  \n     npx -y @martinbowling/clipboard-to-supabase\n\n   • Emoji-style style persistence  \n     npx -y @identimoji/emojikey-mcp-supabase\n\n────────────────────────────────────────────────────────\n3.  Context7 (OpenCtx → MCP bridge)\n   • Community build  \n     npx -y @context7/context7-mcp\n\n   Tools:  \n   • search_docs – search package/API docs  \n   • get_snippet – fetch exact code example  \n   • list_packages – enumerate indexed libraries\n\n────────────────────────────────────────────────────────\n4.  How to list available tools once the server is running\nInside any MCP client (Cursor, Claude Desktop, Windsurf, etc.) you will see a hammer/“MCP” icon.  \nClicking it shows the auto-discovered tool names; or ask the assistant:\n\n“List the exact tool names exposed by the <server> server.”\n\n────────────────────────────────────────────────────────\n5.  Quick start snippets\n\nCursor example – `.cursor/mcp.json`\n{\n  \"mcpServers\": {\n    \"digitalocean\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@digitalocean/mcp-server-do@latest\"],\n      \"env\": { \"DO_TOKEN\": \"<your-do-token>\" }\n    },\n    \"supabase\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@supabase/mcp-server-supabase@latest\", \"--read-only\", \"--project-ref=<ref>\"],\n      \"env\": { \"SUPABASE_ACCESS_TOKEN\": \"<pat>\" }\n    },\n    \"context7\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"@context7/context7-mcp\"]\n    }\n  }\n}\n\nClaude Code CLI add:\nclaude mcp add digitalocean -s local -e DO_TOKEN=$DO_TOKEN -- npx -y @digitalocean/mcp-server-do@latest\nclaude mcp add supabase -s local -e SUPABASE_ACCESS_TOKEN=$SBT -- npx -y @supabase/mcp-server-supabase@latest --read-only --project-ref=$REF\nclaude mcp add context7 -s local -- npx -y @context7/context7-mcp\n\n────────────────────────────────────────────────────────\nThat is the complete, up-to-date list of install commands and example usage for DigitalOcean, Supabase and Context7 MCP servers."
+          },
+          "timestamp": "2025-07-24T20:15:15.418018"
+        },
+        {
+          "message": "Какие у меня есть mcp?",
+          "success": true,
+          "tool_params": {
+            "command": "/mcp list mcp",
+            "response": "App ID: 6eb5ebe0-c0aa-4b98-9ee1-a4e471069702\nName: sample-aspnetapp\nRegion: ams\n",
+            "mcp_response": [
+              {
+                "type": "text",
+                "text": "App ID: 6eb5ebe0-c0aa-4b98-9ee1-a4e471069702\nName: sample-aspnetapp\nRegion: ams\n"
+              }
+            ]
+          },
+          "timestamp": "2025-07-24T20:15:28.319923"
+        }
+      ]
+    }
+  }
+}
