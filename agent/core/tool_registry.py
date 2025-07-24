@@ -132,6 +132,15 @@ class ToolRegistry:
         
         return schemas
     
+    def list_tools(self) -> List[str]:
+        """
+        Возвращает список имен всех зарегистрированных инструментов
+        
+        Returns:
+            Список имен инструментов
+        """
+        return list(self._tools.keys())
+    
     async def execute_tool(
         self, 
         tool_name: str, 

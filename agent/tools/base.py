@@ -28,9 +28,8 @@ class BaseTool(ABC):
     """Базовый класс для всех инструментов"""
     
     def __init__(self):
-        self.metadata = self.get_metadata()
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self.logger.info(f"🔧 Инструмент {self.metadata.name} инициализирован")
+        self.logger.info(f"🔧 Инструмент {self.__class__.__name__} инициализирован")
     
     @abstractmethod
     def get_metadata(self) -> ToolMetadata:

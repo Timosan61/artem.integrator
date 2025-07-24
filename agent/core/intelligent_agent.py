@@ -3,7 +3,7 @@
 """
 import json
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
 from openai import AsyncOpenAI
 from datetime import datetime
 
@@ -12,6 +12,13 @@ from .models import (
     EchoToolParams, MCPCommandParams, ImageGenerationParams,
     YouTubeAnalysisParams, ToolType
 )
+from .intents import Intent
+from .preference_manager import preference_manager
+from .intent_classifier import IntentClassifier
+from .tool_registry import ToolRegistry
+
+if TYPE_CHECKING:
+    from ..tools.base import BaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +37,11 @@ class IntelligentAgent:
         self.client = AsyncOpenAI(api_key=api_key)
         self.model = model
         self.conversation_history = []
+        
+        # Инициализируем компоненты
+        self.intent_classifier = IntentClassifier()
+        self.tool_registry = ToolRegistry()
+        self.preference_manager = preference_manager
         
         # Доступные функции
         self.available_functions = self._get_available_functions()
@@ -142,7 +154,7 @@ class IntelligentAgent:
                             "extract_subtitles": {
                                 "type": "boolean",
                                 "description": "Извлечь субтитры видео",
-                                "default": true
+                                "default": True
                             },
                             "subtitle_language": {
                                 "type": "string",
@@ -152,7 +164,7 @@ class IntelligentAgent:
                             "include_metadata": {
                                 "type": "boolean",
                                 "description": "Включить метаданные видео",
-                                "default": true
+                                "default": True
                             },
                             "user_id": {
                                 "type": "string",
@@ -183,8 +195,20 @@ class IntelligentAgent:
             AgentResponse с результатом обработки
         """
         try:
-            # Подготавливаем сообщения
-            messages = self._prepare_messages(message, context)
+            # Классифицируем намерение
+            intent, confidence, metadata = self.intent_classifier.classify(message)
+            logger.info(f"🎯 Классифицировано намерение: {intent.value} (confidence: {confidence:.2f})")
+            
+            # Проверяем предпочтения пользователя
+            available_tools = self._get_available_tool_types(intent)
+            preferred_tool = self.preference_manager.get_preferred_tool(
+                user_id, intent, available_tools
+            )
+            
+            # Подготавливаем сообщения с учетом предпочтений
+            messages = self._prepare_messages_with_preferences(
+                message, context, intent, preferred_tool
+            )
             
             # Вызываем OpenAI с function calling
             response = await self.client.chat.completions.create(
@@ -205,6 +229,20 @@ class IntelligentAgent:
                     user_id
                 )
                 
+                # Определяем тип использованного инструмента
+                tool_type = self._get_tool_type_from_call(assistant_message.tool_calls[0])
+                
+                # Записываем выбор для обучения
+                if tool_type:
+                    self.preference_manager.record_choice(
+                        user_id=user_id,
+                        message=message,
+                        intent=intent,
+                        tool_type=tool_type,
+                        success=tool_response.success,
+                        tool_params=tool_response.data
+                    )
+                
                 # Получаем финальный ответ с результатами функций
                 final_response = await self._get_final_response(
                     messages,
@@ -216,15 +254,17 @@ class IntelligentAgent:
                     message=final_response,
                     tool_used=tool_response.metadata.get("tool_type") if tool_response.metadata else None,
                     tool_response=tool_response,
-                    confidence=0.95,
-                    requires_confirmation=False
+                    confidence=confidence,
+                    requires_confirmation=False,
+                    intent=intent
                 )
             else:
                 # Обычный ответ без инструментов
                 return AgentResponse(
                     message=assistant_message.content or "Не могу сформировать ответ",
-                    confidence=0.9,
-                    requires_confirmation=False
+                    confidence=confidence,
+                    requires_confirmation=False,
+                    intent=intent
                 )
                 
         except Exception as e:
@@ -378,3 +418,73 @@ class IntelligentAgent:
         )
         
         return final_response.choices[0].message.content or "Операция выполнена"
+    
+    def _get_available_tool_types(self, intent: Intent) -> List[ToolType]:
+        """Получает доступные типы инструментов для намерения"""
+        # Мапинг намерений на инструменты
+        intent_to_tools = {
+            Intent.MCP_COMMAND: [ToolType.MCP],
+            Intent.IMAGE_GENERATION: [ToolType.IMAGE_GENERATOR],
+            Intent.YOUTUBE_ANALYSIS: [ToolType.YOUTUBE_ANALYZER],
+            Intent.GENERAL_QUESTION: [ToolType.ECHO],
+            Intent.GENERAL_CHAT: [ToolType.ECHO],
+            Intent.UNKNOWN: [ToolType.ECHO, ToolType.MCP]
+        }
+        
+        return intent_to_tools.get(intent, [ToolType.ECHO])
+    
+    def _prepare_messages_with_preferences(
+        self,
+        message: str,
+        context: Optional[List[Dict[str, str]]],
+        intent: Intent,
+        preferred_tool: Optional[tuple[ToolType, float]]
+    ) -> List[Dict[str, str]]:
+        """Подготавливает сообщения с учетом предпочтений"""
+        system_prompt = """Ты - умный AI ассистент с доступом к различным инструментам.
+
+Анализируй запросы пользователя и используй подходящие инструменты:
+- Для вопросов об инфраструктуре (приложения, базы данных, серверы) - используй execute_mcp_command
+- Для генерации изображений - используй generate_image
+- Для анализа YouTube видео - используй analyze_youtube_video
+- Для тестирования - используй echo_tool
+
+Отвечай на русском языке, кратко и по существу."""
+        
+        # Добавляем информацию о предпочтениях если есть
+        if preferred_tool:
+            tool_type, confidence = preferred_tool
+            tool_hints = {
+                ToolType.MCP: "execute_mcp_command",
+                ToolType.IMAGE_GENERATOR: "generate_image",
+                ToolType.YOUTUBE_ANALYZER: "analyze_youtube_video",
+                ToolType.ECHO: "echo_tool"
+            }
+            
+            if tool_type in tool_hints:
+                system_prompt += f"\n\nВАЖНО: Пользователь предпочитает использовать {tool_hints[tool_type]} для подобных запросов (уверенность: {confidence:.0%})."
+        
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Добавляем контекст если есть
+        if context:
+            messages.extend(context)
+        
+        # Добавляем текущее сообщение
+        messages.append({"role": "user", "content": message})
+        
+        return messages
+    
+    def _get_tool_type_from_call(self, tool_call) -> Optional[ToolType]:
+        """Определяет тип инструмента по вызову функции"""
+        function_name = tool_call.function.name
+        
+        # Мапинг имен функций на типы
+        function_to_type = {
+            "echo_tool": ToolType.ECHO,
+            "execute_mcp_command": ToolType.MCP,
+            "generate_image": ToolType.IMAGE_GENERATOR,
+            "analyze_youtube_video": ToolType.YOUTUBE_ANALYZER
+        }
+        
+        return function_to_type.get(function_name)

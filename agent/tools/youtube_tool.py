@@ -16,6 +16,11 @@ from ..core.models import BaseToolParams, ToolResponse, YouTubeAnalysisParams, T
 class YouTubeAnalyzerTool(BaseTool):
     """Инструмент для анализа YouTube видео"""
     
+    @property
+    def metadata(self) -> ToolMetadata:
+        """Свойство для совместимости с ToolRegistry"""
+        return self.get_metadata()
+    
     def __init__(self, api_key: Optional[str] = None):
         super().__init__()
         self.api_key = api_key or os.getenv("YOUTUBE_API_KEY")

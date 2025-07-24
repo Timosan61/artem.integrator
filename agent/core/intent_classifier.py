@@ -6,19 +6,11 @@ import logging
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 import yaml
-from enum import Enum
 
 from ..core.models import ToolType
+from .intents import Intent
 
 logger = logging.getLogger(__name__)
-
-
-class Intent(str, Enum):
-    """Типы намерений пользователя"""
-    MCP_COMMAND = "mcp_command"
-    YOUTUBE_ANALYSIS = "youtube_analysis"
-    GENERAL_CHAT = "general_chat"
-    CLARIFICATION_NEEDED = "clarification_needed"
 
 
 class IntentPattern:

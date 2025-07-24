@@ -38,6 +38,11 @@ class MCPTool(BaseTool):
             estimated_time="5-30 секунд"
         )
     
+    @property
+    def metadata(self) -> ToolMetadata:
+        """Свойство для совместимости с ToolRegistry"""
+        return self.get_metadata()
+    
     def get_openai_schema(self) -> Dict[str, Any]:
         return {
             "type": "function",
@@ -90,7 +95,7 @@ class MCPTool(BaseTool):
                         data={
                             "command": formatted_command,
                             "response": result.get("response", "Команда выполнена"),
-                            "mcp_response": result.get("mcp_response")
+                            "mcp_response": result.get("data") or result.get("mcp_response")
                         },
                         metadata={
                             "tool_type": ToolType.MCP,

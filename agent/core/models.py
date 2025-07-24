@@ -6,11 +6,14 @@ from typing import Optional, Dict, Any, List
 from enum import Enum
 from datetime import datetime
 
+from .intents import Intent
+
 
 class ToolType(str, Enum):
     """Типы доступных инструментов"""
     MCP = "mcp_executor"
     YOUTUBE_ANALYZER = "youtube_analyzer"
+    IMAGE_GENERATOR = "image_generator"
     ECHO = "echo_tool"  # для тестирования
 
 
@@ -91,6 +94,7 @@ class AgentResponse(BaseModel):
     tool_response: Optional[ToolResponse] = None
     requires_confirmation: bool = False
     confidence: float = Field(ge=0.0, le=1.0)
+    intent: Optional[Intent] = None
     metadata: Optional[Dict[str, Any]] = None
     timestamp: datetime = Field(default_factory=datetime.now)
 

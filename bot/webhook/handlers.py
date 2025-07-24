@@ -44,6 +44,11 @@ try:
 except ImportError:
     mcp_docker_manager = None
 
+try:
+    from ..services.intelligent_agent_service import intelligent_agent_service
+except ImportError:
+    intelligent_agent_service = None
+
 from ..auth import is_admin, get_user_mode
 from ..core.auto_admin import auto_admin_manager
 
@@ -179,6 +184,7 @@ class WebhookHandler:
             if text and text.startswith('/'):
                 special_response = await self._handle_special_command(message)
                 if special_response:
+                    # Важно: возвращаем сразу после обработки команды
                     return special_response
             
             # Проверяем Social Media интент
@@ -187,8 +193,15 @@ class WebhookHandler:
                 if social_response:
                     return social_response
             
-            # Обрабатываем через AI агента
-            response = await self.agent.process_message(message)
+            # Проверяем доступность Intelligent Agent для админов
+            if intelligent_agent_service and intelligent_agent_service.is_available() and message.user.role == UserRole.ADMIN:
+                # Используем Intelligent Agent для обработки
+                logger.info(f"🧠 Using Intelligent Agent for user {message.user.id}")
+                response = await intelligent_agent_service.process_message(message)
+            else:
+                # Обрабатываем через обычного AI агента
+                logger.info(f"🤖 Using standard agent for user {message.user.id}")
+                response = await self.agent.process_message(message)
             
             # Отправляем ответ
             try:
@@ -350,7 +363,31 @@ class WebhookHandler:
         # Админские команды
         logger.info(f"🔐 Checking admin commands. User role: {message.user.role.value}, is ADMIN: {message.user.role == UserRole.ADMIN}")
         if message.user.role == UserRole.ADMIN:
-            if command == '/clear':
+            # Команда для статуса Intelligent Agent
+            if command == '/agent':
+                from ..telegram_bot import bot
+                if intelligent_agent_service:
+                    status = intelligent_agent_service.get_status()
+                    status_text = "🧠 **Intelligent Agent Status**\n\n"
+                    status_text += f"Enabled: {'✅' if status['enabled'] else '❌'}\n"
+                    status_text += f"Available: {'✅' if status['available'] else '❌'}\n"
+                    
+                    if status['tools']:
+                        status_text += f"\n**Registered Tools:**\n"
+                        for tool in status['tools']:
+                            status_text += f"• {tool}\n"
+                    
+                    status_text += f"\n**Active Confirmations:** {status['active_confirmations']}"
+                else:
+                    status_text = "❌ Intelligent Agent Service не доступен"
+                
+                try:
+                    bot.send_message(message.chat_id, status_text, parse_mode='Markdown')
+                except Exception as e:
+                    logger.error(f"❌ Failed to send agent status: {e}")
+                return {"ok": True, "command": "agent"}
+            
+            elif command == '/clear':
                 success = await self.agent.clear_user_memory(message.user.id)
                 from ..telegram_bot import bot
                 try:
@@ -488,6 +525,16 @@ class WebhookHandler:
 Серверы: supabase, digitalocean, context7, cloudflare
 
 """
+            agent_section = ""
+            if intelligent_agent_service and intelligent_agent_service.is_available():
+                agent_section = """<b>🧠 Intelligent Agent:</b>
+/agent - Статус Intelligent Agent
+• Автоматическая классификация намерений
+• Интеллектуальный выбор инструментов
+• Обучение на ваших предпочтениях
+
+"""
+            
             return f"""
 <b>📋 Команды администратора:</b>
 
@@ -497,7 +544,7 @@ class WebhookHandler:
 /status - Статус всех сервисов
 /test - Тестовый режим
 
-{mcp_section}<b>🎤 Голосовые сообщения:</b>
+{agent_section}{mcp_section}<b>🎤 Голосовые сообщения:</b>
 Отправьте голосовое сообщение для транскрипции
 
 <b>💬 Обычный чат:</b>

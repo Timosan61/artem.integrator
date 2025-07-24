@@ -10,6 +10,11 @@ from ..core.models import BaseToolParams, ToolResponse, EchoToolParams, ToolType
 class EchoTool(BaseTool):
     """Инструмент для эхо-ответов (тестирование)"""
     
+    @property
+    def metadata(self) -> ToolMetadata:
+        """Свойство для совместимости с ToolRegistry"""
+        return self.get_metadata()
+    
     def get_metadata(self) -> ToolMetadata:
         return ToolMetadata(
             name="echo_tool",
