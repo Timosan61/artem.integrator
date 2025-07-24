@@ -546,13 +546,10 @@ class TestService:
                     "error": "MCP not enabled"
                 }
             
-            from ..mcp_manager import MCPManager
-            mcp_manager = MCPManager()
-            
-            # Здесь можно реализовать тестирование MCP
+            # MCP тестирование теперь через Claude Code SDK
             return {
                 "success": False,
-                "error": "MCP testing not implemented yet"
+                "error": "MCP testing through Claude Code SDK not implemented yet"
             }
             
         except Exception as e:
