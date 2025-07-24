@@ -30,9 +30,9 @@ except ImportError:
     social_media_service = None
 
 try:
-    from ..services.youtube_transcript_service import youtube_transcript_service
+    from ..services.ytdlp_service import ytdlp_service
 except ImportError:
-    youtube_transcript_service = None
+    ytdlp_service = None
 
 try:
     from ..services.claude_code_service import claude_code_service
@@ -277,7 +277,7 @@ class WebhookHandler:
                 return {"success": False, "error": "No file_id in voice data"}
             
             # Используем базовый метод транскрипции
-            result = await voice_service.process_voice(
+            result = await voice_service.process_voice_message(
                 voice_data, 
                 str(user_id), 
                 str(voice_data.get('file_id', 'unknown'))

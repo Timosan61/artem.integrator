@@ -1,8 +1,10 @@
 FROM python:3.12-slim
 
-# FORCE REBUILD - MCP VERSION: 2025-07-17-mcp-v1
-# Cache bust timestamp: 2025-07-17T20:26:00Z
-ARG CACHE_BUST=2025-07-17-mcp-v1
+# Обновляем систему и устанавливаем необходимые пакеты
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
@@ -14,17 +16,25 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем весь проект включая voice модуль
+# Устанавливаем Claude Code SDK
+RUN pip install claude-code-sdk==0.0.13 --no-deps
+
+# Копируем весь проект
 COPY . .
 
-# Проверяем наличие важных директорий
-RUN ls -la /app/voice || echo "Voice module not found"
+# Создаем необходимые директории
+RUN mkdir -p /app/logs /app/data
 
-# Создаем директорию для логов
-RUN mkdir -p /app/logs
-
-# Устанавливаем переменную окружения для Python
+# Устанавливаем переменные окружения
 ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
-# Запускаем webhook сервер
-CMD ["python", "webhook.py"]
+# Проверяем наличие модулей
+RUN python -c "import bot; print('✅ Bot module loaded')"
+RUN python -c "from bot.webhook.app import create_app; print('✅ Webhook app loaded')"
+
+# Открываем порт
+EXPOSE 8000
+
+# Запускаем приложение
+CMD ["python", "-m", "uvicorn", "bot.webhook.app:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
