@@ -3,6 +3,7 @@
 """
 
 import logging
+import requests
 from typing import Dict, Any, Optional
 from datetime import datetime
 
@@ -42,6 +43,133 @@ except ImportError:
 
 from ..auth import is_admin, get_user_mode
 from ..core.auto_admin import auto_admin_manager
+
+
+def send_business_message(chat_id: int, text: str, business_connection_id: str) -> Dict[str, Any]:
+    """
+    Отправка сообщения через Business API используя прямой HTTP запрос
+    (pyTelegramBotAPI не поддерживает business_connection_id)
+    
+    Args:
+        chat_id: ID чата для отправки
+        text: Текст сообщения
+        business_connection_id: ID Business подключения
+        
+    Returns:
+        Dict[str, Any]: Результат отправки с деталями
+    """
+    # Валидация входных данных
+    if not chat_id:
+        logger.error("❌ chat_id не может быть пустым")
+        return {"success": False, "error": "Invalid chat_id", "details": "chat_id is required"}
+    
+    if not text or not text.strip():
+        logger.error("❌ text не может быть пустым")
+        return {"success": False, "error": "Invalid text", "details": "text is required and cannot be empty"}
+    
+    if not business_connection_id:
+        logger.error("❌ business_connection_id не может быть пустым")
+        return {"success": False, "error": "Invalid business_connection_id", "details": "business_connection_id is required"}
+    
+    # Ограничение длины сообщения
+    if len(text) > 4096:
+        logger.warning(f"⚠️ Сообщение слишком длинное ({len(text)} символов), обрезаю до 4096")
+        text = text[:4093] + "..."
+    
+    url = f"https://api.telegram.org/bot{config.telegram.token}/sendMessage"
+    data = {
+        "chat_id": chat_id,
+        "text": text,
+        "business_connection_id": business_connection_id,
+        "parse_mode": "HTML"  # Добавляем поддержку HTML форматирования
+    }
+    
+    try:
+        logger.info(f"📤 Отправляю Business сообщение: chat_id={chat_id}, connection_id={business_connection_id}, text_length={len(text)}")
+        
+        response = requests.post(url, json=data, timeout=15)
+        result = response.json()
+        
+        logger.info(f"📨 Telegram API response: status={response.status_code}, ok={result.get('ok')}")
+        
+        if response.status_code == 200 and result.get("ok"):
+            message_id = result.get('result', {}).get('message_id', 'Unknown')
+            logger.info(f"✅ Business сообщение отправлено успешно: message_id={message_id}")
+            return {
+                "success": True, 
+                "message_id": message_id,
+                "api_response": result
+            }
+        else:
+            error_code = result.get("error_code", "Unknown")
+            error_description = result.get("description", "Unknown error")
+            logger.error(f"❌ Telegram API ошибка: code={error_code}, description={error_description}")
+            
+            return {
+                "success": False, 
+                "error": f"Telegram API Error {error_code}",
+                "details": error_description,
+                "api_response": result
+            }
+            
+    except requests.exceptions.Timeout:
+        logger.error("❌ Timeout при отправке Business сообщения (15 секунд)")
+        return {"success": False, "error": "Request timeout", "details": "Request took longer than 15 seconds"}
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"❌ Ошибка соединения с Telegram API: {e}")
+        return {"success": False, "error": "Connection error", "details": str(e)}
+    except requests.exceptions.RequestException as e:
+        logger.error(f"❌ HTTP ошибка при отправке Business сообщения: {e}")
+        return {"success": False, "error": "HTTP error", "details": str(e)}
+    except ValueError as e:
+        logger.error(f"❌ Ошибка парсинга JSON ответа: {e}")
+        return {"success": False, "error": "JSON parse error", "details": str(e)}
+    except Exception as e:
+        logger.error(f"❌ Неожиданная ошибка при отправке Business сообщения: {e}", exc_info=True)
+        return {"success": False, "error": "Unexpected error", "details": str(e)}
+
+
+def get_business_connections_info() -> Dict[str, Any]:
+    """
+    Получает информацию о Business подключениях бота
+    
+    Returns:
+        Dict[str, Any]: Информация о подключениях
+    """
+    url = f"https://api.telegram.org/bot{config.telegram.token}/getBusinessConnection"
+    
+    try:
+        logger.info("🔍 Запрашиваю информацию о Business подключениях...")
+        
+        response = requests.get(url, timeout=10)
+        result = response.json()
+        
+        if response.status_code == 200 and result.get("ok"):
+            connections = result.get("result", [])
+            logger.info(f"✅ Найдено {len(connections)} Business подключений")
+            
+            return {
+                "success": True,
+                "connections_count": len(connections),
+                "connections": connections
+            }
+        else:
+            error_description = result.get("description", "Unknown error")
+            logger.error(f"❌ Ошибка получения Business подключений: {error_description}")
+            
+            return {
+                "success": False,
+                "error": "API Error",
+                "details": error_description
+            }
+            
+    except Exception as e:
+        logger.error(f"❌ Ошибка запроса Business подключений: {e}")
+        return {
+            "success": False,
+            "error": "Request failed",
+            "details": str(e)
+        }
 
 
 class WebhookHandler:
@@ -92,7 +220,7 @@ class WebhookHandler:
             logger.error(f"❌ Ошибка обработки update {update_id}: {e}", exc_info=True)
             return {"ok": False, "error": str(e)}
     
-    async def _handle_message(self, telegram_message: Dict[str, Any], is_business: bool = False) -> Dict[str, Any]:
+    async def _handle_message(self, telegram_message: Dict[str, Any], is_business: bool = False, business_connection_id: Optional[str] = None) -> Dict[str, Any]:
         """Обрабатывает обычное сообщение"""
         try:
             logger.info(f"📩 Processing message: {telegram_message}")
@@ -156,6 +284,10 @@ class WebhookHandler:
                 message_type = MessageType.OTHER
             
             # Создаем объект сообщения
+            metadata = {"telegram_message": telegram_message}
+            if business_connection_id:
+                metadata["business_connection_id"] = business_connection_id
+                
             message = Message(
                 id=telegram_message.get('message_id'),
                 user=user,
@@ -163,7 +295,7 @@ class WebhookHandler:
                 text=text,
                 type=message_type,
                 timestamp=datetime.fromtimestamp(telegram_message.get('date', 0)),
-                metadata={"telegram_message": telegram_message},
+                metadata=metadata,
                 is_business_message=is_business
             )
             
@@ -185,6 +317,26 @@ class WebhookHandler:
             response = await self.agent.process_message(message)
             
             # Отправляем ответ
+            if is_business and business_connection_id:
+                # Для Business сообщений используем специальную функцию
+                logger.info(f"📤 Sending Business response to {chat_id}: {response.text[:100]}...")
+                result = send_business_message(chat_id, response.text, business_connection_id)
+                
+                if result.get("success"):
+                    logger.info(f"✅ Business сообщение отправлено: message_id={result.get('message_id')}")
+                    return {
+                        "ok": True, 
+                        "response_sent": True, 
+                        "method": "business_api",
+                        "message_id": result.get('message_id'),
+                        "business_connection_id": business_connection_id
+                    }
+                else:
+                    error_details = result.get("details", "Unknown error")
+                    logger.warning(f"⚠️ Business API не сработал ({error_details}), пробуем обычную отправку...")
+                    # Fallback к обычной отправке
+            
+            # Обычная отправка или fallback для Business
             try:
                 from ..telegram_bot import bot
                 logger.info(f"📤 Sending response to {chat_id}: {response.text[:100]}...")
@@ -225,12 +377,20 @@ class WebhookHandler:
         """Обрабатывает Business API сообщение"""
         logger.info(f"📱 Обработка Business сообщения: {business_message}")
         
-        # Обрабатываем как обычное сообщение, но с флагом Business
-        result = await self._handle_message(business_message, is_business=True)
+        # Извлекаем business_connection_id
+        business_connection_id = business_message.get('business_connection_id')
+        logger.info(f"📊 Business connection ID: {business_connection_id}")
         
-        # Добавляем business_connection_id в метаданные
+        # Обрабатываем как обычное сообщение, но с флагом Business и connection_id
+        result = await self._handle_message(
+            business_message, 
+            is_business=True, 
+            business_connection_id=business_connection_id
+        )
+        
+        # Добавляем business_connection_id в метаданные результата
         if result.get('ok'):
-            result['business_connection_id'] = business_message.get('business_connection_id')
+            result['business_connection_id'] = business_connection_id
             result['message_type'] = 'business'
         
         return result
@@ -404,6 +564,46 @@ class WebhookHandler:
                     logger.error(f"❌ Failed to send clear memory response: {e}", exc_info=True)
                 return {"ok": True, "command": "clear"}
             
+            elif command == '/business_status':
+                # Команда для проверки статуса Business API
+                from ..telegram_bot import bot
+                logger.info(f"🔍 Business status check requested by {message.user.id}")
+                
+                try:
+                    # Получаем информацию о подключениях
+                    connections_info = get_business_connections_info()
+                    
+                    if connections_info.get("success"):
+                        count = connections_info.get("connections_count", 0)
+                        status_text = f"📱 **Business API Status**\n\n"
+                        status_text += f"Подключений: {count}\n"
+                        
+                        if count > 0:
+                            status_text += "\n**Активные подключения:**\n"
+                            for conn in connections_info.get("connections", []):
+                                user_info = conn.get("user", {})
+                                username = user_info.get("username", "Unknown")
+                                is_enabled = conn.get("is_enabled", False)
+                                status_emoji = "✅" if is_enabled else "❌"
+                                status_text += f"{status_emoji} @{username}\n"
+                        else:
+                            status_text += "\n⚠️ Нет активных подключений"
+                    else:
+                        error_details = connections_info.get("details", "Unknown error")
+                        status_text = f"❌ **Business API Error**\n\nОшибка: {error_details}"
+                    
+                    bot.send_message(message.chat_id, status_text, parse_mode='Markdown')
+                    logger.info(f"✅ Business status sent to {message.chat_id}")
+                    
+                except Exception as e:
+                    logger.error(f"❌ Failed to get business status: {e}", exc_info=True)
+                    try:
+                        bot.send_message(message.chat_id, f"❌ Ошибка проверки статуса: {str(e)}")
+                    except:
+                        pass
+                
+                return {"ok": True, "command": "business_status"}
+            
             # MCP команды через унифицированный сервис (только для админов)
             logger.info(f"🔌 Checking MCP commands. Command: {command}, unified_mcp_service: {unified_mcp_service is not None}")
             if unified_mcp_service and unified_mcp_service.is_mcp_command(message.text):
@@ -518,11 +718,15 @@ class WebhookHandler:
 
 /help - Показать это сообщение
 /clear - Очистить память бота
+/business_status - Статус Business API
 /youtube &lt;url&gt; - Анализ YouTube видео
 /status - Статус всех сервисов
 /test - Тестовый режим
 
-{agent_section}{mcp_section}<b>🎤 Голосовые сообщения:</b>
+{agent_section}{mcp_section}<b>📱 Business API:</b>
+/business_status - Проверка подключения и статуса
+
+<b>🎤 Голосовые сообщения:</b>
 Отправьте голосовое сообщение для транскрипции
 
 <b>💬 Обычный чат:</b>
