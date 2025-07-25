@@ -36,7 +36,7 @@ class UnifiedAgent:
         
         # Добавляем агентов в порядке приоритета
         try:
-            # 1. Intelligent Agent только для владельца бота (приоритет 90)
+            # 1. Intelligent Agent для администраторов бота + MCP команды (приоритет 90)
             agents.append(IntelligentAgentAdapter())
             logger.info("✅ IntelligentAgent добавлен в цепочку")
         except Exception as e:
