@@ -92,7 +92,7 @@ class WebhookHandler:
             logger.error(f"❌ Ошибка обработки update {update_id}: {e}", exc_info=True)
             return {"ok": False, "error": str(e)}
     
-    async def _handle_message(self, telegram_message: Dict[str, Any]) -> Dict[str, Any]:
+    async def _handle_message(self, telegram_message: Dict[str, Any], is_business: bool = False) -> Dict[str, Any]:
         """Обрабатывает обычное сообщение"""
         try:
             logger.info(f"📩 Processing message: {telegram_message}")
@@ -123,6 +123,7 @@ class WebhookHandler:
             )
             
             logger.info(f"👤 Created user object with role: {user.role.value}")
+            logger.info(f"📱 Is business message: {is_business}")
             
             # Определяем тип сообщения
             if voice:
@@ -162,7 +163,8 @@ class WebhookHandler:
                 text=text,
                 type=message_type,
                 timestamp=datetime.fromtimestamp(telegram_message.get('date', 0)),
-                metadata={"telegram_message": telegram_message}
+                metadata={"telegram_message": telegram_message},
+                is_business_message=is_business
             )
             
             # Проверяем специальные команды
@@ -221,12 +223,15 @@ class WebhookHandler:
     
     async def _handle_business_message(self, business_message: Dict[str, Any]) -> Dict[str, Any]:
         """Обрабатывает Business API сообщение"""
-        # Обрабатываем как обычное сообщение, но с business_connection_id
-        result = await self._handle_message(business_message)
+        logger.info(f"📱 Обработка Business сообщения: {business_message}")
+        
+        # Обрабатываем как обычное сообщение, но с флагом Business
+        result = await self._handle_message(business_message, is_business=True)
         
         # Добавляем business_connection_id в метаданные
         if result.get('ok'):
             result['business_connection_id'] = business_message.get('business_connection_id')
+            result['message_type'] = 'business'
         
         return result
     

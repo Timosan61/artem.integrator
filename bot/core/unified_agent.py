@@ -11,7 +11,6 @@ from typing import Optional, List
 from .base_agent import ChainedAgent, IAgent
 from .agent_adapters import (
     IntelligentAgentAdapter,
-    MCPAgentAdapter, 
     DefaultAgentAdapter
 )
 from .interfaces import Message, Response
@@ -37,21 +36,14 @@ class UnifiedAgent:
         
         # Добавляем агентов в порядке приоритета
         try:
-            # 1. Intelligent Agent для админов (приоритет 90)
+            # 1. Intelligent Agent только для владельца бота (приоритет 90)
             agents.append(IntelligentAgentAdapter())
             logger.info("✅ IntelligentAgent добавлен в цепочку")
         except Exception as e:
             logger.warning(f"⚠️ IntelligentAgent недоступен: {e}")
             
         try:
-            # 2. MCP Agent для MCP команд (приоритет 80)
-            agents.append(MCPAgentAdapter())
-            logger.info("✅ MCPAgent добавлен в цепочку")
-        except Exception as e:
-            logger.warning(f"⚠️ MCPAgent недоступен: {e}")
-            
-        try:
-            # 3. Default Agent как fallback (приоритет 10)
+            # 2. Default Agent (ArtemAgent) для всех остальных + Business (приоритет 10)
             agents.append(DefaultAgentAdapter())
             logger.info("✅ DefaultAgent добавлен в цепочку")
         except Exception as e:
@@ -112,7 +104,7 @@ class UnifiedAgent:
         """
         return self.chain.get_status()
         
-    def get_agent_for_message(self, message: Message) -> Optional[str]:
+    async def get_agent_for_message(self, message: Message) -> Optional[str]:
         """
         Определяет, какой агент будет обрабатывать сообщение
         
@@ -123,7 +115,7 @@ class UnifiedAgent:
             Имя агента или None
         """
         for agent in self.chain.agents:
-            if agent.can_handle(message):
+            if await agent.can_handle(message):
                 return agent.get_name()
         return None
 

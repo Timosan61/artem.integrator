@@ -9,7 +9,6 @@ from typing import Optional, Dict, Any
 
 from .base_agent import IAgent
 from .interfaces import Message, Response, UserRole
-from ..services.unified_mcp_service import unified_mcp_service
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +38,36 @@ class IntelligentAgentAdapter(IAgent):
         
     async def can_handle(self, message: Message) -> bool:
         """Проверяет, может ли обработать сообщение"""
-        # Intelligent Agent обрабатывает сообщения только для админов
-        return (
-            self._service is not None and 
-            self._service.is_available() and 
-            message.user.role == UserRole.ADMIN
-        )
+        # Intelligent Agent обрабатывает только MCP команды от владельца бота
+        from ..core.config import config
+        from ..services.unified_mcp_service import unified_mcp_service
+        
+        # Если IntelligentAgent недоступен, не обрабатываем
+        if not self._service or not self._service.is_available():
+            return False
+            
+        # Проверяем, что пользователь админ
+        if message.user.role != UserRole.ADMIN:
+            return False
+            
+        # Получаем ID владельца бота (первый админ из списка)
+        owner_id = None
+        if config.admin.user_ids:
+            owner_id = config.admin.user_ids[0]
+        
+        # Проверяем, что это владелец бота
+        if owner_id is not None and message.user.id != owner_id:
+            return False
+            
+        # Проверяем, что это MCP команда
+        if not message.text:
+            return False
+            
+        # Проверяем через unified_mcp_service или fallback для команд /mcp
+        return (unified_mcp_service.is_mcp_command(message.text) or 
+                message.text.startswith('/mcp') or
+                message.text.startswith('/db') or 
+                message.text.startswith('/docs'))
         
     def get_name(self) -> str:
         return "IntelligentAgent"
@@ -62,38 +85,6 @@ class IntelligentAgentAdapter(IAgent):
             "error": "Service not initialized"
         }
 
-
-class MCPAgentAdapter(IAgent):
-    """Адаптер для MCP обработки"""
-    
-    def __init__(self):
-        self.mcp_service = unified_mcp_service
-        
-    async def process_message(self, message: Message) -> Response:
-        """Обрабатывает MCP команды"""
-        result = await self.mcp_service.process_message(message.text)
-        
-        if result:
-            return Response(text=result, metadata={"mcp": True})
-        else:
-            return Response(
-                text="Не удалось обработать MCP команду",
-                metadata={"error": "MCP processing failed"}
-            )
-            
-    async def can_handle(self, message: Message) -> bool:
-        """Проверяет, является ли сообщение MCP командой"""
-        return (
-            message.user.role == UserRole.ADMIN and
-            message.text and
-            self.mcp_service.is_mcp_command(message.text)
-        )
-        
-    def get_name(self) -> str:
-        return "MCPAgent"
-        
-    def get_priority(self) -> int:
-        return 80  # Высокий приоритет для MCP команд
 
 
 class DefaultAgentAdapter(IAgent):

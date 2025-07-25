@@ -70,6 +70,7 @@ class Message:
     entities: List[Dict[str, Any]] = None
     attachments: Dict[str, Any] = None
     metadata: Dict[str, Any] = None
+    is_business_message: bool = False
     
     def __post_init__(self):
         if self.entities is None:
