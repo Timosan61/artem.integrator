@@ -54,9 +54,7 @@ class ClaudeCodeService:
         # Создаем временный файл конфигурации с подставленными переменными
         self.temp_mcp_config = self._create_mcp_config_with_env_vars()
         
-        # Загружаем промпты из YAML файлов
-        self.voice_prompts = self._load_yaml_config("mcp_voice_prompts.yaml")
-        self.sdk_prompts = self._load_yaml_config("claude_sdk_prompts.yaml")
+        # Упрощенная инициализация - больше не используем YAML промпты
         
         if not self.enabled:
             logger.warning("⚠️ Claude Code Service отключен: MCP или Anthropic не настроены")
@@ -74,15 +72,9 @@ class ClaudeCodeService:
     
     def reload_prompts(self) -> None:
         """
-        Перезагружает промпты из YAML файлов
-        Можно вызывать для обновления промптов без перезапуска сервиса
+        Заглушка для совместимости - промпты больше не используются
         """
-        try:
-            self.voice_prompts = self._load_yaml_config("mcp_voice_prompts.yaml")
-            self.sdk_prompts = self._load_yaml_config("claude_sdk_prompts.yaml")
-            logger.info("✅ Промпты успешно перезагружены")
-        except Exception as e:
-            logger.error(f"❌ Ошибка перезагрузки промптов: {e}")
+        logger.info("ℹ️ Перезагрузка промптов не требуется в упрощенной версии")
     
     def _load_yaml_config(self, filename: str) -> Dict[str, Any]:
         """
@@ -382,29 +374,41 @@ USE ONLY THESE FUNCTIONS. NO EXCEPTIONS."""
     
     def _format_mcp_prompt(self, command: str) -> str:
         """
-        Форматирует команду в промпт для Claude Code используя YAML конфигурацию
+        Упрощенное форматирование команды в промпт для Claude Code
         
         Args:
             command: Исходная команда
             
         Returns:
-            Промпт для SDK
+            Простой промпт для SDK
         """
-        # Сначала проверяем маппинги из YAML
-        if self.sdk_prompts and 'command_mappings' in self.sdk_prompts:
-            mappings = self.sdk_prompts['command_mappings']
-            
-            # Ищем точное совпадение или префикс команды
-            for cmd_pattern, cmd_config in mappings.items():
-                if command.startswith(cmd_pattern):
-                    # Проверяем fallback для недоступных функций
-                    if 'fallback_response' in cmd_config:
-                        return cmd_config['fallback_response']
-                    else:
-                        return cmd_config.get('prompt', f"Execute MCP command: {command}")
+        # Упрощенная обработка - просто передаем команду напрямую
+        return self._get_simple_mcp_prompt(command)
+    
+    def _get_simple_mcp_prompt(self, command: str) -> str:
+        """Упрощенный промпт без сложной логики"""
+        # Проверяем основные типы команд
+        if command.startswith("/voice"):
+            # Убираем префикс /voice и обрабатываем как обычный запрос
+            voice_text = command[6:].strip()
+            return f"Пользователь сказал: '{voice_text}'. Определи что он хочет и выполни соответствующее MCP действие."
         
-        # Fallback на старую логику
-        return self._get_legacy_mcp_prompt(command)
+        elif command.startswith("/mcp apps") or "приложен" in command.lower():
+            return "List all DigitalOcean apps using mcp__digitalocean__list_apps function."
+        
+        elif command.startswith("/mcp status") or "mcp сервер" in command.lower() or "сервер" in command.lower():
+            return "Show status of available MCP servers and list their capabilities."
+        
+        elif command.startswith("/mcp projects") or "проект" in command.lower():
+            return "List all Supabase projects using MCP."
+        
+        elif command.startswith("/db "):
+            sql_query = command[4:].strip()
+            return f"Execute SQL query using Supabase MCP: {sql_query}"
+        
+        else:
+            # Общий случай - пусть SDK сам разбирается
+            return f"Execute MCP command: {command}"
     
     def _get_legacy_mcp_prompt(self, command: str) -> str:
         """Старая логика форматирования промптов для обратной совместимости"""
@@ -451,54 +455,14 @@ USE ONLY THESE FUNCTIONS. NO EXCEPTIONS."""
             return f"Search Context7 documentation: {query}"
             
         elif command.startswith("/voice"):
-            # Обработка голосовых команд
+            # Обработка голосовых команд - теперь упрощенно
             voice_text = command[6:].strip()
-            return self._format_voice_mcp_prompt(voice_text)
+            return f"Пользователь сказал: '{voice_text}'. Определи что он хочет и выполни соответствующее MCP действие."
             
         else:
             # Общий случай
             return f"Execute MCP command: {command}"
     
-    def _format_voice_mcp_prompt(self, voice_text: str) -> str:
-        """
-        Форматирует голосовой текст в промпт для Claude Code используя YAML конфигурацию
-        
-        Args:
-            voice_text: Транскрибированный голосовой текст
-            
-        Returns:
-            Промпт для SDK с инструкциями для обработки
-        """
-        # Используем конфигурацию из YAML или fallback на старый промпт
-        if self.voice_prompts and 'voice_commands' in self.voice_prompts:
-            voice_config = self.voice_prompts['voice_commands']
-            system_prompt = voice_config.get('system_prompt', '')
-            scenarios = voice_config.get('scenarios', [])
-            default_response = voice_config.get('default_response', '')
-            
-            # Формируем промпт из YAML конфигурации
-            prompt_parts = [system_prompt]
-            prompt_parts.append(f'\nПользователь сказал: "{voice_text}"\n')
-            prompt_parts.append("Определи намерение пользователя и выполни соответствующее действие:\n")
-            
-            for i, scenario in enumerate(scenarios, 1):
-                triggers = ", ".join([f'"{t}"' for t in scenario.get('triggers', [])])
-                action = scenario.get('action', '')
-                fallback = scenario.get('fallback_message', '')
-                
-                prompt_parts.append(f"{i}. **{scenario.get('name', '')}** - триггеры: {triggers}")
-                if action and not fallback:
-                    prompt_parts.append(f"   - Используй {action}")
-                elif fallback:
-                    prompt_parts.append(f"   - Верни сообщение: {fallback}")
-                prompt_parts.append("")
-            
-            prompt_parts.append(default_response)
-            
-            return "\n".join(prompt_parts)
-        else:
-            # Fallback на старый промпт если YAML не загружен
-            return self._get_legacy_voice_prompt(voice_text)
     
     def _get_legacy_voice_prompt(self, voice_text: str) -> str:
         """Старый промпт для обратной совместимости"""
@@ -534,34 +498,21 @@ USE ONLY THESE FUNCTIONS. NO EXCEPTIONS."""
 Если не понял запрос - вежливо попроси уточнить."""
 
     def _get_system_prompt(self) -> str:
-        """Возвращает системный промпт для Claude Code из YAML конфигурации"""
-        # Используем промпт из YAML или fallback
-        if self.sdk_prompts and 'system_prompt' in self.sdk_prompts:
-            return self.sdk_prompts['system_prompt']
-        else:
-            # Fallback на старый промпт
-            return """You are an MCP assistant that helps execute commands through Model Context Protocol servers.
+        """Упрощенный системный промпт для Claude Code"""
+        return """You are a simple MCP assistant. Execute MCP commands directly.
 
 Available MCP servers:
-1. DigitalOcean - for app management and deployments (mcp__digitalocean__*)
-2. Supabase - for database operations and project management (mcp__supabase__*)
-3. Context7 - for documentation search (mcp__context7__*)
+- DigitalOcean: mcp__digitalocean__list_apps, mcp__digitalocean__get_app
+- Supabase: mcp__supabase__list_projects, mcp__supabase__execute_sql  
+- Context7: mcp__context7__get-library-docs
 
-IMPORTANT RULES:
-- NEVER use mcp__cloudflare__* functions - they are NOT available
-- Only use functions from the three servers listed above
-- Match the server to the task (apps = DigitalOcean, database = Supabase, docs = Context7)
+Rules:
+1. For apps/applications → use DigitalOcean functions
+2. For databases/projects → use Supabase functions  
+3. For docs/documentation → use Context7 functions
+4. Return results clearly and concisely
 
-When executing commands:
-- Use the appropriate MCP tool based on the command
-- Format responses clearly and concisely
-- Include relevant data from the MCP response
-- Handle errors gracefully
-- Return structured data when possible
-
-For voice commands (/voice prefix), understand natural language and execute the appropriate MCP operation.
-
-Important: Execute the requested MCP operation and return the result."""
+Execute the requested operation and return the result."""
     
     def _get_allowed_tools(self, command: str) -> List[str]:
         """

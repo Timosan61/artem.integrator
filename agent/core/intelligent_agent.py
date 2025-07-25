@@ -1,5 +1,5 @@
 """
-Основной класс Intelligent Agent с поддержкой OpenAI Function Calling
+Упрощенный Intelligent Agent с прямым LLM-анализом намерений
 """
 import json
 import logging
@@ -13,8 +13,6 @@ from .models import (
     YouTubeAnalysisParams, ToolType
 )
 from .intents import Intent
-from .preference_manager import preference_manager
-from .intent_classifier import IntentClassifier
 from .tool_registry import ToolRegistry
 
 if TYPE_CHECKING:
@@ -24,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class IntelligentAgent:
-    """Интеллектуальный агент с поддержкой Function Calling"""
+    """Упрощенный интеллектуальный агент с прямым LLM-анализом"""
     
     def __init__(self, api_key: str, model: str = "gpt-4o"):
         """
@@ -38,16 +36,14 @@ class IntelligentAgent:
         self.model = model
         self.conversation_history = []
         
-        # Инициализируем компоненты
-        self.intent_classifier = IntentClassifier()
+        # Упрощенная инициализация - только registry инструментов
         self.tool_registry = ToolRegistry()
-        self.preference_manager = preference_manager
         self.logger = logger
         
         # Доступные функции
         self.available_functions = self._get_available_functions()
         
-        logger.info(f"✅ IntelligentAgent инициализирован с моделью {model}")
+        logger.info(f"✅ Упрощенный IntelligentAgent инициализирован с моделью {model}")
     
     def _get_available_functions(self) -> List[Dict[str, Any]]:
         """Возвращает список доступных функций для OpenAI"""
@@ -185,7 +181,7 @@ class IntelligentAgent:
         context: Optional[List[Dict[str, str]]] = None
     ) -> AgentResponse:
         """
-        Обрабатывает сообщение пользователя
+        Упрощенная обработка сообщения с прямым LLM-анализом
         
         Args:
             message: Сообщение от пользователя
@@ -196,25 +192,10 @@ class IntelligentAgent:
             AgentResponse с результатом обработки
         """
         try:
-            # Классифицируем намерение
-            intent, confidence, metadata = self.intent_classifier.classify(message)
-            logger.info(f"🎯 Классифицировано намерение: {intent.value} (confidence: {confidence:.2f})")
+            logger.info(f"🤖 Простая обработка сообщения: '{message[:50]}...' от пользователя {user_id}")
             
-            # Дополнительное логирование для вопросов об инструментах
-            message_lower = message.lower()
-            if any(word in message_lower for word in ["инструмент", "tool", "mcp", "умеешь", "можешь"]):
-                logger.info(f"📝 Обнаружен вопрос об инструментах/возможностях")
-            
-            # Проверяем предпочтения пользователя
-            available_tools = self._get_available_tool_types(intent)
-            preferred_tool = self.preference_manager.get_preferred_tool(
-                user_id, intent, available_tools
-            )
-            
-            # Подготавливаем сообщения с учетом предпочтений
-            messages = self._prepare_messages_with_preferences(
-                message, context, intent, preferred_tool
-            )
+            # Упрощенная подготовка сообщений - LLM сам выберет инструмент
+            messages = self._prepare_simple_messages(message, context)
             
             # Вызываем OpenAI с function calling
             response = await self.client.chat.completions.create(
@@ -229,6 +210,8 @@ class IntelligentAgent:
             
             # Проверяем, нужно ли вызвать функцию
             if assistant_message.tool_calls:
+                logger.info(f"🔧 LLM выбрал инструмент: {assistant_message.tool_calls[0].function.name}")
+                
                 # Обрабатываем вызовы функций
                 tool_response = await self._handle_tool_calls(
                     assistant_message.tool_calls,
@@ -237,17 +220,6 @@ class IntelligentAgent:
                 
                 # Определяем тип использованного инструмента
                 tool_type = self._get_tool_type_from_call(assistant_message.tool_calls[0])
-                
-                # Записываем выбор для обучения
-                if tool_type:
-                    self.preference_manager.record_choice(
-                        user_id=user_id,
-                        message=message,
-                        intent=intent,
-                        tool_type=tool_type,
-                        success=tool_response.success,
-                        tool_params=tool_response.data
-                    )
                 
                 # Получаем финальный ответ с результатами функций
                 final_response = await self._get_final_response(
@@ -260,17 +232,16 @@ class IntelligentAgent:
                     message=final_response,
                     tool_used=tool_response.metadata.get("tool_type") if tool_response.metadata else None,
                     tool_response=tool_response,
-                    confidence=confidence,
-                    requires_confirmation=False,
-                    intent=intent
+                    confidence=0.9,  # Высокая уверенность - LLM сам выбрал инструмент
+                    requires_confirmation=False
                 )
             else:
                 # Обычный ответ без инструментов
+                logger.info("💬 LLM выбрал обычный разговор")
                 return AgentResponse(
                     message=assistant_message.content or "Не могу сформировать ответ",
-                    confidence=confidence,
-                    requires_confirmation=False,
-                    intent=intent
+                    confidence=0.8,
+                    requires_confirmation=False
                 )
                 
         except Exception as e:
@@ -281,6 +252,54 @@ class IntelligentAgent:
                 requires_confirmation=False,
                 tool_response=ToolResponse(success=False, error=str(e))
             )
+    
+    def _prepare_simple_messages(
+        self, 
+        message: str, 
+        context: Optional[List[Dict[str, str]]] = None
+    ) -> List[Dict[str, str]]:
+        """Упрощенная подготовка сообщений с прямыми инструкциями для LLM"""
+        system_prompt = """Ты - умный AI ассистент Артём Интегратор с доступом к инструментам.
+
+🎯 ТВОЯ ЗАДАЧА: Понять, что хочет пользователь, и выбрать правильный инструмент:
+
+📊 **MCP КОМАНДЫ** (execute_mcp_command) - используй для:
+- "покажи приложения", "мои приложения", "список приложений"
+- "какие у меня базы данных", "mcp сервера", "серверы"
+- "деплойменты", "история деплоев" 
+- любые вопросы про инфраструктуру DigitalOcean/Supabase
+
+🎥 **YOUTUBE АНАЛИЗ** (analyze_youtube_video) - используй для:
+- ссылок на YouTube видео
+- "анализ видео", "субтитры", "статистика видео"
+
+🖼️ **ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ** (generate_image) - используй для:
+- "нарисуй", "создай картинку", "сгенерируй изображение"
+
+💬 **ОБЫЧНЫЙ РАЗГОВОР** - для всего остального:
+- приветствия, общие вопросы, помощь
+
+🚀 **КЛЮЧЕВОЕ ПРАВИЛО**: Не думай о паттернах - просто пойми намерение и действуй!
+
+Примеры:
+- "какие у меня MCP сервера?" → execute_mcp_command
+- "покажи мои приложения" → execute_mcp_command  
+- "как дела?" → обычный разговор
+- "нарисуй кота" → generate_image
+
+Будь дружелюбным и полезным! 🤖"""
+        
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Добавляем контекст если есть
+        if context:
+            for ctx_msg in context[-5:]:  # Берем последние 5 сообщений
+                messages.append(ctx_msg)
+        
+        # Добавляем текущее сообщение
+        messages.append({"role": "user", "content": message})
+        
+        return messages
     
     def _prepare_messages(
         self, 
