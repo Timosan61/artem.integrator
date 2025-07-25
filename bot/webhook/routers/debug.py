@@ -297,3 +297,55 @@ async def voice_status():
         "voice_service_status": voice_service.get_status() if voice_service else None,
         "timestamp": datetime.now().isoformat()
     }
+
+
+@router.get("/webhook-config")
+async def webhook_config():
+    """Диагностика конфигурации webhook"""
+    from ..services import WebhookService
+    
+    try:
+        webhook_service = WebhookService()
+        
+        # Получаем текущий webhook info от Telegram
+        webhook_info = await webhook_service.get_webhook_info()
+        
+        # Собираем информацию о переменных окружения
+        env_vars = {
+            "WEBHOOK_URL": os.getenv('WEBHOOK_URL'),
+            "BASE_URL": os.getenv('BASE_URL'),
+            "RAILWAY_PUBLIC_DOMAIN": os.getenv('RAILWAY_PUBLIC_DOMAIN'),
+            "TELEGRAM_WEBHOOK_SECRET": "***" if os.getenv('TELEGRAM_WEBHOOK_SECRET') else None,
+            "AUTO_SETUP_WEBHOOK": os.getenv('AUTO_SETUP_WEBHOOK', 'true')
+        }
+        
+        # Конфигурация из config
+        webhook_config_info = {
+            "base_url": config.webhook.base_url,
+            "auto_setup": config.webhook.auto_setup,
+            "secret_token": "***" if config.webhook.secret_token else None,
+            "allowed_updates": config.webhook.allowed_updates,
+            "max_connections": config.webhook.max_connections
+        }
+        
+        # Вычисляемый webhook URL
+        computed_webhook_url = f"{config.webhook.base_url}/webhook" if config.webhook.base_url else "INVALID"
+        
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "environment_variables": env_vars,
+            "webhook_config": webhook_config_info,
+            "computed_webhook_url": computed_webhook_url,
+            "telegram_webhook_info": webhook_info,
+            "validation": {
+                "base_url_valid": bool(config.webhook.base_url and config.webhook.base_url != ""),
+                "webhook_url_valid": computed_webhook_url != "INVALID" and computed_webhook_url != "/webhook",
+                "telegram_webhook_set": webhook_info.get("webhook_url") != "❌ Not set" if isinstance(webhook_info, dict) else False
+            }
+        }
+        
+    except Exception as e:
+        return {
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }

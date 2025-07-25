@@ -56,6 +56,22 @@ class WebhookService:
             webhook_url = custom_url or f"{self.base_url}/webhook"
             secret_token = custom_secret or config.webhook.secret_token
             
+            # Детальное логирование для диагностики
+            logger.info(f"🔧 Setting up webhook...")
+            logger.info(f"   base_url: '{self.base_url}'")
+            logger.info(f"   custom_url: '{custom_url}'")
+            logger.info(f"   final webhook_url: '{webhook_url}'")
+            logger.info(f"   secret_token: {'***' if secret_token else 'None'}")
+            
+            # Валидация URL
+            if not webhook_url or webhook_url == "/webhook":
+                error_msg = f"Invalid webhook URL: '{webhook_url}'. Check BASE_URL, RAILWAY_PUBLIC_DOMAIN or WEBHOOK_URL environment variables."
+                logger.error(f"❌ {error_msg}")
+                return {
+                    "success": False,
+                    "error": error_msg
+                }
+            
             # Параметры webhook
             params = {
                 "url": webhook_url,
@@ -66,6 +82,8 @@ class WebhookService:
             
             if max_connections:
                 params["max_connections"] = max_connections
+            
+            logger.info(f"🚀 Calling Telegram setWebhook with params: {dict(params, secret_token='***' if params.get('secret_token') else None)}")
             
             # Устанавливаем webhook
             result = self.bot.set_webhook(**params)
@@ -78,9 +96,10 @@ class WebhookService:
                     "message": "Webhook установлен успешно"
                 }
             else:
+                logger.error(f"❌ Telegram API returned False for setWebhook")
                 return {
                     "success": False,
-                    "error": "Failed to set webhook"
+                    "error": "Telegram API returned False for setWebhook"
                 }
                 
         except Exception as e:

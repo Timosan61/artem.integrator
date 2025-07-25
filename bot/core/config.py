@@ -182,9 +182,21 @@ class WebhookConfig:
     @classmethod
     def from_env(cls) -> 'WebhookConfig':
         """Создает конфигурацию из переменных окружения"""
-        base_url = os.getenv('BASE_URL', os.getenv('RAILWAY_PUBLIC_DOMAIN', ''))
-        if base_url and not base_url.startswith('http'):
+        # Приоритет: WEBHOOK_URL → BASE_URL → RAILWAY_PUBLIC_DOMAIN
+        webhook_url = os.getenv('WEBHOOK_URL')
+        base_url = os.getenv('BASE_URL') or os.getenv('RAILWAY_PUBLIC_DOMAIN', '')
+        
+        # Если есть полный WEBHOOK_URL, извлекаем base_url
+        if webhook_url:
+            if webhook_url.endswith('/webhook'):
+                base_url = webhook_url[:-8]  # Убираем '/webhook'
+            else:
+                base_url = webhook_url
+        elif base_url and not base_url.startswith('http'):
             base_url = f"https://{base_url}"
+        
+        # Логируем конфигурацию для диагностики
+        logger.info(f"🔧 Webhook config: base_url='{base_url}', webhook_url_env='{webhook_url}', railway_domain='{os.getenv('RAILWAY_PUBLIC_DOMAIN')}'")
         
         return cls(
             base_url=base_url,
