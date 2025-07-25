@@ -17,10 +17,10 @@ class DeployManager:
         self.github_repo = st.secrets.get("GITHUB_REPO", "artem.integrator")
         self.github_api_base = "https://api.github.com"
         
-        # Railway настройки
-        self.railway_token = st.secrets.get("RAILWAY_TOKEN", os.getenv("RAILWAY_TOKEN"))
-        self.railway_project_id = st.secrets.get("RAILWAY_PROJECT_ID", os.getenv("RAILWAY_PROJECT_ID"))
-        self.railway_service_id = st.secrets.get("RAILWAY_SERVICE_ID", os.getenv("RAILWAY_SERVICE_ID"))
+        # DigitalOcean настройки
+        self.digitalocean_token = st.secrets.get("DIGITALOCEAN_TOKEN", os.getenv("DIGITALOCEAN_TOKEN"))
+        self.digitalocean_app_id = st.secrets.get("DIGITALOCEAN_APP_ID", "38929bac-dfee-41b5-8b8c-ad710efd81aa")
+        self.digitalocean_api_base = "https://api.digitalocean.com/v2"
         
     def get_git_status(self) -> Dict[str, Any]:
         """Получает статус Git репозитория"""
@@ -104,51 +104,84 @@ class DeployManager:
         except Exception as e:
             return False
     
-    def trigger_railway_deploy(self) -> bool:
-        """Запускает деплой на Railway через API"""
+    def get_digitalocean_app_status(self) -> Dict[str, Any]:
+        """Получает статус приложения DigitalOcean"""
         try:
             headers = {
-                "Authorization": f"Bearer {self.railway_token}",
+                "Authorization": f"Bearer {self.digitalocean_token}",
                 "Content-Type": "application/json"
             }
             
-            # GraphQL запрос для редеплоя службы
-            query = """
-            mutation serviceInstanceRedeploy($serviceId: String!) {
-                serviceInstanceRedeploy(serviceId: $serviceId) {
-                    id
-                    status
-                }
-            }
-            """
-            
-            variables = {
-                "serviceId": self.railway_service_id
-            }
-            
-            response = requests.post(
-                "https://backboard.railway.com/graphql/v2",
-                headers=headers,
-                json={
-                    "query": query,
-                    "variables": variables
-                }
-            )
+            url = f"{self.digitalocean_api_base}/apps/{self.digitalocean_app_id}"
+            response = requests.get(url, headers=headers)
             
             if response.status_code == 200:
-                result = response.json()
-                if "errors" not in result:
-                    return True
-                else:
-                    print(f"Railway API errors: {result['errors']}")
-                    return False
+                data = response.json()
+                app = data.get("app", {})
+                
+                return {
+                    "success": True,
+                    "status": app.get("phase", "unknown"),
+                    "name": app.get("spec", {}).get("name", "unknown"),
+                    "live_url": app.get("live_url", ""),
+                    "created_at": app.get("created_at", ""),
+                    "last_deployment": app.get("last_deployment_created_at", "")
+                }
             else:
-                print(f"Railway API request failed: {response.status_code}")
-                return False
+                return {
+                    "success": False,
+                    "error": f"API Error: {response.status_code}"
+                }
                 
         except Exception as e:
-            print(f"Railway deploy error: {e}")
-            return False
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def get_digitalocean_deployments(self) -> Dict[str, Any]:
+        """Получает список деплоев DigitalOcean"""
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.digitalocean_token}",
+                "Content-Type": "application/json"
+            }
+            
+            url = f"{self.digitalocean_api_base}/apps/{self.digitalocean_app_id}/deployments"
+            response = requests.get(url, headers=headers)
+            
+            if response.status_code == 200:
+                data = response.json()
+                deployments = data.get("deployments", [])
+                
+                if deployments:
+                    latest = deployments[0]
+                    return {
+                        "success": True,
+                        "latest_deployment": {
+                            "id": latest.get("id", ""),
+                            "phase": latest.get("phase", "unknown"),
+                            "created_at": latest.get("created_at", ""),
+                            "updated_at": latest.get("updated_at", ""),
+                            "cause": latest.get("cause", "unknown")
+                        }
+                    }
+                else:
+                    return {
+                        "success": True,
+                        "latest_deployment": None
+                    }
+            else:
+                return {
+                    "success": False,
+                    "error": f"API Error: {response.status_code}"
+                }
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
     def auto_deploy_changes(self, commit_message: str, instruction_content: str = None) -> bool:
         """Автоматический деплой через GitHub API + автоматическая синхронизация Railway"""
@@ -172,10 +205,10 @@ class DeployManager:
             
         st.success("✅ Файл обновлен в GitHub")
         
-        # Информируем о автоматической синхронизации Railway
-        st.info("🔄 Railway автоматически синхронизируется с GitHub...")
+        # Информируем о автоматической синхронизации DigitalOcean
+        st.info("🔄 DigitalOcean автоматически синхронизируется с GitHub...")
         st.info("⏳ Изменения будут применены через 2-3 минуты автоматически")
-        st.info("💡 Используйте кнопку 'Перезагрузить промпт' ниже для ручного обновления")
+        st.info("💡 Проверьте статус деплоя в боковой панели")
         
         return True
 
@@ -195,8 +228,8 @@ def show_deploy_status():
         **GitHub API:**
         {'✅ Готов к работе' if deploy_manager.github_token else '❌ Токен не настроен'}
         
-        **Railway:**
-        ✅ Автосинхронизация с GitHub
+        **DigitalOcean:**
+        {'✅ Готов к работе' if deploy_manager.digitalocean_token else '❌ Токен не настроен'}
         """)
     except Exception as e:
         st.sidebar.error(f"❌ Ошибка API: {e}")
@@ -205,23 +238,47 @@ def show_deploy_status():
     st.sidebar.markdown("### 🤖 Статус бота")
     try:
         import requests
-        response = requests.get("https://web-production-84d8.up.railway.app/", timeout=5)
+        response = requests.get("https://artemintegrator-nahdj.ondigitalocean.app/", timeout=5)
         if response.status_code == 200:
             st.sidebar.success("✅ Бот онлайн")
             
             # Проверяем промпт
-            prompt_response = requests.get("https://web-production-84d8.up.railway.app/debug/prompt", timeout=5)
+            prompt_response = requests.get("https://artemintegrator-nahdj.ondigitalocean.app/debug/last-updates", timeout=5)
             if prompt_response.status_code == 200:
                 prompt_data = prompt_response.json()
+                total_updates = prompt_data.get('total_updates', 0)
                 st.sidebar.info(f"""
-                **Промпт:**
-                Обновлен: {prompt_data.get('last_updated', 'неизвестно')[:16]}
-                Длина: {prompt_data.get('system_instruction_length', 0)} символов
+                **Последние обновления:**
+                Всего сообщений: {total_updates}
+                Статус: {'Получает сообщения' if total_updates > 0 else 'Ожидает сообщений'}
                 """)
         else:
             st.sidebar.error("❌ Бот недоступен")
     except Exception as e:
         st.sidebar.error(f"❌ Ошибка проверки бота: {str(e)[:50]}")
+    
+    # Показываем статус DigitalOcean App
+    st.sidebar.markdown("### 🌐 DigitalOcean App")
+    try:
+        do_status = deploy_manager.get_digitalocean_app_status()
+        if do_status.get("success"):
+            status = do_status.get("status", "unknown")
+            if status.upper() == "ACTIVE":
+                st.sidebar.success(f"✅ Статус: {status}")
+            else:
+                st.sidebar.warning(f"⚠️ Статус: {status}")
+            
+            st.sidebar.info(f"""
+            **Приложение:**
+            {do_status.get('name', 'unknown')}
+            
+            **URL:**
+            {do_status.get('live_url', 'не указан')}
+            """)
+        else:
+            st.sidebar.error(f"❌ DigitalOcean API: {do_status.get('error', 'неизвестная ошибка')}")
+    except Exception as e:
+        st.sidebar.error(f"❌ Ошибка DigitalOcean API: {str(e)[:50]}")
     
     # Пытаемся получить Git статус (может не работать в облаке)
     try:
