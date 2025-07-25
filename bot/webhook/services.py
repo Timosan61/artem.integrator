@@ -213,18 +213,32 @@ class ServiceManager:
     def _check_voice(self) -> str:
         """Проверяет Voice Service"""
         try:
+            # Сначала проверяем конфигурацию
+            if not config.voice.enabled:
+                return "❌ DISABLED"
+            
+            # Пытаемся импортировать модуль
             from voice.voice_service import VoiceService
-            return "✅ ENABLED" if config.voice.enabled else "❌ DISABLED"
-        except:
-            return "❌ NOT AVAILABLE"
+            logger.debug("Voice service module imported successfully")
+            return "✅ ENABLED"
+        except ImportError as e:
+            logger.warning(f"Voice service import error: {e}")
+            return "⚠️ IMPORT ERROR"
+        except Exception as e:
+            logger.error(f"Voice service check error: {e}")
+            return "❌ ERROR"
     
     def _check_social_media(self) -> str:
         """Проверяет Social Media Service"""
         try:
             from ..services.social_media_service import social_media_service
             return "✅ ENABLED" if social_media_service else "❌ DISABLED"
-        except:
+        except ImportError as e:
+            logger.debug(f"Social media service import error: {e}")
             return "❌ NOT AVAILABLE"
+        except Exception as e:
+            logger.warning(f"Social media service check error: {e}")
+            return "❌ ERROR"
     
     def _check_mcp(self) -> str:
         """Проверяет MCP"""
