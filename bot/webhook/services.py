@@ -329,10 +329,16 @@ class AdminService:
     async def reload_instructions(self) -> Dict[str, Any]:
         """Перезагружает инструкции из файла"""
         try:
-            # Перезагружаем инструкции в ResponseGenerator
+            # Перезагружаем инструкции в самом агенте
+            if hasattr(self.agent, 'reload_instructions'):
+                self.agent.reload_instructions()
+                logger.info("📝 Инструкции перезагружены в агенте")
+            
+            # Также перезагружаем в ResponseGenerator для совместимости
             from ..services.response_generator import HybridResponseGenerator
             if isinstance(self.agent.response_generator, HybridResponseGenerator):
                 self.agent.response_generator._load_instructions()
+                logger.info("📝 Инструкции перезагружены в HybridResponseGenerator")
                 
             return {
                 "success": True,

@@ -157,12 +157,41 @@ class ArtemAgent:
         return status
     
     def _load_instructions(self) -> Dict[str, Any]:
-        """Загружает инструкции агента"""
-        # Здесь можно загрузить специфичные инструкции для агента
-        return {
+        """Загружает инструкции агента из файла"""
+        from ..core.utils import FileUtils
+        
+        instruction_file = config.data_dir / 'instruction.json'
+        default_instructions = {
+            "system_instruction": "Ты - AI ассистент по имени Артём.",
+            "welcome_message": "Привет! Чем могу помочь?",
             "version": "2.0",
             "updated": "2024-01-20"
         }
+        
+        instructions = FileUtils.safe_json_load(instruction_file, default_instructions)
+        logger.info(f"📝 Загружены инструкции агента из {instruction_file}")
+        
+        return instructions
+    
+    def reload_instructions(self) -> None:
+        """Перезагружает инструкции агента"""
+        try:
+            self.instructions = self._load_instructions()
+            
+            # Также перезагружаем инструкции в response_generator если он поддерживает это
+            if hasattr(self.response_generator, 'reload_instructions'):
+                self.response_generator.reload_instructions()
+                logger.info("📝 Инструкции перезагружены в response_generator")
+            elif hasattr(self.response_generator, '_load_instructions'):
+                # Для совместимости со старыми версиями
+                for generator in getattr(self.response_generator, 'generators', []):
+                    if hasattr(generator, '_load_instructions'):
+                        generator.instructions = generator._load_instructions()
+                logger.info("📝 Инструкции перезагружены в генераторах ответов")
+            
+            logger.info("✅ Инструкции агента успешно перезагружены")
+        except Exception as e:
+            logger.error(f"❌ Ошибка перезагрузки инструкций: {e}")
 
 
 class AgentFactory:

@@ -104,7 +104,11 @@ class OpenAIResponseGenerator(IResponseGenerator):
         """Подготавливает системный промпт"""
         current_date = datetime.now().strftime("%Y-%m-%d")
         
-        prompt = f"""{self.instructions.get('base_prompt', '')}
+        # Используем system_instruction из файла или fallback на старые поля
+        system_instruction = self.instructions.get('system_instruction', 
+                                                   self.instructions.get('base_prompt', ''))
+        
+        prompt = f"""{system_instruction}
 
 Текущая дата: {current_date}
 Имя пользователя: {user.full_name}
@@ -118,6 +122,7 @@ class OpenAIResponseGenerator(IResponseGenerator):
         """Загружает инструкции из файла"""
         instruction_file = config.data_dir / 'instruction.json'
         default_instructions = {
+            "system_instruction": "Ты - AI ассистент по имени Артём.",
             "base_prompt": "Ты - AI ассистент по имени Артём.",
             "behavior_rules": "Будь вежливым и полезным."
         }
@@ -209,7 +214,11 @@ class AnthropicResponseGenerator(IResponseGenerator):
         """Подготавливает системный промпт"""
         current_date = datetime.now().strftime("%Y-%m-%d")
         
-        prompt = f"""{self.instructions.get('base_prompt', '')}
+        # Используем system_instruction из файла или fallback на старые поля
+        system_instruction = self.instructions.get('system_instruction', 
+                                                   self.instructions.get('base_prompt', ''))
+        
+        prompt = f"""{system_instruction}
 
 Текущая дата: {current_date}
 Имя пользователя: {user.full_name}
@@ -223,6 +232,7 @@ class AnthropicResponseGenerator(IResponseGenerator):
         """Загружает инструкции из файла"""
         instruction_file = config.data_dir / 'instruction.json'
         default_instructions = {
+            "system_instruction": "Ты - AI ассистент по имени Артём.",
             "base_prompt": "Ты - AI ассистент по имени Артём.",
             "behavior_rules": "Будь вежливым и полезным."
         }
