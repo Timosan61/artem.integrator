@@ -51,6 +51,9 @@ class ClaudeCodeService:
         default_config = Path(__file__).parent.parent.parent / "data" / "mcp-servers.json"
         self.mcp_config_path = local_config if local_config.exists() else default_config
         
+        # Создаем временный файл конфигурации с подставленными переменными
+        self.temp_mcp_config = self._create_mcp_config_with_env_vars()
+        
         # Загружаем промпты из YAML файлов
         self.voice_prompts = self._load_yaml_config("mcp_voice_prompts.yaml")
         self.sdk_prompts = self._load_yaml_config("claude_sdk_prompts.yaml")
@@ -102,6 +105,96 @@ class ClaudeCodeService:
         except Exception as e:
             logger.error(f"❌ Ошибка загрузки YAML {filename}: {e}")
             return {}
+    
+    def _create_mcp_config_with_env_vars(self) -> Optional[Path]:
+        """
+        Создает временный файл конфигурации MCP с подставленными переменными окружения
+        
+        Returns:
+            Путь к временному файлу конфигурации или None при ошибке
+        """
+        try:
+            if not self.mcp_config_path.exists():
+                logger.warning(f"⚠️ Файл конфигурации MCP не найден: {self.mcp_config_path}")
+                return None
+                
+            # Загружаем шаблон конфигурации
+            with open(self.mcp_config_path, 'r', encoding='utf-8') as f:
+                config_template = f.read()
+            
+            # Подставляем переменные окружения
+            config_content = self._substitute_env_variables(config_template)
+            
+            # Создаем временный файл
+            import tempfile
+            temp_file = tempfile.NamedTemporaryFile(
+                mode='w', 
+                suffix='.json', 
+                prefix='mcp-config-', 
+                delete=False,
+                encoding='utf-8'
+            )
+            temp_file.write(config_content)
+            temp_file.flush()
+            temp_file.close()
+            
+            temp_path = Path(temp_file.name)
+            logger.info(f"✅ Создан временный файл конфигурации MCP: {temp_path}")
+            return temp_path
+            
+        except Exception as e:
+            logger.error(f"❌ Ошибка создания временного файла конфигурации MCP: {e}")
+            return None
+    
+    def _substitute_env_variables(self, template: str) -> str:
+        """
+        Подставляет переменные окружения в шаблон конфигурации
+        
+        Args:
+            template: Шаблон с переменными вида {VARIABLE_NAME}
+            
+        Returns:
+            Строка с подставленными значениями
+        """
+        import re
+        
+        # Маппинг переменных из .env
+        env_mapping = {
+            'DIGITALOCEAN_TOKEN': os.getenv('DIGITALOCEAN_TOKEN', ''),
+            'SUPABASE_URL': os.getenv('SUPABASE_URL', ''),
+            'SUPABASE_KEY': os.getenv('SUPABASE_KEY', ''),
+            'CONTEXT7_API_KEY': os.getenv('CONTEXT7_API_KEY', ''),
+        }
+        
+        # Подставляем переменные
+        result = template
+        for var_name, var_value in env_mapping.items():
+            pattern = f"{{{var_name}}}"
+            result = result.replace(pattern, var_value)
+            
+        # Удаляем серверы с пустыми токенами
+        try:
+            import json
+            config_dict = json.loads(result)
+            filtered_servers = {}
+            
+            for server_name, server_config in config_dict.get("mcpServers", {}).items():
+                env_vars = server_config.get("env", {})
+                # Проверяем, есть ли хотя бы одна заполненная переменная окружения
+                has_valid_env = any(value.strip() for value in env_vars.values()) if env_vars else True
+                
+                if has_valid_env:
+                    filtered_servers[server_name] = server_config
+                else:
+                    logger.info(f"⚠️ Пропускаем сервер {server_name} - отсутствуют переменные окружения")
+            
+            config_dict["mcpServers"] = filtered_servers
+            result = json.dumps(config_dict, indent=2)
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Не удалось отфильтровать серверы: {e}")
+            
+        return result
         
     async def execute_mcp_command(
         self, 
@@ -132,11 +225,13 @@ class ClaudeCodeService:
             
             # Опции для SDK
             if CLAUDE_CODE_SDK_AVAILABLE:
-                # Загружаем конфигурацию MCP серверов
+                # Загружаем конфигурацию MCP серверов из временного файла
                 mcp_servers = {}
-                if self.mcp_config_path.exists():
+                config_file = self.temp_mcp_config if self.temp_mcp_config and self.temp_mcp_config.exists() else self.mcp_config_path
+                
+                if config_file and config_file.exists():
                     try:
-                        with open(self.mcp_config_path) as f:
+                        with open(config_file) as f:
                             mcp_config = json.load(f)
                             # Преобразуем конфигурацию в формат SDK
                             for server_name, server_config in mcp_config.get("mcpServers", {}).items():
@@ -896,6 +991,19 @@ Found 3 results:
                 "error": "Command not recognized in emulation mode",
                 "message_count": 1
             }
+    
+    def __del__(self):
+        """Очищаем временные файлы при удалении экземпляра"""
+        self._cleanup_temp_files()
+    
+    def _cleanup_temp_files(self):
+        """Удаляет временные файлы конфигурации"""
+        try:
+            if hasattr(self, 'temp_mcp_config') and self.temp_mcp_config and self.temp_mcp_config.exists():
+                self.temp_mcp_config.unlink()
+                logger.info(f"🧹 Удален временный файл: {self.temp_mcp_config}")
+        except Exception as e:
+            logger.warning(f"⚠️ Не удалось удалить временный файл: {e}")
 
 
 # Создаем глобальный экземпляр сервиса

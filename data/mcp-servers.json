@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "digitalocean": {
+      "command": "npx",
+      "args": ["-y", "@digitalocean/mcp"],
+      "env": {
+        "DIGITALOCEAN_API_TOKEN": "{DIGITALOCEAN_TOKEN}"
+      }
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server"],
+      "env": {
+        "SUPABASE_URL": "{SUPABASE_URL}",
+        "SUPABASE_SERVICE_ROLE_KEY": "{SUPABASE_KEY}"
+      }
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@context-labs/context7-mcp"],
+      "env": {
+        "CONTEXT7_API_KEY": "{CONTEXT7_API_KEY}"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+      "env": {}
+    },
+    "git": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git"],
+      "env": {}
+    }
+  }
+}
