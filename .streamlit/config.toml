@@ -1,29 +1,12 @@
-# Streamlit Configuration for Cloud Deployment
-# Optimized for Streamlit Cloud
+[global]
+dataFrameSerialization = "legacy"
 
 [server]
 headless = true
+port = 8501
 enableCORS = false
 enableXsrfProtection = false
-port = 8501
-address = "0.0.0.0"
-maxUploadSize = 200
-enableStaticServing = false
 
 [browser]
+serverAddress = "localhost" 
 gatherUsageStats = false
-serverAddress = "0.0.0.0"
-serverPort = 8501
-
-[theme]
-primaryColor = "#1f77b4"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f0f2f6"
-textColor = "#262730"
-font = "sans serif"
-
-[global]
-developmentMode = false
-
-[logger]
-level = "info"

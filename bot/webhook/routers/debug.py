@@ -299,6 +299,44 @@ async def voice_status():
     }
 
 
+@router.get("/current-prompt")
+async def get_current_prompt():
+    """Получить информацию о текущем промпте без аутентификации"""
+    import json
+    
+    instruction_file = config.data_dir / "instruction.json"
+    
+    if not instruction_file.exists():
+        return {
+            "error": "Файл инструкций не найден",
+            "instruction_file": str(instruction_file),
+            "exists": False,
+            "timestamp": datetime.now().isoformat()
+        }
+    
+    try:
+        with open(instruction_file, 'r', encoding='utf-8') as f:
+            instruction_data = json.load(f)
+        
+        return {
+            "instruction_file": str(instruction_file),
+            "exists": True,
+            "last_updated": instruction_data.get("last_updated", "Неизвестно"),
+            "system_instruction_length": len(instruction_data.get("system_instruction", "")),
+            "welcome_message_length": len(instruction_data.get("welcome_message", "")),
+            "has_system_instruction": bool(instruction_data.get("system_instruction")),
+            "has_welcome_message": bool(instruction_data.get("welcome_message")),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            "error": f"Ошибка чтения файла: {str(e)}",
+            "instruction_file": str(instruction_file),
+            "exists": True,
+            "timestamp": datetime.now().isoformat()
+        }
+
+
 @router.get("/webhook-config")
 async def webhook_config():
     """Диагностика конфигурации webhook"""

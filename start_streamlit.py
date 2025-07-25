@@ -10,8 +10,12 @@ import os
 # Добавляем корневую директорию в путь
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Запускаем админку
+# Импортируем главную функцию админки
+from admin.streamlit_admin import main
+
+# Запускаем админку (для Streamlit Cloud автоматически)
 if __name__ == "__main__":
-    # Импортируем и запускаем главную функцию админки
-    from admin.streamlit_admin import main
+    main()
+else:
+    # Для Streamlit Cloud вызываем main() напрямую
     main()

@@ -1,6 +1,8 @@
 {
   "mcpServers": {
-    "digitalocean": {
+    "_digitalocean_disabled": {
+      "reason": "DigitalOcean MCP не поддерживает Linux x64",
+      "alternative": "Используется прямой API вызов в unified_mcp_service.py",
       "command": "npx",
       "args": ["-y", "@digitalocean/mcp"],
       "env": {

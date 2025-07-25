@@ -407,6 +407,73 @@ class AppConfig:
                 "usernames": len(self.admin.usernames)
             }
         }
+    
+    def get_safe_config(self) -> Dict[str, Any]:
+        """Возвращает конфигурацию без секретных данных"""
+        import os
+        
+        return {
+            "environment": self.environment.value,
+            "debug": self.debug,
+            "port": self.port,
+            "max_message_length": self.max_message_length,
+            "telegram": {
+                "bot_id": self.telegram.bot_id,
+                "bot_username": self.telegram.bot_username,
+                "webhook_url": self.telegram.webhook_url,
+                "token_configured": bool(self.telegram.token and self.telegram.token != 'dummy:token_for_streamlit_cloud')
+            },
+            "webhook": {
+                "base_url": self.webhook.base_url,
+                "auto_setup": self.webhook.auto_setup,
+                "allowed_updates": self.webhook.allowed_updates,
+                "max_connections": self.webhook.max_connections,
+                "secret_configured": bool(self.webhook.secret_token)
+            },
+            "admin": {
+                "user_ids_count": len(self.admin.user_ids),
+                "usernames_count": len(self.admin.usernames),
+                "user_ids": self.admin.user_ids,  # Можно показать ID
+                "usernames": self.admin.usernames  # Можно показать usernames
+            },
+            "services": {
+                "openai": {
+                    "enabled": self.openai.enabled,
+                    "model": self.openai.model,
+                    "api_key_configured": bool(self.openai.api_key)
+                },
+                "anthropic": {
+                    "enabled": self.anthropic.enabled,
+                    "model": self.anthropic.model,
+                    "api_key_configured": bool(self.anthropic.api_key)
+                },
+                "voice": {
+                    "enabled": self.voice.enabled,
+                    "whisper_model": self.voice.whisper_model,
+                    "whisper_api_url": self.voice.whisper_api_url
+                },
+                "social_media": {
+                    "enabled": self.social_media.enabled,
+                    "youtube_configured": bool(self.social_media.youtube_api_key),
+                    "instagram_configured": bool(self.social_media.instagram_api_key),
+                    "tiktok_configured": bool(self.social_media.tiktok_api_key)
+                },
+                "mcp": {
+                    "enabled": self.mcp.enabled,
+                    "supabase_enabled": self.mcp.supabase_enabled,
+                    "digitalocean_enabled": self.mcp.digitalocean_enabled,
+                    "context7_enabled": self.mcp.context7_enabled
+                }
+            },
+            "environment_variables": {
+                "ADMIN_TOKEN_configured": bool(os.getenv('ADMIN_TOKEN')),
+                "VOICE_ENABLED": os.getenv('VOICE_ENABLED'),
+                "BASE_URL": os.getenv('BASE_URL'),
+                "WEBHOOK_URL": os.getenv('WEBHOOK_URL'),
+                "MCP_ENABLED": os.getenv('MCP_ENABLED'),
+                "ENVIRONMENT": os.getenv('ENVIRONMENT')
+            }
+        }
 
 
 # Создаем глобальный экземпляр конфигурации

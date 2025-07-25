@@ -99,14 +99,31 @@ def main():
         if st.button("🔍 Проверить текущий промпт", use_container_width=True):
             try:
                 import requests
-                response = requests.get("https://web-production-84d8.up.railway.app/debug/prompt", timeout=10)
+                response = requests.get("https://artemintegrator-nahdj.ondigitalocean.app/debug/current-prompt", timeout=10)
                 if response.status_code == 200:
                     data = response.json()
                     if "error" not in data:
-                        st.success("✅ Связь с ботом установлена")
-                        st.json(data)
+                        st.success("✅ Промпт успешно загружен")
+                        
+                        # Красивое отображение информации о промпте
+                        st.markdown("### 📄 Информация о промпте")
+                        
+                        col_info1, col_info2 = st.columns(2)
+                        with col_info1:
+                            st.metric("Последнее обновление", data.get("last_updated", "Неизвестно"))
+                            st.metric("Системная инструкция", f"{data.get('system_instruction_length', 0)} символов")
+                        
+                        with col_info2:
+                            st.metric("Приветственное сообщение", f"{data.get('welcome_message_length', 0)} символов")
+                            st.metric("Файл существует", "✅" if data.get("exists", False) else "❌")
+                        
+                        # Показываем детали
+                        with st.expander("🔍 Детали"):
+                            st.json(data)
                     else:
-                        st.error(f"❌ Ошибка бота: {data['error']}")
+                        st.error(f"❌ Ошибка: {data['error']}")
+                        if st.checkbox("Показать детали ошибки"):
+                            st.json(data)
                 else:
                     st.error(f"❌ HTTP {response.status_code}")
             except Exception as e:
@@ -116,17 +133,51 @@ def main():
         if st.button("🔄 Перезагрузить промпт", use_container_width=True):
             try:
                 import requests
-                response = requests.post("https://web-production-84d8.up.railway.app/admin/reload-prompt", timeout=10)
+                
+                # Получаем админский токен из secrets
+                admin_token = st.secrets.get("ADMIN_TOKEN", "secure-admin-token")
+                
+                headers = {
+                    "X-Admin-Token": admin_token,
+                    "Content-Type": "application/json"
+                }
+                
+                response = requests.post(
+                    "https://artemintegrator-nahdj.ondigitalocean.app/admin/reload-prompt", 
+                    headers=headers,
+                    timeout=10
+                )
+                
                 if response.status_code == 200:
                     data = response.json()
                     if data.get("changed"):
-                        st.success(f"✅ Промпт обновлен: {data['old_updated']} → {data['new_updated']}")
+                        st.success(f"✅ Промпт обновлен")
+                        st.info(f"📅 Старое обновление: {data.get('old_updated', 'Неизвестно')}")
+                        st.info(f"📅 Новое обновление: {data.get('new_updated', 'Неизвестно')}")
                     else:
                         st.info("📝 Промпт перезагружен (без изменений)")
+                        
+                    # Показываем детали успешного ответа
+                    with st.expander("🔍 Детали ответа"):
+                        st.json(data)
+                        
+                elif response.status_code == 403:
+                    st.error("❌ Ошибка аутентификации: неверный админский токен")
+                    st.info("🔑 Проверьте настройку ADMIN_TOKEN в secrets")
+                elif response.status_code == 404:
+                    st.error("❌ Админские endpoints отключены")
+                    st.info("⚙️ Убедитесь, что на сервере настроены администраторы")
                 else:
                     st.error(f"❌ HTTP {response.status_code}")
+                    try:
+                        error_data = response.json()
+                        st.error(f"Детали: {error_data.get('detail', 'Неизвестная ошибка')}")
+                    except:
+                        st.error(f"Ответ сервера: {response.text[:200]}")
+                        
             except Exception as e:
                 st.error(f"❌ Ошибка перезагрузки: {e}")
+                st.info("🌐 Проверьте подключение к серверу")
     
     st.markdown("---")
     
