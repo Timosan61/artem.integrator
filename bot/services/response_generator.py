@@ -274,6 +274,20 @@ class HybridResponseGenerator(IResponseGenerator):
             if await generator.is_available():
                 return True
         return False
+    
+    def reload_instructions(self) -> None:
+        """Перезагружает инструкции у всех генераторов"""
+        for generator in self.generators:
+            if hasattr(generator, '_load_instructions'):
+                try:
+                    generator.instructions = generator._load_instructions()
+                    logger.info(f"📝 Инструкции перезагружены для {type(generator).__name__}")
+                except Exception as e:
+                    logger.error(f"❌ Ошибка перезагрузки инструкций для {type(generator).__name__}: {e}")
+    
+    def _load_instructions(self) -> None:
+        """Совместимость с AdminService - вызывает reload_instructions()"""
+        self.reload_instructions()
 
 
 class SimpleResponseGenerator(IResponseGenerator):
