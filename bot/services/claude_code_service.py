@@ -237,7 +237,10 @@ class ClaudeCodeService:
                 
                 # Добавляем более явные инструкции для MCP
                 system_prompt = self._get_system_prompt()
-                if "apps" in command.lower() or "digitalocean" in command.lower():
+                command_lower = command.lower()
+                
+                # Распознаем запросы о приложениях (русский и английский)
+                if any(word in command_lower for word in ["apps", "приложен", "digitalocean"]):
                     system_prompt = f"""Execute user command: {command}
 
 IMPORTANT: Call mcp__digitalocean__list_apps with parameter {{"query": {{}}}} immediately.
@@ -252,9 +255,26 @@ JUST execute mcp__digitalocean__list_apps directly and return the results.
 
 USE ONLY THESE FUNCTIONS. NO EXCEPTIONS."""
                 
+                # Распознаем запросы о MCP серверах
+                elif any(word in command_lower for word in ["mcp сервер", "list servers", "серверов", "какие серверы", "список серверов"]):
+                    system_prompt = f"""Execute user command: {command}
+
+User wants to know about available MCP servers. Show them what MCP servers are configured and available.
+
+IMPORTANT: You can use mcp__digitalocean__list_apps to show DigitalOcean capabilities as an example of MCP servers working.
+
+Explain that MCP servers provide access to:
+- DigitalOcean (apps, databases, deployments)
+- Context7 (documentation)
+- Other configured servers
+
+DO NOT use TodoWrite or Task tools. Just provide information about MCP servers."""
+                
                 # Определяем разрешенные инструменты на основе команды
                 allowed_tools = []
-                if "apps" in command.lower() or "digitalocean" in command.lower():
+                
+                # Запросы о приложениях
+                if any(word in command_lower for word in ["apps", "приложен", "digitalocean"]):
                     # Только DigitalOcean инструменты
                     allowed_tools = [
                         "mcp__digitalocean__list_apps", 
@@ -263,6 +283,13 @@ USE ONLY THESE FUNCTIONS. NO EXCEPTIONS."""
                         "mcp__digitalocean__list_deployments",
                         "mcp__digitalocean__get_deployment",
                         "mcp__digitalocean__list_databases_cluster"
+                    ]
+                
+                # Запросы о MCP серверах
+                elif any(word in command_lower for word in ["mcp сервер", "list servers", "серверов", "какие серверы", "список серверов"]):
+                    # Разрешаем DigitalOcean для демонстрации работы MCP
+                    allowed_tools = [
+                        "mcp__digitalocean__list_apps"
                     ]
                 elif "project" in command.lower() or "supabase" in command.lower() or "/db" in command:
                     # Только Supabase инструменты

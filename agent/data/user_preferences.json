@@ -5,9 +5,9 @@
       "intent": "general_chat",
       "tool_type": "mcp_executor",
       "confidence_threshold": 0.8,
-      "usage_count": 3,
-      "success_count": 3,
-      "last_used": "2025-07-24T20:15:28.319918",
+      "usage_count": 6,
+      "success_count": 4,
+      "last_used": "2025-07-25T04:45:53.721232",
       "created_at": "2025-07-24T20:15:08.408522",
       "examples": [
         {
@@ -49,6 +49,91 @@
             ]
           },
           "timestamp": "2025-07-24T20:15:28.319923"
+        },
+        {
+          "message": "/status",
+          "success": true,
+          "tool_params": {
+            "command": "/mcp status",
+            "response": "App ID: 6eb5ebe0-c0aa-4b98-9ee1-a4e471069702\nName: sample-aspnetapp\nRegion: ams\n",
+            "mcp_response": [
+              {
+                "type": "text",
+                "text": "App ID: 6eb5ebe0-c0aa-4b98-9ee1-a4e471069702\nName: sample-aspnetapp\nRegion: ams\n"
+              }
+            ]
+          },
+          "timestamp": "2025-07-24T20:20:51.058155"
+        },
+        {
+          "message": "Какие у меня есть MCP сервера?",
+          "success": false,
+          "tool_params": null,
+          "timestamp": "2025-07-25T04:06:55.130284"
+        },
+        {
+          "message": "Какие у меня есть MCP сервера?",
+          "success": false,
+          "tool_params": null,
+          "timestamp": "2025-07-25T04:45:53.721239"
+        }
+      ]
+    },
+    "mcp_command:mcp_executor": {
+      "user_id": "229838448",
+      "intent": "mcp_command",
+      "tool_type": "mcp_executor",
+      "confidence_threshold": 0.8,
+      "usage_count": 2,
+      "success_count": 2,
+      "last_used": "2025-07-24T20:22:13.369829",
+      "created_at": "2025-07-24T20:17:54.811195",
+      "examples": [
+        {
+          "message": "Скажи, какие приложения у меня есть на DigitalOcean?",
+          "success": true,
+          "tool_params": {
+            "command": "/mcp apps",
+            "response": "App ID: 6eb5ebe0-c0aa-4b98-9ee1-a4e471069702\nName: sample-aspnetapp\nRegion: ams\n",
+            "mcp_response": [
+              {
+                "type": "text",
+                "text": "App ID: 6eb5ebe0-c0aa-4b98-9ee1-a4e471069702\nName: sample-aspnetapp\nRegion: ams\n"
+              }
+            ]
+          },
+          "timestamp": "2025-07-24T20:17:54.811199"
+        },
+        {
+          "message": "Давай посмотрим шоу DataBase, такую команду.",
+          "success": true,
+          "tool_params": {
+            "command": "/db SELECT datname FROM pg_database",
+            "response": "Команда выполнена",
+            "mcp_response": null
+          },
+          "timestamp": "2025-07-24T20:22:13.369836"
+        }
+      ]
+    },
+    "general_chat:echo_tool": {
+      "user_id": "229838448",
+      "intent": "general_chat",
+      "tool_type": "echo_tool",
+      "confidence_threshold": 0.8,
+      "usage_count": 1,
+      "success_count": 1,
+      "last_used": "2025-07-24T20:27:16.512700",
+      "created_at": "2025-07-24T20:27:16.512696",
+      "examples": [
+        {
+          "message": "/test_status",
+          "success": true,
+          "tool_params": {
+            "echo": "/test_status",
+            "original": "/test_status"
+          },
+          "timestamp": "2025-07-24T20:27:16.512700"
         }
       ]
     }

@@ -9,11 +9,10 @@ from datetime import datetime
 
 from .models import (
     AgentResponse, ToolResponse, BaseToolParams,
-    EchoToolParams, MCPCommandParams, ImageGenerationParams,
+    EchoToolParams, ImageGenerationParams,
     YouTubeAnalysisParams, ToolType
 )
 from .intents import Intent
-from .tool_registry import ToolRegistry
 
 if TYPE_CHECKING:
     from ..tools.base import BaseTool
@@ -36,14 +35,26 @@ class IntelligentAgent:
         self.model = model
         self.conversation_history = []
         
-        # Упрощенная инициализация - только registry инструментов
-        self.tool_registry = ToolRegistry()
         self.logger = logger
+        
+        # Импортируем Claude Code Service для прямых вызовов
+        self._init_claude_code_service()
         
         # Доступные функции
         self.available_functions = self._get_available_functions()
         
         logger.info(f"✅ Упрощенный IntelligentAgent инициализирован с моделью {model}")
+    
+    def _init_claude_code_service(self) -> None:
+        """Инициализирует Claude Code Service для прямых вызовов"""
+        try:
+            from bot.services.claude_code_service import claude_code_service
+            self.claude_code_service = claude_code_service
+            logger.info("✅ Claude Code Service подключен напрямую")
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Не удалось подключить Claude Code Service: {e}")
+            self.claude_code_service = None
     
     def _get_available_functions(self) -> List[Dict[str, Any]]:
         """Возвращает список доступных функций для OpenAI"""
@@ -77,26 +88,21 @@ class IntelligentAgent:
             {
                 "type": "function",
                 "function": {
-                    "name": "execute_mcp_command",
-                    "description": "Выполнить MCP команду для управления инфраструктурой (приложения, базы данных, серверы)",
+                    "name": "claude_code_direct",
+                    "description": "Прямой вызов Claude Code Service для MCP команд и управления инфраструктурой",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "command": {
+                            "message": {
                                 "type": "string",
-                                "description": "MCP команда (например: 'list apps', 'show databases', 'get deployments')"
+                                "description": "Сообщение пользователя для Claude Code Service (на русском или английском)"
                             },
                             "user_id": {
                                 "type": "string",
                                 "description": "ID пользователя"
-                            },
-                            "filters": {
-                                "type": "object",
-                                "description": "Дополнительные фильтры",
-                                "default": {}
                             }
                         },
-                        "required": ["command", "user_id"]
+                        "required": ["message", "user_id"]
                     }
                 }
             },
@@ -263,10 +269,11 @@ class IntelligentAgent:
 
 🎯 ТВОЯ ЗАДАЧА: Понять, что хочет пользователь, и выбрать правильный инструмент:
 
-📊 **MCP КОМАНДЫ** (execute_mcp_command) - используй для:
+📊 **MCP КОМАНДЫ** (claude_code_direct) - используй для:
 - "покажи приложения", "мои приложения", "список приложений"
-- "какие у меня базы данных", "mcp сервера", "серверы"
-- "деплойменты", "история деплоев" 
+- "какие у меня MCP сервера", "список серверов", "mcp сервера"
+- "какие у меня базы данных", "база данных", "БД"
+- "деплойменты", "история деплоев", "развертывания"
 - любые вопросы про инфраструктуру DigitalOcean/Supabase
 
 🎥 **YOUTUBE АНАЛИЗ** (analyze_youtube_video) - используй для:
@@ -282,8 +289,10 @@ class IntelligentAgent:
 🚀 **КЛЮЧЕВОЕ ПРАВИЛО**: Не думай о паттернах - просто пойми намерение и действуй!
 
 Примеры:
-- "какие у меня MCP сервера?" → execute_mcp_command
-- "покажи мои приложения" → execute_mcp_command  
+- "какие у меня есть MCP сервера?" → claude_code_direct
+- "какие у меня MCP сервера" → claude_code_direct
+- "покажи мои приложения" → claude_code_direct
+- "список серверов" → claude_code_direct  
 - "как дела?" → обычный разговор
 - "нарисуй кота" → generate_image
 
@@ -349,15 +358,15 @@ class IntelligentAgent:
         
         logger.info(f"🔧 Вызов функции: {function_name} с параметрами: {function_args}")
         
-        # Логируем для MCP команд
-        if function_name == "execute_mcp_command":
-            logger.info(f"🔌 MCP команда обнаружена: {function_args.get('command')}")
+        # Логируем для Claude Code команд
+        if function_name == "claude_code_direct":
+            logger.info(f"🔌 Claude Code прямой вызов: {function_args.get('message')}")
         
         # Выполняем функцию
         if function_name == "echo_tool":
             return await self._execute_echo_tool(EchoToolParams(**function_args))
-        elif function_name == "execute_mcp_command":
-            return await self._execute_mcp_command(MCPCommandParams(**function_args))
+        elif function_name == "claude_code_direct":
+            return await self._execute_claude_code_direct(function_args)
         elif function_name == "generate_image":
             return await self._execute_image_generation(ImageGenerationParams(**function_args))
         elif function_name == "analyze_youtube_video":
@@ -383,25 +392,47 @@ class IntelligentAgent:
         except Exception as e:
             return ToolResponse(success=False, error=str(e))
     
-    async def _execute_mcp_command(self, params: MCPCommandParams) -> ToolResponse:
-        """Выполняет MCP команду через реальный инструмент"""
-        # Получаем MCP tool из реестра
-        mcp_tool = self.tool_registry.get_tool("mcp_executor")
-        
-        if mcp_tool:
-            logger.info(f"🔧 Выполнение MCP команды через tool: {params.command}")
-            result = await mcp_tool.execute(params)
-            return result
-        else:
-            # Fallback на заглушку
-            logger.warning("⚠️ MCP tool не найден в реестре, используем заглушку")
+    async def _execute_claude_code_direct(self, function_args: Dict[str, Any]) -> ToolResponse:
+        """Выполняет прямой вызов Claude Code Service"""
+        try:
+            message = function_args.get("message")
+            user_id = function_args.get("user_id")
+            
+            logger.info(f"🔌 Прямой вызов Claude Code Service: {message}")
+            
+            if self.claude_code_service:
+                # Прямой вызов Claude Code Service
+                result = await self.claude_code_service.execute_mcp_command(message, user_id)
+                
+                if result.get("success"):
+                    return ToolResponse(
+                        success=True,
+                        data={
+                            "message": message,
+                            "response": result.get("response", "Команда выполнена"),
+                            "mcp_response": result.get("data") or result.get("mcp_response")
+                        },
+                        metadata={"tool_type": ToolType.MCP}
+                    )
+                else:
+                    return ToolResponse(
+                        success=False,
+                        error=result.get("error", "Ошибка выполнения Claude Code Service"),
+                        metadata={"tool_type": ToolType.MCP}
+                    )
+            else:
+                # Fallback если сервис недоступен
+                return ToolResponse(
+                    success=False,
+                    error="Claude Code Service недоступен",
+                    metadata={"tool_type": ToolType.MCP}
+                )
+                
+        except Exception as e:
+            logger.error(f"❌ Ошибка прямого вызова Claude Code Service: {e}", exc_info=True)
             return ToolResponse(
-                success=True,
-                data={
-                    "message": f"MCP команда '{params.command}' будет выполнена",
-                    "command": params.command,
-                    "user": params.user_id
-                },
+                success=False,
+                error=f"Ошибка: {str(e)}",
                 metadata={"tool_type": ToolType.MCP}
             )
     
