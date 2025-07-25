@@ -6,8 +6,8 @@
   },
   "deploy": {
     "startCommand": "python -m uvicorn bot.webhook.app:create_app --factory --host 0.0.0.0 --port 8000",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 120,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300,
     "restartPolicyType": "always"
   }
 }
