@@ -1,5 +1,5 @@
 [global]
-dataFrameSerialization = "legacy"
+# dataFrameSerialization удален - больше не поддерживается в Streamlit 1.28+
 
 [server]
 headless = true
