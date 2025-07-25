@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Тесты системы инструментов (Tool System)
+ПРИМЕЧАНИЕ: Этот файл неактуален - MCPTool удален в Simple Agent архитектуре
 """
 import asyncio
 import os

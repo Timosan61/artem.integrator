@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Тесты для Confirmation Manager и ConversationState
+ПРИМЕЧАНИЕ: Этот файл неактуален - MCPTool удален в Simple Agent архитектуре
 """
 import asyncio
 import os
@@ -21,8 +22,9 @@ from agent.core.conversation_state import (
     StateType
 )
 from agent.core.confirmation_formatter import ConfirmationFormatter
-from agent.tools import MCPTool, EchoTool
-from agent.core.models import MCPCommandParams, EchoToolParams, ToolType
+# MCPTool удален в Simple Agent архитектуре
+from agent.tools import EchoTool
+from agent.core.models import EchoToolParams, ToolType
 
 
 async def test_confirmation_request():

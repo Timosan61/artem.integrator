@@ -226,7 +226,7 @@ class ToolRegistry:
         # Мапинг имен инструментов на модули
         tool_modules = {
             "echo_tool": "agent.tools.echo_tool.EchoTool",
-            "mcp_executor": "agent.tools.mcp_tool.MCPTool",
+            # "mcp_executor": "agent.tools.mcp_tool.MCPTool",  # Удален в Simple Agent
             "youtube_analyzer": "agent.tools.youtube_tool.YouTubeAnalyzerTool"
         }
         

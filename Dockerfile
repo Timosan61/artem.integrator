@@ -16,8 +16,8 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Устанавливаем Claude Code SDK
-RUN pip install claude-code-sdk==0.0.13 --no-deps
+# Устанавливаем Claude Code SDK (версия синхронизирована с requirements.txt)
+RUN pip install claude-code-sdk==0.0.14
 
 # Копируем весь проект
 COPY . .

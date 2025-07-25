@@ -1,5 +1,6 @@
 """
-Тесты для реальных инструментов (MCP и YouTube)
+Тесты для реальных инструментов (YouTube)
+Примечание: MCPTool удален в рамках упрощенной Simple Agent архитектуры
 """
 import pytest
 import asyncio
@@ -12,120 +13,13 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from agent.tools.mcp_tool import MCPTool
 from agent.tools.youtube_tool import YouTubeAnalyzerTool
-from agent.core.models import MCPCommandParams, YouTubeAnalysisParams, ToolResponse
+from agent.core.models import YouTubeAnalysisParams, ToolResponse
 
 
-class TestMCPTool:
-    """Тесты для MCP инструмента"""
-    
-    @pytest.fixture
-    def mcp_tool(self):
-        """Создает экземпляр MCPTool"""
-        return MCPTool()
-    
-    @pytest.mark.asyncio
-    async def test_mcp_command_formatting(self, mcp_tool):
-        """Тест форматирования MCP команд"""
-        # Тестируем различные форматы команд
-        test_cases = [
-            ("list apps", "/mcp apps"),
-            ("show databases", "/db SELECT datname FROM pg_database"),
-            ("приложения", "/mcp apps"),
-            ("базы данных", "/db SELECT datname FROM pg_database"),
-            ("/mcp apps", "/mcp apps"),  # Уже отформатированная
-            ("get deployments", "/mcp apps"),
-        ]
-        
-        for input_cmd, expected in test_cases:
-            result = mcp_tool._format_command(input_cmd)
-            assert result == expected, f"Ожидалось {expected}, получено {result}"
-    
-    @pytest.mark.asyncio
-    async def test_mcp_command_type_detection(self, mcp_tool):
-        """Тест определения типа команды"""
-        test_cases = [
-            ("show apps", "applications"),
-            ("list databases", "databases"),
-            ("get deployments", "deployments"),
-            ("базы данных", "databases"),
-            ("random command", "general"),
-        ]
-        
-        for command, expected_type in test_cases:
-            result = mcp_tool._get_command_type(command)
-            assert result == expected_type, f"Для команды '{command}' ожидался тип {expected_type}"
-    
-    @pytest.mark.asyncio
-    async def test_mcp_emulation_response(self, mcp_tool):
-        """Тест эмулированного ответа MCP"""
-        params = MCPCommandParams(
-            command="list apps",
-            user_id="test_user"
-        )
-        
-        response = await mcp_tool.execute(params)
-        
-        assert response.success is True
-        assert response.data is not None
-        mcp_response = response.data.get("mcp_response")
-        assert mcp_response is not None
-        # В зависимости от того, используется реальный сервис или эмуляция
-        if isinstance(mcp_response, dict):
-            assert "apps" in mcp_response
-            assert response.metadata.get("emulated") is True
-        elif isinstance(mcp_response, list):
-            # Реальный ответ от ClaudeCodeService
-            assert len(mcp_response) > 0
-            # Проверяем что есть текст с упоминанием app
-            assert any("app" in str(item).lower() for item in mcp_response)
-    
-    @pytest.mark.asyncio
-    @patch('agent.tools.mcp_tool.claude_code_service')
-    async def test_mcp_real_service_call(self, mock_service, mcp_tool):
-        """Тест вызова реального ClaudeCodeService"""
-        # Настраиваем мок
-        mock_service.execute_mcp_command = AsyncMock(return_value={
-            "success": True,
-            "response": "Список приложений",
-            "mcp_response": {"apps": [{"name": "test-app"}]},
-            "execution_time": 1.5
-        })
-        
-        # Включаем доступность сервиса
-        with patch('agent.tools.mcp_tool.CLAUDE_SERVICE_AVAILABLE', True):
-            params = MCPCommandParams(
-                command="list apps",
-                user_id="test_user"
-            )
-            
-            response = await mcp_tool.execute(params)
-            
-            # Проверяем результат
-            assert response.success is True
-            assert response.data["response"] == "Список приложений"
-            assert "apps" in response.data.get("mcp_response", {})
-            
-            # Проверяем, что сервис был вызван
-            mock_service.execute_mcp_command.assert_called_once_with(
-                "/mcp apps",
-                "test_user"
-            )
-    
-    def test_mcp_confirmation_message(self, mcp_tool):
-        """Тест генерации сообщения подтверждения"""
-        params = MCPCommandParams(
-            command="show databases",
-            user_id="test_user"
-        )
-        
-        message = mcp_tool.get_confirmation_message(params)
-        
-        assert "Подтверждение MCP команды" in message
-        assert "show databases" in message
-        assert "databases" in message
-        assert "✅ Да / ❌ Нет" in message
+# Примечание: Тесты для MCPTool удалены, так как MCPTool был убран 
+# в рамках упрощенной Simple Agent архитектуры. Теперь используется 
+# прямой вызов через claude_code_direct функцию в IntelligentAgent.
 
 
 class TestYouTubeAnalyzerTool:
@@ -283,15 +177,9 @@ class TestToolIntegration:
     """Интеграционные тесты для работы инструментов вместе"""
     
     @pytest.mark.asyncio
-    async def test_tool_metadata(self):
-        """Тест метаданных инструментов"""
-        mcp_tool = MCPTool()
+    async def test_youtube_tool_metadata(self):
+        """Тест метаданных YouTube инструмента"""
         youtube_tool = YouTubeAnalyzerTool()
-        
-        # Проверяем метаданные MCP
-        mcp_meta = mcp_tool.get_metadata()
-        assert mcp_meta.name == "mcp_executor"
-        assert mcp_meta.requires_confirmation is True
         
         # Проверяем метаданные YouTube
         youtube_meta = youtube_tool.get_metadata()
@@ -299,16 +187,9 @@ class TestToolIntegration:
         assert youtube_meta.requires_confirmation is False
     
     @pytest.mark.asyncio
-    async def test_openai_schemas(self):
-        """Тест схем для OpenAI"""
-        mcp_tool = MCPTool()
+    async def test_youtube_openai_schema(self):
+        """Тест схемы YouTube для OpenAI"""
         youtube_tool = YouTubeAnalyzerTool()
-        
-        # Проверяем схему MCP
-        mcp_schema = mcp_tool.get_openai_schema()
-        assert mcp_schema["type"] == "function"
-        assert "execute_mcp_command" in mcp_schema["function"]["name"]
-        assert "command" in mcp_schema["function"]["parameters"]["properties"]
         
         # Проверяем схему YouTube
         youtube_schema = youtube_tool.get_openai_schema()
