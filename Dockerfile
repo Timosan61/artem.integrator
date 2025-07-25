@@ -31,7 +31,8 @@ ENV PYTHONUNBUFFERED=1
 
 # Проверяем наличие модулей
 RUN python -c "import bot; print('✅ Bot module loaded')"
-RUN python -c "from bot.webhook.app import create_app; print('✅ Webhook app loaded')"
+# Временно отключаем проверку webhook app - требует переменных окружения
+# RUN python -c "from bot.webhook.app import create_app; print('✅ Webhook app loaded')"
 
 # Открываем порт
 EXPOSE 8000
