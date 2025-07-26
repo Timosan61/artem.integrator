@@ -1,123 +1,118 @@
 """
-Унифицированный агент
+Упрощенный унифицированный агент
 
-Главный агент, который использует цепочку ответственности
-для обработки сообщений разными специализированными агентами
+Прямой вызов Claude Code SDK для обработки естественного языка
+по аналогии с Claude Desktop
 """
 
 import logging
-from typing import Optional, List
+from typing import Optional
 
-from .base_agent import ChainedAgent, IAgent
-from .agent_adapters import (
-    IntelligentAgentAdapter,
-    DefaultAgentAdapter
-)
 from .interfaces import Message, Response
+from ..services.claude_code_service import claude_code_service
 
 logger = logging.getLogger(__name__)
 
 
 class UnifiedAgent:
     """
-    Главный агент системы
+    Упрощенный агент с прямым вызовом Claude Code SDK
     
-    Использует паттерн Chain of Responsibility для делегирования
-    обработки сообщений специализированным агентам
+    Повторяет логику Claude Desktop:
+    - Получает естественный язык от пользователя
+    - Передает напрямую в Claude Code SDK
+    - SDK сам анализирует схемы MCP и вызывает нужные функции
     """
     
     def __init__(self):
-        """Инициализация с автоматической настройкой цепочки агентов"""
-        self._setup_agent_chain()
-        
-    def _setup_agent_chain(self):
-        """Настраивает цепочку агентов"""
-        agents: List[IAgent] = []
-        
-        # Добавляем агентов в порядке приоритета
-        try:
-            # 1. Intelligent Agent для всех сообщений от администраторов бота (приоритет 90)
-            agents.append(IntelligentAgentAdapter())
-            logger.info("✅ IntelligentAgent добавлен в цепочку")
-        except Exception as e:
-            logger.warning(f"⚠️ IntelligentAgent недоступен: {e}")
-            
-        try:
-            # 2. Default Agent (ArtemAgent) для обычных пользователей + Business (приоритет 10)
-            agents.append(DefaultAgentAdapter())
-            logger.info("✅ DefaultAgent добавлен в цепочку")
-        except Exception as e:
-            logger.error(f"❌ DefaultAgent недоступен: {e}")
-            
-        # Создаем цепочку
-        self.chain = ChainedAgent(agents)
-        logger.info(f"🔗 Цепочка агентов создана с {len(agents)} агентами")
+        """Инициализация сервиса"""
+        self.claude_service = claude_code_service
+        logger.info("✅ UnifiedAgent инициализирован с Claude Code SDK")
         
     async def process_message(self, message: Message) -> Response:
         """
-        Обрабатывает входящее сообщение
+        Обрабатывает сообщение через Claude Code SDK
         
         Args:
             message: Сообщение для обработки
             
         Returns:
-            Response с ответом от подходящего агента
+            Response от Claude Code SDK
         """
-        logger.info(f"📨 UnifiedAgent обрабатывает сообщение от {message.user.id} (role: {message.user.role.value})")
+        logger.info(f"📨 UnifiedAgent: сообщение от {message.user.id} -> Claude Code SDK")
         
         try:
-            # Делегируем обработку цепочке
-            response = await self.chain.process_message(message)
+            # Передаем естественный язык напрямую в Claude Code SDK
+            result = await self.claude_service.execute_natural_request(
+                text=message.text,
+                user_id=str(message.user.id)
+            )
             
-            # Логируем, какой агент обработал
-            if "agent" in response.metadata:
-                logger.info(f"✅ Сообщение обработано агентом: {response.metadata['agent']}")
-            
-            return response
+            if result.get("success"):
+                logger.info("✅ Claude Code SDK успешно обработал сообщение")
+                return Response(
+                    text=result.get("response", "Выполнено"),
+                    metadata={
+                        "agent": "ClaudeCodeSDK",
+                        "success": True
+                    }
+                )
+            else:
+                logger.warning(f"⚠️ Claude Code SDK вернул ошибку: {result.get('error')}")
+                return Response(
+                    text=f"Ошибка: {result.get('error', 'Неизвестная ошибка')}",
+                    metadata={
+                        "agent": "ClaudeCodeSDK", 
+                        "success": False,
+                        "error": result.get("error")
+                    }
+                )
             
         except Exception as e:
-            logger.error(f"❌ Ошибка обработки сообщения: {e}", exc_info=True)
+            logger.error(f"❌ Ошибка вызова Claude Code SDK: {e}", exc_info=True)
             return Response(
-                text="Извините, произошла ошибка при обработке вашего сообщения.",
-                metadata={"error": str(e)}
+                text="Извините, произошла ошибка при обработке сообщения.",
+                metadata={"error": str(e), "agent": "UnifiedAgent"}
             )
             
     async def clear_user_memory(self, user_id: int) -> bool:
         """
-        Очищает память пользователя во всех агентах
+        Заглушка для совместимости - Claude Code SDK не сохраняет историю
         
         Args:
             user_id: ID пользователя
             
         Returns:
-            True если успешно
+            True всегда
         """
-        logger.info(f"🧹 Очистка памяти пользователя {user_id}")
-        return await self.chain.clear_user_memory(user_id)
+        logger.info(f"🧹 Очистка памяти пользователя {user_id} (заглушка - SDK без истории)")
+        return True
         
     def get_status(self) -> dict:
         """
-        Возвращает статус всех агентов
+        Возвращает статус Claude Code SDK
         
         Returns:
             Словарь со статусом системы
         """
-        return self.chain.get_status()
+        return {
+            "agent": "ClaudeCodeSDK",
+            "enabled": self.claude_service.enabled,
+            "mcp_config": str(self.claude_service.mcp_config_path),
+            "api_key_set": bool(self.claude_service.api_key)
+        }
         
     async def get_agent_for_message(self, message: Message) -> Optional[str]:
         """
-        Определяет, какой агент будет обрабатывать сообщение
+        Всегда возвращает Claude Code SDK как единственный агент
         
         Args:
             message: Сообщение для анализа
             
         Returns:
-            Имя агента или None
+            Имя агента
         """
-        for agent in self.chain.agents:
-            if await agent.can_handle(message):
-                return agent.get_name()
-        return None
+        return "ClaudeCodeSDK"
 
 
 # Глобальный экземпляр унифицированного агента

@@ -7,7 +7,6 @@ Claude Code Service - интеграция с Claude Code SDK для выпол�
 import logging
 import json
 import os
-import yaml
 from typing import Optional, Dict, Any, List, AsyncIterator
 from pathlib import Path
 import asyncio
@@ -54,8 +53,6 @@ class ClaudeCodeService:
         # Создаем временный файл конфигурации с подставленными переменными
         self.temp_mcp_config = self._create_mcp_config_with_env_vars()
         
-        # Упрощенная инициализация - больше не используем YAML промпты
-        
         if not self.enabled:
             logger.warning("⚠️ Claude Code Service отключен: MCP или Anthropic не настроены")
             return
@@ -70,33 +67,95 @@ class ClaudeCodeService:
             
         logger.info("✅ Claude Code Service инициализирован")
     
-    def reload_prompts(self) -> None:
+    async def execute_natural_request(
+        self, 
+        text: str, 
+        user_id: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
-        Заглушка для совместимости - промпты больше не используются
-        """
-        logger.info("ℹ️ Перезагрузка промптов не требуется в упрощенной версии")
-    
-    def _load_yaml_config(self, filename: str) -> Dict[str, Any]:
-        """
-        Загружает конфигурацию из YAML файла
+        Выполняет запрос на естественном языке через Claude Code SDK
+        (по аналогии с Claude Desktop)
         
         Args:
-            filename: Имя файла в папке data
+            text: Текст запроса от пользователя
+            user_id: ID пользователя для логирования
             
         Returns:
-            Словарь с конфигурацией или пустой словарь при ошибке
+            Dict с результатом выполнения
         """
+        import uuid
+        trace_id = str(uuid.uuid4())[:8]
+        
+        if not self.enabled:
+            logger.warning(f"❌ [TRACE:{trace_id}] Claude Code Service отключен")
+            return {
+                "success": False,
+                "error": "Claude Code SDK отключен"
+            }
+            
+        if not CLAUDE_CODE_SDK_AVAILABLE:
+            logger.warning(f"❌ [TRACE:{trace_id}] Claude Code SDK недоступен")
+            return {
+                "success": False,
+                "error": "Claude Code SDK не установлен"
+            }
+            
         try:
-            yaml_path = Path(__file__).parent.parent.parent / "data" / filename
-            if yaml_path.exists():
-                with open(yaml_path, 'r', encoding='utf-8') as f:
-                    return yaml.safe_load(f) or {}
-            else:
-                logger.warning(f"⚠️ YAML файл не найден: {yaml_path}")
-                return {}
+            logger.info(f"🚀 [TRACE:{trace_id}] Естественный запрос: '{text[:100]}{'...' if len(text) > 100 else ''}'")
+            logger.info(f"👤 [TRACE:{trace_id}] Пользователь: {user_id}")
+            
+            # Загружаем MCP серверы
+            mcp_servers = {}
+            config_file = self.temp_mcp_config if self.temp_mcp_config and self.temp_mcp_config.exists() else self.mcp_config_path
+            
+            if config_file and config_file.exists():
+                try:
+                    with open(config_file) as f:
+                        mcp_config = json.load(f)
+                        for server_name, server_config in mcp_config.get("mcpServers", {}).items():
+                            mcp_servers[server_name] = {
+                                "command": server_config.get("command", ""),
+                                "args": server_config.get("args", []),
+                                "env": server_config.get("env", {})
+                            }
+                    logger.info(f"✅ [TRACE:{trace_id}] Загружено {len(mcp_servers)} MCP серверов")
+                except Exception as e:
+                    logger.warning(f"⚠️ [TRACE:{trace_id}] Не удалось загрузить MCP конфигурацию: {e}")
+            
+            # Минимальные опции для SDK - пусть сам анализирует
+            options = ClaudeCodeOptions(
+                max_turns=1,
+                mcp_servers=mcp_servers,
+                permission_mode="acceptEdits"
+            )
+            
+            # Выполняем через SDK
+            messages: List[Message] = []
+            
+            import time
+            start_time = time.time()
+            
+            async for message in query(prompt=text, options=options):
+                messages.append(message)
+                if len(messages) > 50:  # Ограничение для безопасности
+                    logger.warning(f"⚠️ [TRACE:{trace_id}] Слишком много сообщений, прерываем")
+                    break
+                    
+            execution_time = time.time() - start_time
+            logger.info(f"✅ [TRACE:{trace_id}] SDK выполнен за {execution_time:.2f}с, получено {len(messages)} сообщений")
+            
+            # Обрабатываем результат (используем существующую логику)
+            result = self._process_messages(messages, text, trace_id)
+            
+            return result
+            
         except Exception as e:
-            logger.error(f"❌ Ошибка загрузки YAML {filename}: {e}")
-            return {}
+            logger.error(f"💥 [TRACE:{trace_id}] Ошибка выполнения естественного запроса: {e}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
     
     def _create_mcp_config_with_env_vars(self) -> Optional[Path]:
         """
@@ -195,517 +254,12 @@ class ClaudeCodeService:
         trace_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Выполняет MCP команду через Claude Code SDK
-        
-        Args:
-            command: Команда для выполнения (например: "/mcp status")
-            user_id: ID пользователя для логирования
-            trace_id: ID трассировки для логирования
-            
-        Returns:
-            Dict с результатом выполнения
+        УСТАРЕВШИЙ метод - используйте execute_natural_request
+        Оставлен для обратной совместимости
         """
-        if not trace_id:
-            import uuid
-            trace_id = str(uuid.uuid4())[:8]
-            
-        if not self.enabled:
-            logger.warning(f"❌ [TRACE:{trace_id}] MCP Service отключен")
-            return {
-                "success": False,
-                "error": "MCP сервис отключен"
-            }
-            
-        try:
-            logger.info(f"🔧 [TRACE:{trace_id}] Claude Code Service: начинаем выполнение MCP команды")
-            logger.info(f"📝 [TRACE:{trace_id}] Команда: '{command}'")
-            logger.info(f"👤 [TRACE:{trace_id}] Пользователь: {user_id}")
-            logger.info(f"⚙️ [TRACE:{trace_id}] SDK доступен: {CLAUDE_CODE_SDK_AVAILABLE}")
-            
-            # Анализируем тип команды
-            command_type = self._analyze_command_type(command, trace_id)
-            logger.info(f"🎯 [TRACE:{trace_id}] Тип команды: {command_type}")
-            
-            # Формируем промпт для Claude Code
-            logger.info(f"📋 [TRACE:{trace_id}] Этап 1: Подготовка промпта...")
-            prompt = self._format_mcp_prompt(command, trace_id)
-            
-            # Опции для SDK
-            if CLAUDE_CODE_SDK_AVAILABLE:
-                logger.info(f"📂 [TRACE:{trace_id}] Этап 2: Загрузка конфигурации MCP серверов...")
-                
-                # Загружаем конфигурацию MCP серверов из временного файла
-                mcp_servers = {}
-                config_file = self.temp_mcp_config if self.temp_mcp_config and self.temp_mcp_config.exists() else self.mcp_config_path
-                
-                logger.info(f"📄 [TRACE:{trace_id}] Файл конфигурации: {config_file}")
-                
-                if config_file and config_file.exists():
-                    try:
-                        with open(config_file) as f:
-                            mcp_config = json.load(f)
-                            # Преобразуем конфигурацию в формат SDK
-                            for server_name, server_config in mcp_config.get("mcpServers", {}).items():
-                                mcp_servers[server_name] = {
-                                    "command": server_config.get("command", ""),
-                                    "args": server_config.get("args", []),
-                                    "env": server_config.get("env", {})
-                                }
-                                logger.debug(f"🔧 [TRACE:{trace_id}] Сервер {server_name}: {server_config.get('command', 'N/A')}")
-                                
-                        logger.info(f"✅ [TRACE:{trace_id}] Загружено {len(mcp_servers)} MCP серверов")
-                        
-                    except Exception as e:
-                        logger.warning(f"⚠️ [TRACE:{trace_id}] Не удалось загрузить MCP конфигурацию: {e}")
-                else:
-                    logger.warning(f"⚠️ [TRACE:{trace_id}] Файл конфигурации MCP не найден")
-                
-                # Добавляем более явные инструкции для MCP
-                logger.info(f"🎯 [TRACE:{trace_id}] Этап 3: Определение системного промпта...")
-                system_prompt = self._get_system_prompt()
-                command_lower = command.lower()
-                
-                # Распознаем запросы о приложениях (русский и английский)
-                if any(word in command_lower for word in ["apps", "приложен", "digitalocean"]):
-                    logger.info(f"📱 [TRACE:{trace_id}] Обнаружен запрос о DigitalOcean приложениях")
-                    system_prompt = f"""Execute user command: {command}
-
-IMPORTANT: Call mcp__digitalocean__list_apps with parameter {{"query": {{}}}} immediately.
-
-DO NOT:
-- Use TodoWrite or any todo management tools
-- Use Task tool
-- Plan or organize tasks
-- Use any Cloudflare functions
-
-JUST execute mcp__digitalocean__list_apps directly and return the results.
-
-USE ONLY THESE FUNCTIONS. NO EXCEPTIONS."""
-                
-                # Распознаем запросы о MCP серверах
-                elif any(word in command_lower for word in ["mcp сервер", "list servers", "серверов", "какие серверы", "список серверов"]):
-                    logger.info(f"🔌 [TRACE:{trace_id}] Обнаружен запрос о MCP серверах")
-                    system_prompt = f"""Execute user command: {command}
-
-User wants to know about available MCP servers. Show them what MCP servers are configured and available.
-
-IMPORTANT: You can use mcp__digitalocean__list_apps to show DigitalOcean capabilities as an example of MCP servers working.
-
-Explain that MCP servers provide access to:
-- DigitalOcean (apps, databases, deployments)
-- Context7 (documentation)
-- Other configured servers
-
-DO NOT use TodoWrite or Task tools. Just provide information about MCP servers."""
-                
-                # Определяем разрешенные инструменты на основе команды
-                logger.info(f"🛠️ [TRACE:{trace_id}] Этап 4: Определение разрешенных инструментов...")
-                allowed_tools = []
-                
-                # Запросы о приложениях
-                if any(word in command_lower for word in ["apps", "приложен", "digitalocean"]):
-                    logger.info(f"📱 [TRACE:{trace_id}] Используем DigitalOcean инструменты для приложений")
-                    # Только DigitalOcean инструменты
-                    allowed_tools = [
-                        "mcp__digitalocean__list_apps", 
-                        "mcp__digitalocean__get_app", 
-                        "mcp__digitalocean__create_app", 
-                        "mcp__digitalocean__list_deployments",
-                        "mcp__digitalocean__get_deployment",
-                        "mcp__digitalocean__list_databases_cluster"
-                    ]
-                
-                # Запросы о MCP серверах
-                elif any(word in command_lower for word in ["mcp сервер", "list servers", "серверов", "какие серверы", "список серверов"]):
-                    logger.info(f"🔌 [TRACE:{trace_id}] Используем DigitalOcean для демонстрации MCP серверов")
-                    # Разрешаем DigitalOcean для демонстрации работы MCP
-                    allowed_tools = [
-                        "mcp__digitalocean__list_apps"
-                    ]
-                elif "project" in command.lower() or "supabase" in command.lower() or "/db" in command:
-                    logger.info(f"🗄️ [TRACE:{trace_id}] Используем Supabase инструменты для проектов/БД")
-                    # Только Supabase инструменты
-                    allowed_tools = [
-                        "mcp__supabase__list_projects", 
-                        "mcp__supabase__get_project",
-                        "mcp__supabase__execute_sql", 
-                        "mcp__supabase__list_tables",
-                        "mcp__supabase__list_organizations"
-                    ]
-                elif "doc" in command.lower() or "context7" in command.lower():
-                    logger.info(f"📚 [TRACE:{trace_id}] Используем Context7 инструменты для документации")
-                    # Только Context7 инструменты
-                    allowed_tools = [
-                        "mcp__context7__resolve-library-id", 
-                        "mcp__context7__get-library-docs"
-                    ]
-                else:
-                    logger.info(f"❓ [TRACE:{trace_id}] Неопределенная команда, используем стандартный набор")
-                    # Если не уверены - используем стандартный набор
-                    allowed_tools = self._get_allowed_tools(command)
-                
-                # Список запрещенных инструментов (все Cloudflare функции)
-                logger.info(f"🚫 [TRACE:{trace_id}] Этап 5: Настройка запрещенных инструментов...")
-                disallowed_tools = [
-                    "mcp__cloudflare__*",  # Блокируем все Cloudflare функции
-                    "mcp__cloudflare__worker_list",
-                    "mcp__cloudflare__ai_inference",
-                    "mcp__cloudflare__kv_get",
-                    "mcp__cloudflare__r2_list_buckets",
-                    "mcp__cloudflare__d1_list_databases",
-                    "mcp__cloudflare__analytics_get",
-                    "mcp__cloudflare__zones_list"
-                ]
-                
-                # Добавляем все возможные инструменты управления задачами в запрещенные
-                task_management_tools = [
-                    "TodoWrite", "Task", "ExitPlanMode", "WebSearch", "WebFetch",
-                    "Read", "Write", "Edit", "MultiEdit", "Bash", "LS", "Grep", "Glob"
-                ]
-                
-                if "apps" in command.lower():
-                    logger.info(f"📱 [TRACE:{trace_id}] Специальные ограничения для команды apps")
-                    # Для команды apps разрешаем ТОЛЬКО list_apps
-                    allowed_tools = ["mcp__digitalocean__list_apps"]
-                    disallowed_tools.extend(task_management_tools)
-                
-                logger.info(f"✅ [TRACE:{trace_id}] Разрешенные инструменты ({len(allowed_tools)}): {allowed_tools}")
-                logger.info(f"❌ [TRACE:{trace_id}] Запрещенные инструменты ({len(disallowed_tools)}): {disallowed_tools[:3]}...")
-                
-                logger.info(f"🔧 [TRACE:{trace_id}] Этап 6: Создание опций для Claude Code SDK...")
-                options = ClaudeCodeOptions(
-                    max_turns=1,  # Одна итерация для команды
-                    system_prompt=system_prompt,
-                    cwd=Path.cwd(),
-                    allowed_tools=allowed_tools,  # Ограничиваем доступные инструменты
-                    disallowed_tools=disallowed_tools,  # Блокируем Cloudflare и task management
-                    mcp_servers=mcp_servers,  # Передаем конфигурацию серверов
-                    permission_mode="acceptEdits"  # Автоматически принимаем использование инструментов
-                )
-                logger.info(f"✅ [TRACE:{trace_id}] Опции SDK созданы успешно")
-            else:
-                options = None
-            
-            # Используем реальный SDK если доступен
-            if CLAUDE_CODE_SDK_AVAILABLE:
-                try:
-                    logger.info(f"🚀 [TRACE:{trace_id}] Этап 7: Выполнение через реальный Claude Code SDK...")
-                    logger.info(f"📝 [TRACE:{trace_id}] Промпт: '{prompt[:100]}{'...' if len(prompt) > 100 else ''}'")
-                    
-                    # Используем настоящий SDK
-                    messages: List[Message] = []
-                    
-                    import time
-                    start_time = time.time()
-                    
-                    try:
-                        logger.info(f"🔄 [TRACE:{trace_id}] Начинаем потоковое получение сообщений от SDK...")
-                        
-                        async for message in query(prompt=prompt, options=options):
-                            messages.append(message)
-                            # Безопасный вывод для отладки
-                            msg_type = type(message).__name__
-                            msg_role = getattr(message, 'role', 'No role')
-                            msg_content = str(getattr(message, 'content', ''))[:100] if hasattr(message, 'content') else 'No content'
-                            logger.debug(f"📨 [TRACE:{trace_id}] Получено сообщение #{len(messages)}: {msg_type} - {msg_role} - {msg_content}...")
-                            
-                            # Ограничиваем количество сообщений для предотвращения переполнения
-                            if len(messages) > 50:
-                                logger.warning(f"⚠️ [TRACE:{trace_id}] Слишком много сообщений от SDK ({len(messages)}), прерываем")
-                                break
-                                
-                        execution_time = time.time() - start_time
-                        logger.info(f"✅ [TRACE:{trace_id}] SDK выполнение завершено за {execution_time:.2f}с")
-                        logger.info(f"📊 [TRACE:{trace_id}] Получено {len(messages)} сообщений от SDK")
-                                
-                    except json.JSONDecodeError as e:
-                        execution_time = time.time() - start_time
-                        logger.error(f"❌ [TRACE:{trace_id}] Ошибка декодирования JSON от SDK за {execution_time:.2f}с: {e}")
-                        logger.warning(f"⚠️ [TRACE:{trace_id}] Используем частичный результат ({len(messages)} сообщений)")
-                        # Продолжаем с тем, что успели получить
-                    
-                    # Обрабатываем результат
-                    logger.info(f"🔄 [TRACE:{trace_id}] Этап 8: Обработка полученных сообщений...")
-                    result = self._process_messages(messages, command, trace_id)
-                    
-                except Exception as sdk_error:
-                    logger.error(f"💥 [TRACE:{trace_id}] Критическая ошибка SDK: {sdk_error}", exc_info=True)
-                    # Больше не переключаемся на эмуляцию - возвращаем ошибку
-                    result = {
-                        "success": False,
-                        "command": command,
-                        "error": f"Ошибка выполнения MCP: {str(sdk_error)}"
-                    }
-            else:
-                # SDK недоступен - возвращаем ошибку
-                logger.error(f"❌ [TRACE:{trace_id}] Claude Code SDK недоступен")
-                result = {
-                    "success": False,
-                    "command": command,
-                    "error": "Claude Code SDK не установлен или недоступен"
-                }
-            
-            logger.info(f"📊 [TRACE:{trace_id}] Этап 9: Финальный результат обработки")
-            logger.info(f"✅ [TRACE:{trace_id}] Success: {result.get('success', False)}")
-            
-            if result.get('success'):
-                response_len = len(result.get('response', ''))
-                logger.info(f"📝 [TRACE:{trace_id}] Длина ответа: {response_len} символов")
-            else:
-                logger.warning(f"❌ [TRACE:{trace_id}] Ошибка: {result.get('error', 'Unknown error')}")
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"💥 [TRACE:{trace_id}] Критическая ошибка выполнения MCP команды: {e}", exc_info=True)
-            return {
-                "success": False,
-                "error": str(e)
-            }
+        logger.warning(f"⚠️ execute_mcp_command устарел, используйте execute_natural_request")
+        return await self.execute_natural_request(command, user_id)
     
-    def _analyze_command_type(self, command: str, trace_id: str = None) -> str:
-        """Анализирует тип команды для логирования"""
-        if not trace_id:
-            trace_id = "no-trace"
-            
-        command_lower = command.lower()
-        
-        if any(word in command_lower for word in ["apps", "приложен", "digitalocean"]):
-            return "DIGITALOCEAN_APPS (список приложений)"
-        elif any(word in command_lower for word in ["mcp сервер", "list servers", "серверов"]):
-            return "MCP_SERVERS (информация о серверах)"
-        elif any(word in command_lower for word in ["project", "supabase", "/db"]):
-            return "SUPABASE_DB (работа с базой данных)"
-        elif any(word in command_lower for word in ["doc", "context7"]):
-            return "CONTEXT7_DOCS (поиск документации)"
-        elif command.startswith("/voice"):
-            return "VOICE_COMMAND (голосовая команда)"
-        else:
-            return "GENERAL_MCP (общая MCP команда)"
-
-    def _format_mcp_prompt(self, command: str, trace_id: str = None) -> str:
-        """
-        Упрощенное форматирование команды в промпт для Claude Code
-        
-        Args:
-            command: Исходная команда
-            trace_id: ID трассировки
-            
-        Returns:
-            Простой промпт для SDK
-        """
-        if not trace_id:
-            trace_id = "no-trace"
-            
-        logger.info(f"📝 [TRACE:{trace_id}] Форматирование промпта для команды: '{command}'")
-        
-        # Упрощенная обработка - просто передаем команду напрямую
-        prompt = self._get_simple_mcp_prompt(command)
-        
-        logger.debug(f"📋 [TRACE:{trace_id}] Сгенерированный промпт: '{prompt[:200]}{'...' if len(prompt) > 200 else ''}'")
-        
-        return prompt
-    
-    def _get_simple_mcp_prompt(self, command: str) -> str:
-        """Упрощенный промпт без сложной логики"""
-        # Проверяем основные типы команд
-        if command.startswith("/voice"):
-            # Убираем префикс /voice и обрабатываем как обычный запрос
-            voice_text = command[6:].strip()
-            return f"Пользователь сказал: '{voice_text}'. Определи что он хочет и выполни соответствующее MCP действие."
-        
-        elif command.startswith("/mcp apps") or "приложен" in command.lower():
-            return "List all DigitalOcean apps using mcp__digitalocean__list_apps function."
-        
-        elif command.startswith("/mcp status") or "mcp сервер" in command.lower() or "сервер" in command.lower():
-            return "Show status of available MCP servers and list their capabilities."
-        
-        elif command.startswith("/mcp projects") or "проект" in command.lower():
-            return "List all Supabase projects using MCP."
-        
-        elif command.startswith("/db "):
-            sql_query = command[4:].strip()
-            return f"Execute SQL query using Supabase MCP: {sql_query}"
-        
-        else:
-            # Общий случай - пусть SDK сам разбирается
-            return f"Execute MCP command: {command}"
-    
-    def _get_legacy_mcp_prompt(self, command: str) -> str:
-        """Старая логика форматирования промптов для обратной совместимости"""
-        # Парсим команду
-        parts = command.strip().split()
-        
-        # Обработка различных типов команд
-        if command.startswith("/mcp status"):
-            return "Check the status of all MCP servers and list available functions"
-            
-        elif command.startswith("/mcp projects"):
-            return "List all Supabase projects using MCP"
-            
-        elif command.startswith("/mcp organizations"):
-            return "List all Supabase organizations using MCP"
-            
-        elif command.startswith("/db "):
-            sql_query = command[4:].strip()
-            return f"Execute SQL query using Supabase MCP: {sql_query}"
-            
-        elif command.startswith("/mcp apps"):
-            return "List all DigitalOcean apps. You MUST use the mcp__digitalocean__list_apps function. This is a DigitalOcean operation, not Cloudflare. Return the full list of apps with their names, status, and other details."
-        
-        elif command.startswith("/mcp digitalocean"):
-            # Обрабатываем разные команды DigitalOcean
-            sub_command = command[17:].strip()
-            if sub_command == "list apps" or sub_command == "apps":
-                return "Use mcp__digitalocean__list_apps to get all DigitalOcean applications."
-            elif sub_command.startswith("deployments"):
-                return "Use mcp__digitalocean__list_deployments to get deployment history."
-            else:
-                return f"Execute DigitalOcean MCP command: {sub_command}"
-            
-        elif command.startswith("/docs "):
-            parts = command[6:].strip().split(maxsplit=1)
-            if len(parts) >= 2:
-                library, query = parts[0], parts[1]
-                return f"Search documentation for {library} about: {query}"
-            else:
-                return f"Search documentation for: {parts[0]}"
-                
-        elif command.startswith("/mcp context7"):
-            query = command[13:].strip()
-            return f"Search Context7 documentation: {query}"
-            
-        elif command.startswith("/voice"):
-            # Обработка голосовых команд - теперь упрощенно
-            voice_text = command[6:].strip()
-            return f"Пользователь сказал: '{voice_text}'. Определи что он хочет и выполни соответствующее MCP действие."
-            
-        else:
-            # Общий случай
-            return f"Execute MCP command: {command}"
-    
-    
-    def _get_legacy_voice_prompt(self, voice_text: str) -> str:
-        """Старый промпт для обратной совместимости"""
-        return f"""Ты голосовой ассистент для управления инфраструктурой через естественный язык.
-
-Пользователь сказал: "{voice_text}"
-
-Определи намерение пользователя и выполни соответствующее действие:
-
-1. **Если спрашивает о приложениях** (например: "посмотри мои приложения", "какие у меня приложения в DigitalOcean", "список приложений"):
-   - Используй mcp__digitalocean__list_apps
-   - Верни список всех приложений с названиями, ID и регионами
-
-2. **Если спрашивает о конкретном приложении** (например: "информация о приложении sample-aspnetapp"):
-   - Извлеки имя приложения из текста
-   - Используй mcp__digitalocean__get_app чтобы получить детали
-
-3. **Если спрашивает о деплойментах** (например: "посмотри деплойменты", "история развертываний"):
-   - Используй mcp__digitalocean__list_deployments
-   - Покажи последние деплойменты
-
-4. **Если спрашивает о базах данных** (например: "посмотри базы данных", "какие у меня базы в DigitalOcean"):
-   - Используй mcp__digitalocean__list_databases_cluster
-
-ВАЖНО: Верни ответ в дружелюбном формате для Telegram с использованием эмодзи и понятного языка.
-
-Примеры хороших ответов:
-📁 **Ваши DigitalOcean приложения:**
-📦 **sample-aspnetapp**
-  🆔 ID: `6eb5ebe0-c0aa-4b98-9ee1-a4e471069702`
-  🌍 Регион: ams
-
-Если не понял запрос - вежливо попроси уточнить."""
-
-    def _get_system_prompt(self) -> str:
-        """Упрощенный системный промпт для Claude Code"""
-        return """You are a simple MCP assistant. Execute MCP commands directly.
-
-Available MCP servers:
-- DigitalOcean: mcp__digitalocean__list_apps, mcp__digitalocean__get_app
-- Supabase: mcp__supabase__list_projects, mcp__supabase__execute_sql  
-- Context7: mcp__context7__get-library-docs
-
-Rules:
-1. For apps/applications → use DigitalOcean functions
-2. For databases/projects → use Supabase functions  
-3. For docs/documentation → use Context7 functions
-4. Return results clearly and concisely
-
-Execute the requested operation and return the result."""
-    
-    def _get_allowed_tools(self, command: str) -> List[str]:
-        """
-        Возвращает список разрешенных инструментов для команды используя YAML конфигурацию
-        
-        Args:
-            command: Команда для выполнения
-            
-        Returns:
-            Список разрешенных инструментов
-        """
-        tools = []
-        
-        # Сначала проверяем маппинги команд из YAML
-        if self.sdk_prompts and 'command_mappings' in self.sdk_prompts:
-            mappings = self.sdk_prompts['command_mappings']
-            
-            # Ищем подходящую команду
-            for cmd_pattern, cmd_config in mappings.items():
-                if command.startswith(cmd_pattern):
-                    cmd_tools = cmd_config.get('tools', [])
-                    tools.extend(cmd_tools)
-                    break
-        
-        # Если не нашли в маппингах, используем allowed_tools из YAML
-        if not tools and self.sdk_prompts and 'allowed_tools' in self.sdk_prompts:
-            allowed = self.sdk_prompts['allowed_tools']
-            
-            # Определяем какой сервер использовать по ключевым словам
-            if any(word in command.lower() for word in ['app', 'deploy', 'droplet', 'database', 'digitalocean', 'do']):
-                # Добавляем все инструменты DigitalOcean
-                for category in allowed.get('digitalocean', {}).values():
-                    if isinstance(category, list):
-                        tools.extend(category)
-            
-            if any(word in command.lower() for word in ['project', 'supabase', 'sql', 'db']):
-                # Добавляем инструменты Supabase
-                for category in allowed.get('supabase', {}).values():
-                    if isinstance(category, list):
-                        tools.extend(category)
-            
-            if any(word in command.lower() for word in ['doc', 'context7', 'library']):
-                # Добавляем инструменты Context7
-                for category in allowed.get('context7', {}).values():
-                    if isinstance(category, list):
-                        tools.extend(category)
-        
-        # Fallback на старую логику если YAML не помог
-        if not tools:
-            return self._get_legacy_allowed_tools(command)
-            
-        return list(set(tools))  # Убираем дубликаты
-    
-    def _get_legacy_allowed_tools(self, command: str) -> List[str]:
-        """Старая логика определения инструментов для обратной совместимости"""
-        # Базовые инструменты для всех команд
-        tools = ["mcp"]
-        
-        # Добавляем специфичные инструменты
-        if "/db" in command or "sql" in command.lower():
-            tools.extend(["mcp__supabase__execute_sql", "mcp__supabase__list_tables"])
-        
-        if "project" in command.lower():
-            tools.extend(["mcp__supabase__list_projects", "mcp__supabase__get_project"])
-            
-        if "app" in command.lower() or "digitalocean" in command.lower():
-            tools.extend(["mcp__digitalocean__list_apps", "mcp__digitalocean__get_app"])
-            
-        if "doc" in command.lower() or "context7" in command.lower():
-            tools.extend(["mcp__context7__resolve-library-id", "mcp__context7__get-library-docs"])
-            
-        return tools
     
     def _process_messages(self, messages: List[Message], command: str, trace_id: str = None) -> Dict[str, Any]:
         """
