@@ -10,11 +10,26 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from enum import Enum
 
+try:
+    from ..core.logging_utils import (
+        get_structured_logger, ComponentType, TraceContext,
+        log_operation_start, log_operation_success, log_operation_error
+    )
+    STRUCTURED_LOGGING = True
+except ImportError:
+    STRUCTURED_LOGGING = False
+
 from ..core.config import config
 from ..core.errors import MCPError
 from ..formatters.mcp_formatter import MCPFormatter
 
 logger = logging.getLogger(__name__)
+
+# Инициализируем структурированный логгер если доступен
+if STRUCTURED_LOGGING:
+    structured_logger = get_structured_logger("unified_mcp_service", ComponentType.MCP)
+else:
+    structured_logger = None
 
 
 class MCPProvider(str, Enum):
@@ -49,6 +64,7 @@ class UnifiedMCPService:
     def __init__(self):
         self.formatter = MCPFormatter()
         self._claude_sdk_available = False
+        self.structured_logger = structured_logger if STRUCTURED_LOGGING else None
         self._init_claude_sdk()
         
     def _init_claude_sdk(self):

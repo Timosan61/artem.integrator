@@ -7,10 +7,25 @@
 import logging
 from typing import Optional, Dict, Any
 
+try:
+    from .logging_utils import (
+        get_structured_logger, ComponentType, TraceContext,
+        log_operation_start, log_operation_success, log_operation_error
+    )
+    STRUCTURED_LOGGING = True
+except ImportError:
+    STRUCTURED_LOGGING = False
+
 from .base_agent import IAgent
 from .interfaces import Message, Response, UserRole
 
 logger = logging.getLogger(__name__)
+
+# Инициализируем структурированные логгеры если доступны
+if STRUCTURED_LOGGING:
+    adapter_logger = get_structured_logger("agent_adapter", ComponentType.ADAPTER)
+else:
+    adapter_logger = None
 
 
 class IntelligentAgentAdapter(IAgent):
@@ -18,6 +33,7 @@ class IntelligentAgentAdapter(IAgent):
     
     def __init__(self):
         self._service = None
+        self.structured_logger = adapter_logger if STRUCTURED_LOGGING else None
         self._init_service()
         
     def _init_service(self):
@@ -38,20 +54,72 @@ class IntelligentAgentAdapter(IAgent):
         
     async def can_handle(self, message: Message) -> bool:
         """Проверяет, может ли обработать сообщение"""
+        import uuid
+        trace_id = getattr(message, 'trace_id', str(uuid.uuid4())[:8])
+        
+        if self.structured_logger:
+            self.structured_logger.info(
+                "🔍 IntelligentAgentAdapter: анализ возможности обработки",
+                trace_id=trace_id,
+                operation="can_handle_analysis",
+                metadata={
+                    "user_id": message.user.id,
+                    "user_role": message.user.role.value,
+                    "is_business_message": getattr(message, 'is_business_message', False),
+                    "message_length": len(message.text)
+                }
+            )
+        else:
+            logger.info(f"🔍 [TRACE:{trace_id}] IntelligentAgentAdapter: анализ возможности обработки")
+            logger.info(f"👤 [TRACE:{trace_id}] Пользователь: {message.user.id}")
+            logger.info(f"🏷️ [TRACE:{trace_id}] Роль пользователя: {message.user.role.value}")
+            logger.info(f"🏗️ [TRACE:{trace_id}] Business сообщение: {getattr(message, 'is_business_message', False)}")
+        
         # Intelligent Agent обрабатывает ВСЕ сообщения от администраторов бота
         from ..core.config import config
         from ..services.unified_mcp_service import unified_mcp_service
         
         # Если IntelligentAgent недоступен, не обрабатываем
         if not self._service or not self._service.is_available():
+            if self.structured_logger:
+                self.structured_logger.warning(
+                    "❌ IntelligentAgent недоступен или не инициализирован",
+                    trace_id=trace_id,
+                    operation="availability_check",
+                    metadata={"service_available": False}
+                )
+            else:
+                logger.warning(f"❌ [TRACE:{trace_id}] IntelligentAgent недоступен или не инициализирован")
             return False
             
         # Проверяем, что пользователь админ
         if message.user.role != UserRole.ADMIN:
+            if self.structured_logger:
+                self.structured_logger.info(
+                    "❌ Отклонено: пользователь не администратор",
+                    trace_id=trace_id,
+                    operation="role_check",
+                    metadata={"user_role": message.user.role.value, "required_role": "admin"}
+                )
+            else:
+                logger.info(f"❌ [TRACE:{trace_id}] Отклонено: пользователь не администратор")
             return False
             
         # IntelligentAgent обрабатывает ВСЕ сообщения от любого администратора
-        logger.debug(f"Admin user {message.user.id} can access IntelligentAgent for any message")
+        if self.structured_logger:
+            self.structured_logger.info(
+                "✅ Принято: администратор может использовать IntelligentAgent",
+                trace_id=trace_id,
+                operation="admin_access_granted",
+                metadata={
+                    "user_id": message.user.id,
+                    "access_type": "full_admin_access",
+                    "agent_priority": self.get_priority()
+                }
+            )
+        else:
+            logger.info(f"✅ [TRACE:{trace_id}] Принято: администратор может использовать IntelligentAgent")
+            logger.debug(f"Admin user {message.user.id} can access IntelligentAgent for any message")
         
         # Администратор всегда направляется к IntelligentAgent
         return True
@@ -79,6 +147,7 @@ class DefaultAgentAdapter(IAgent):
     
     def __init__(self):
         self._agent = None
+        self.structured_logger = adapter_logger if STRUCTURED_LOGGING else None
         self._init_agent()
         
     def _init_agent(self):
@@ -102,7 +171,50 @@ class DefaultAgentAdapter(IAgent):
         
     async def can_handle(self, message: Message) -> bool:
         """Стандартный агент может обработать любое сообщение"""
-        return self._agent is not None
+        import uuid
+        trace_id = getattr(message, 'trace_id', str(uuid.uuid4())[:8])
+        
+        if self.structured_logger:
+            self.structured_logger.info(
+                "🔍 DefaultAgentAdapter: анализ возможности обработки",
+                trace_id=trace_id,
+                operation="can_handle_analysis",
+                metadata={
+                    "user_id": message.user.id,
+                    "user_role": message.user.role.value,
+                    "is_business_message": getattr(message, 'is_business_message', False),
+                    "agent_initialized": self._agent is not None,
+                    "agent_priority": self.get_priority()
+                }
+            )
+        else:
+            logger.info(f"🔍 [TRACE:{trace_id}] DefaultAgentAdapter: анализ возможности обработки")
+            logger.info(f"👤 [TRACE:{trace_id}] Пользователь: {message.user.id}")
+            logger.info(f"🏷️ [TRACE:{trace_id}] Роль пользователя: {message.user.role.value}")
+            logger.info(f"🏗️ [TRACE:{trace_id}] Business сообщение: {getattr(message, 'is_business_message', False)}")
+        
+        if self._agent is not None:
+            if self.structured_logger:
+                self.structured_logger.info(
+                    "✅ Принято: DefaultAgent (ArtemAgent) готов обработать сообщение",
+                    trace_id=trace_id,
+                    operation="agent_ready",
+                    metadata={"agent_type": "ArtemAgent", "fallback_role": True}
+                )
+            else:
+                logger.info(f"✅ [TRACE:{trace_id}] Принято: DefaultAgent (ArtemAgent) готов обработать сообщение")
+            return True
+        else:
+            if self.structured_logger:
+                self.structured_logger.warning(
+                    "❌ Отклонено: DefaultAgent не инициализирован",
+                    trace_id=trace_id,
+                    operation="agent_unavailable",
+                    metadata={"error": "agent_not_initialized"}
+                )
+            else:
+                logger.warning(f"❌ [TRACE:{trace_id}] Отклонено: DefaultAgent не инициализирован")
+            return False
         
     def get_name(self) -> str:
         return "DefaultAgent"

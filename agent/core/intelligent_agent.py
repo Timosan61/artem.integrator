@@ -6,6 +6,20 @@ import logging
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 from openai import AsyncOpenAI
 from datetime import datetime
+import sys
+import os
+
+# Добавляем bot в path для импорта logging_utils
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+try:
+    from bot.core.logging_utils import (
+        get_structured_logger, ComponentType, TraceContext,
+        log_operation_start, log_operation_success, log_operation_error
+    )
+    STRUCTURED_LOGGING = True
+except ImportError:
+    STRUCTURED_LOGGING = False
 
 from .models import (
     AgentResponse, ToolResponse, BaseToolParams,
@@ -18,6 +32,12 @@ if TYPE_CHECKING:
     from ..tools.base import BaseTool
 
 logger = logging.getLogger(__name__)
+
+# Инициализируем структурированный логгер если доступен
+if STRUCTURED_LOGGING:
+    structured_logger = get_structured_logger("intelligent_agent", ComponentType.AGENT)
+else:
+    structured_logger = None
 
 
 class IntelligentAgent:
@@ -36,6 +56,7 @@ class IntelligentAgent:
         self.conversation_history = []
         
         self.logger = logger
+        self.structured_logger = structured_logger if STRUCTURED_LOGGING else None
         
         # Импортируем Claude Code Service для прямых вызовов
         self._init_claude_code_service()
@@ -197,13 +218,125 @@ class IntelligentAgent:
         Returns:
             AgentResponse с результатом обработки
         """
-        try:
-            logger.info(f"🤖 Простая обработка сообщения: '{message[:50]}...' от пользователя {user_id}")
+        import uuid
+        import time
+        
+        # Используем структурированное логирование если доступно
+        if self.structured_logger:
+            trace_id = str(uuid.uuid4())[:8]
             
-            # Упрощенная подготовка сообщений - LLM сам выберет инструмент
+            with TraceContext(trace_id=trace_id, user_id=user_id, operation="process_message") as trace:
+                start_time = time.time()
+                
+                log_operation_start(
+                    self.structured_logger,
+                    "process_message",
+                    trace_id=trace_id,
+                    message_length=len(message),
+                    context_messages=len(context) if context else 0,
+                    user_id=user_id
+                )
+                
+                self.structured_logger.info(
+                    f"🚀 IntelligentAgent начинает обработку сообщения",
+                    trace_id=trace_id,
+                    operation="process_message",
+                    metadata={
+                        "message_preview": message[:100] + ('...' if len(message) > 100 else ''),
+                        "message_length": len(message),
+                        "context_messages": len(context) if context else 0
+                    }
+                )
+                
+                try:
+                    return await self._process_with_structured_logging(message, user_id, context, trace_id, start_time)
+                except Exception as e:
+                    duration = time.time() - start_time
+                    log_operation_error(
+                        self.structured_logger,
+                        "process_message", 
+                        e,
+                        trace_id=trace_id,
+                        duration=duration
+                    )
+                    raise
+        else:
+            # Fallback к обычному логированию
+            trace_id = str(uuid.uuid4())[:8]
+            
+            try:
+                logger.info(f"🚀 [TRACE:{trace_id}] IntelligentAgent начинает обработку сообщения")
+                logger.info(f"📝 [TRACE:{trace_id}] Сообщение: '{message[:100]}{'...' if len(message) > 100 else ''}'")
+                logger.info(f"👤 [TRACE:{trace_id}] Пользователь: {user_id}")
+                logger.info(f"📚 [TRACE:{trace_id}] Контекст: {len(context) if context else 0} сообщений")
+            
+                return await self._process_with_legacy_logging(message, user_id, context, trace_id)
+            except Exception as e:
+                logger.error(f"❌ [TRACE:{trace_id}] Критическая ошибка обработки сообщения: {e}", exc_info=True)
+                return AgentResponse(
+                    message=f"Извините, произошла ошибка: {str(e)}",
+                    confidence=0.0,
+                    requires_confirmation=False,
+                    tool_response=ToolResponse(success=False, error=str(e))
+                )
+    
+    async def _process_with_structured_logging(
+        self, 
+        message: str, 
+        user_id: str, 
+        context: Optional[List[Dict[str, str]]], 
+        trace_id: str,
+        start_time: float
+    ) -> AgentResponse:
+        """Обработка сообщения с использованием структурированного логирования"""
+        try:
+            # 1. АНАЛИЗ СООБЩЕНИЯ
+            self.structured_logger.info(
+                "🔍 Этап 1: Анализ намерения пользователя",
+                trace_id=trace_id,
+                operation="intent_analysis"
+            )
+            
+            intent_analysis = self._analyze_user_intent(message)
+            
+            self.structured_logger.info(
+                "🎯 Определено намерение пользователя",
+                trace_id=trace_id,
+                operation="intent_analysis",
+                metadata={"intent": intent_analysis}
+            )
+            
+            # 2. ПОДГОТОВКА КОНТЕКСТА
+            self.structured_logger.info(
+                "⚙️ Этап 2: Подготовка контекста для LLM",
+                trace_id=trace_id,
+                operation="prepare_context"
+            )
+            
             messages = self._prepare_simple_messages(message, context)
             
-            # Вызываем OpenAI с function calling
+            self.structured_logger.info(
+                "📋 Контекст для LLM подготовлен",
+                trace_id=trace_id,
+                operation="prepare_context",
+                metadata={
+                    "messages_count": len(messages),
+                    "system_prompt_preview": messages[0]['content'][:200] + "..."
+                }
+            )
+            
+            # 3. ВЫЗОВ LLM
+            self.structured_logger.info(
+                f"🧠 Этап 3: Отправка запроса к LLM ({self.model})",
+                trace_id=trace_id,
+                operation="llm_request",
+                metadata={
+                    "model": self.model,
+                    "available_tools": [func['function']['name'] for func in self.available_functions],
+                    "tools_count": len(self.available_functions)
+                }
+            )
+            
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -214,24 +347,95 @@ class IntelligentAgent:
             # Получаем ответ
             assistant_message = response.choices[0].message
             
-            # Проверяем, нужно ли вызвать функцию
+            self.structured_logger.info(
+                "💭 LLM ответ получен",
+                trace_id=trace_id,
+                operation="llm_response",
+                metadata={
+                    "has_tool_calls": bool(assistant_message.tool_calls),
+                    "tool_calls_count": len(assistant_message.tool_calls) if assistant_message.tool_calls else 0,
+                    "content_length": len(assistant_message.content or "")
+                }
+            )
+            
+            # 4. АНАЛИЗ РЕШЕНИЯ LLM
             if assistant_message.tool_calls:
-                logger.info(f"🔧 LLM выбрал инструмент: {assistant_message.tool_calls[0].function.name}")
+                selected_tool = assistant_message.tool_calls[0].function.name
+                tool_args = assistant_message.tool_calls[0].function.arguments
                 
-                # Обрабатываем вызовы функций
+                self.structured_logger.info(
+                    "🎯 Этап 4: LLM принял решение использовать инструмент",
+                    trace_id=trace_id,
+                    operation="tool_selection",
+                    metadata={
+                        "selected_tool": selected_tool,
+                        "tool_arguments": tool_args,
+                        "decision_confidence": "high"
+                    }
+                )
+                
+                # Анализируем логику выбора
+                self._log_tool_selection_reasoning_structured(trace_id, message, selected_tool, intent_analysis)
+                
+                # 5. ВЫПОЛНЕНИЕ ИНСТРУМЕНТА
+                self.structured_logger.info(
+                    "⚡ Этап 5: Выполнение выбранного инструмента",
+                    trace_id=trace_id,
+                    operation="tool_execution",
+                    metadata={"tool_name": selected_tool}
+                )
                 tool_response = await self._handle_tool_calls(
                     assistant_message.tool_calls,
-                    user_id
+                    user_id,
+                    trace_id
                 )
                 
                 # Определяем тип использованного инструмента
                 tool_type = self._get_tool_type_from_call(assistant_message.tool_calls[0])
                 
-                # Получаем финальный ответ с результатами функций
+                self.structured_logger.info(
+                    "🏷️ Тип инструмента определен",
+                    trace_id=trace_id,
+                    operation="tool_type_detection",
+                    metadata={"tool_type": tool_type}
+                )
+                
+                # 6. ФИНАЛЬНАЯ ГЕНЕРАЦИЯ ОТВЕТА
+                self.structured_logger.info(
+                    "📝 Этап 6: Генерация финального ответа",
+                    trace_id=trace_id,
+                    operation="final_response_generation"
+                )
                 final_response = await self._get_final_response(
                     messages,
                     assistant_message,
-                    tool_response
+                    tool_response,
+                    trace_id
+                )
+                
+                duration = time.time() - start_time
+                
+                log_operation_success(
+                    self.structured_logger,
+                    "process_message",
+                    trace_id=trace_id,
+                    duration=duration,
+                    tool_used=selected_tool,
+                    response_length=len(final_response),
+                    confidence=0.9
+                )
+                
+                self.structured_logger.info(
+                    "✅ Обработка завершена успешно с инструментом",
+                    trace_id=trace_id,
+                    operation="completion",
+                    metadata={
+                        "success": True,
+                        "tool_used": selected_tool,
+                        "response_length": len(final_response),
+                        "duration_seconds": duration,
+                        "confidence": 0.9
+                    }
                 )
                 
                 return AgentResponse(
@@ -243,21 +447,184 @@ class IntelligentAgent:
                 )
             else:
                 # Обычный ответ без инструментов
-                logger.info("💬 LLM выбрал обычный разговор")
+                self.structured_logger.info(
+                    "💬 Этап 4: LLM принял решение об обычном разговоре",
+                    trace_id=trace_id,
+                    operation="conversation_response",
+                    metadata={"reason": "no_tools_required"}
+                )
+                
+                response_text = assistant_message.content or "Не могу сформировать ответ"
+                duration = time.time() - start_time
+                
+                log_operation_success(
+                    self.structured_logger,
+                    "process_message",
+                    trace_id=trace_id,
+                    duration=duration,
+                    response_length=len(response_text),
+                    confidence=0.8
+                )
+                
+                self.structured_logger.info(
+                    "✅ Обработка завершена без инструментов",
+                    trace_id=trace_id,
+                    operation="completion",
+                    metadata={
+                        "success": True,
+                        "tool_used": None,
+                        "response_length": len(response_text),
+                        "duration_seconds": duration,
+                        "confidence": 0.8
+                    }
+                )
+                
                 return AgentResponse(
-                    message=assistant_message.content or "Не могу сформировать ответ",
+                    message=response_text,
                     confidence=0.8,
                     requires_confirmation=False
                 )
                 
         except Exception as e:
-            logger.error(f"❌ Ошибка обработки сообщения: {e}", exc_info=True)
+            duration = time.time() - start_time
+            log_operation_error(
+                self.structured_logger,
+                "process_message",
+                e,
+                trace_id=trace_id,
+                duration=duration
+            )
+            
+            self.structured_logger.error(
+                "🚨 Критическая ошибка - возвращаем ошибку пользователю",
+                trace_id=trace_id,
+                operation="error_handling",
+                exc_info=True
+            )
+            
             return AgentResponse(
                 message=f"Извините, произошла ошибка: {str(e)}",
                 confidence=0.0,
                 requires_confirmation=False,
                 tool_response=ToolResponse(success=False, error=str(e))
             )
+    
+    async def _process_with_legacy_logging(
+        self, 
+        message: str, 
+        user_id: str, 
+        context: Optional[List[Dict[str, str]]], 
+        trace_id: str
+    ) -> AgentResponse:
+        """Обработка сообщения с использованием обычного логирования (fallback)"""
+        # 1. АНАЛИЗ СООБЩЕНИЯ
+        logger.info(f"🔍 [TRACE:{trace_id}] Этап 1: Анализ намерения пользователя...")
+        intent_analysis = self._analyze_user_intent(message)
+        logger.info(f"🎯 [TRACE:{trace_id}] Определено намерение: {intent_analysis}")
+        
+        # 2. ПОДГОТОВКА КОНТЕКСТА
+        logger.info(f"⚙️ [TRACE:{trace_id}] Этап 2: Подготовка контекста для LLM...")
+        messages = self._prepare_simple_messages(message, context)
+        logger.info(f"📋 [TRACE:{trace_id}] Подготовлено {len(messages)} сообщений для LLM")
+        logger.debug(f"📋 [TRACE:{trace_id}] System prompt: {messages[0]['content'][:200]}...")
+        
+        # 3. ВЫЗОВ LLM
+        logger.info(f"🧠 [TRACE:{trace_id}] Этап 3: Отправка запроса к LLM ({self.model})...")
+        logger.info(f"🛠️ [TRACE:{trace_id}] Доступные инструменты: {len(self.available_functions)}")
+        for func in self.available_functions:
+            logger.debug(f"🔧 [TRACE:{trace_id}] - {func['function']['name']}: {func['function']['description']}")
+        
+        response = await self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
+            tools=self.available_functions,
+            tool_choice="auto"
+        )
+        
+        # Получаем ответ
+        assistant_message = response.choices[0].message
+        logger.info(f"💭 [TRACE:{trace_id}] LLM ответ получен")
+        
+        # 4. АНАЛИЗ РЕШЕНИЯ LLM
+        if assistant_message.tool_calls:
+            selected_tool = assistant_message.tool_calls[0].function.name
+            tool_args = assistant_message.tool_calls[0].function.arguments
+            
+            logger.info(f"🎯 [TRACE:{trace_id}] Этап 4: LLM принял решение использовать инструмент")
+            logger.info(f"🔧 [TRACE:{trace_id}] Выбранный инструмент: {selected_tool}")
+            logger.info(f"📋 [TRACE:{trace_id}] Аргументы инструмента: {tool_args}")
+            
+            # Анализируем логику выбора
+            self._log_tool_selection_reasoning(trace_id, message, selected_tool, intent_analysis)
+            
+            # 5. ВЫПОЛНЕНИЕ ИНСТРУМЕНТА
+            logger.info(f"⚡ [TRACE:{trace_id}] Этап 5: Выполнение выбранного инструмента...")
+            tool_response = await self._handle_tool_calls(
+                assistant_message.tool_calls,
+                user_id,
+                trace_id
+            )
+            
+            # Определяем тип использованного инструмента
+            tool_type = self._get_tool_type_from_call(assistant_message.tool_calls[0])
+            logger.info(f"🏷️ [TRACE:{trace_id}] Тип инструмента: {tool_type}")
+            
+            # 6. ФИНАЛЬНАЯ ГЕНЕРАЦИЯ ОТВЕТА
+            logger.info(f"📝 [TRACE:{trace_id}] Этап 6: Генерация финального ответа...")
+            final_response = await self._get_final_response(
+                messages,
+                assistant_message,
+                tool_response,
+                trace_id
+            )
+            
+            logger.info(f"✅ [TRACE:{trace_id}] Обработка завершена успешно с инструментом {selected_tool}")
+            logger.info(f"📊 [TRACE:{trace_id}] Результат: {len(final_response)} символов")
+            
+            return AgentResponse(
+                message=final_response,
+                tool_used=tool_response.metadata.get("tool_type") if tool_response.metadata else None,
+                tool_response=tool_response,
+                confidence=0.9,  # Высокая уверенность - LLM сам выбрал инструмент
+                requires_confirmation=False
+            )
+        else:
+            # Обычный ответ без инструментов
+            logger.info(f"💬 [TRACE:{trace_id}] Этап 4: LLM принял решение об обычном разговоре")
+            logger.info(f"📝 [TRACE:{trace_id}] Причина: не требуется использование инструментов")
+            logger.info(f"✅ [TRACE:{trace_id}] Обработка завершена без инструментов")
+            
+            response_text = assistant_message.content or "Не могу сформировать ответ"
+            logger.info(f"📊 [TRACE:{trace_id}] Результат: {len(response_text)} символов")
+            
+            return AgentResponse(
+                message=response_text,
+                confidence=0.8,
+                requires_confirmation=False
+            )
+    
+    def _log_tool_selection_reasoning_structured(
+        self, 
+        trace_id: str, 
+        message: str, 
+        selected_tool: str, 
+        intent_analysis: str
+    ):
+        """Структурированное логирование логики выбора инструмента"""
+        self.structured_logger.info(
+            "🧠 Анализ логики выбора инструмента LLM",
+            trace_id=trace_id,
+            operation="tool_selection_reasoning",
+            metadata={
+                "message_preview": message[:100],
+                "selected_tool": selected_tool,
+                "intent_analysis": intent_analysis,
+                "reasoning_factors": {
+                    "message_keywords": self._extract_keywords(message),
+                    "tool_match_confidence": self._assess_tool_match_confidence(message, selected_tool)
+                }
+            }
+        )
     
     def _prepare_simple_messages(
         self, 
@@ -341,48 +708,156 @@ class IntelligentAgent:
         
         return messages
     
+    def _analyze_user_intent(self, message: str) -> str:
+        """Анализирует намерение пользователя для логирования"""
+        message_lower = message.lower()
+        
+        # MCP команды
+        mcp_keywords = ['мои приложения', 'список приложений', 'mcp сервера', 'какие у меня', 'покажи', 'базы данных', 'деплой']
+        if any(keyword in message_lower for keyword in mcp_keywords):
+            return "MCP_COMMAND (инфраструктура/сервера)"
+            
+        # YouTube анализ
+        if 'youtube.com' in message_lower or 'youtu.be' in message_lower or 'видео' in message_lower:
+            return "YOUTUBE_ANALYSIS (анализ видео)"
+            
+        # Генерация изображений
+        image_keywords = ['нарисуй', 'создай картинку', 'сгенерируй изображение', 'изображение']
+        if any(keyword in message_lower for keyword in image_keywords):
+            return "IMAGE_GENERATION (создание изображения)"
+            
+        # Обычный разговор
+        return "GENERAL_CHAT (обычное общение)"
+    
+    def _log_tool_selection_reasoning(self, trace_id: str, message: str, selected_tool: str, intent_analysis: str):
+        """Логирует логику выбора инструмента"""
+        logger.info(f"🤔 [TRACE:{trace_id}] АНАЛИЗ ВЫБОРА ИНСТРУМЕНТА:")
+        logger.info(f"   📝 Исходное сообщение: '{message[:100]}...'")
+        logger.info(f"   🎯 Определенное намерение: {intent_analysis}")
+        logger.info(f"   🔧 Выбранный LLM инструмент: {selected_tool}")
+        
+        # Анализ соответствия
+        intent_tool_mapping = {
+            "MCP_COMMAND": "claude_code_direct",
+            "YOUTUBE_ANALYSIS": "analyze_youtube_video", 
+            "IMAGE_GENERATION": "generate_image",
+            "GENERAL_CHAT": "echo_tool или разговор"
+        }
+        
+        expected_tool = None
+        for intent_key, tool_name in intent_tool_mapping.items():
+            if intent_key in intent_analysis:
+                expected_tool = tool_name
+                break
+                
+        if expected_tool and selected_tool in expected_tool:
+            logger.info(f"   ✅ Выбор корректен: {selected_tool} соответствует намерению")
+        elif expected_tool:
+            logger.warning(f"   ⚠️ Неожиданный выбор: ожидался {expected_tool}, выбран {selected_tool}")
+        else:
+            logger.info(f"   🔄 Анализ выбора: LLM принял решение на основе контекста")
+
     async def _handle_tool_calls(
         self, 
         tool_calls, 
-        user_id: str
+        user_id: str,
+        trace_id: str = None
     ) -> ToolResponse:
         """Обрабатывает вызовы инструментов"""
+        if not trace_id:
+            trace_id = "no-trace"
+            
         # Для простоты обрабатываем только первый вызов
         tool_call = tool_calls[0]
         function_name = tool_call.function.name
         function_args = json.loads(tool_call.function.arguments)
         
+        logger.info(f"🔧 [TRACE:{trace_id}] Начинаем выполнение инструмента: {function_name}")
+        logger.info(f"📋 [TRACE:{trace_id}] Исходные аргументы: {function_args}")
+        
         # Добавляем user_id если его нет
         if "user_id" not in function_args:
             function_args["user_id"] = user_id
+            logger.debug(f"➕ [TRACE:{trace_id}] Добавлен user_id: {user_id}")
         
-        logger.info(f"🔧 Вызов функции: {function_name} с параметрами: {function_args}")
+        logger.info(f"⚙️ [TRACE:{trace_id}] Финальные параметры: {function_args}")
         
-        # Логируем для Claude Code команд
+        # Специальное логирование для разных типов инструментов
         if function_name == "claude_code_direct":
-            logger.info(f"🔌 Claude Code прямой вызов: {function_args.get('message')}")
-        
-        # Выполняем функцию
-        if function_name == "echo_tool":
-            return await self._execute_echo_tool(EchoToolParams(**function_args))
-        elif function_name == "claude_code_direct":
-            return await self._execute_claude_code_direct(function_args)
+            logger.info(f"🔌 [TRACE:{trace_id}] CLAUDE CODE ВЫЗОВ:")
+            logger.info(f"   📝 Сообщение для Claude Code: '{function_args.get('message')}'")
+            logger.info(f"   👤 Пользователь: {function_args.get('user_id')}")
+            logger.info(f"   🎯 Ожидается: MCP команда или инфраструктурный запрос")
         elif function_name == "generate_image":
-            return await self._execute_image_generation(ImageGenerationParams(**function_args))
+            logger.info(f"🖼️ [TRACE:{trace_id}] ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЯ:")
+            logger.info(f"   📝 Промпт: '{function_args.get('prompt')}'")
+            logger.info(f"   🎨 Стиль: {function_args.get('style', 'realistic')}")
+            logger.info(f"   📏 Размер: {function_args.get('size', '1024x1024')}")
         elif function_name == "analyze_youtube_video":
-            return await self._execute_youtube_analysis(YouTubeAnalysisParams(**function_args))
-        else:
+            logger.info(f"🎥 [TRACE:{trace_id}] АНАЛИЗ YOUTUBE:")
+            logger.info(f"   🔗 URL: {function_args.get('url')}")
+            logger.info(f"   📝 Субтитры: {function_args.get('extract_subtitles', True)}")
+            logger.info(f"   🌐 Язык: {function_args.get('subtitle_language', 'ru')}")
+        elif function_name == "echo_tool":
+            logger.info(f"🔄 [TRACE:{trace_id}] ECHO ИНСТРУМЕНТ:")
+            logger.info(f"   📝 Сообщение: '{function_args.get('message')}'")
+            logger.info(f"   🔠 Верхний регистр: {function_args.get('uppercase', False)}")
+        
+        # Выполняем функцию с измерением времени
+        import time
+        start_time = time.time()
+        
+        try:
+            logger.info(f"⚡ [TRACE:{trace_id}] Запуск выполнения инструмента...")
+            
+            if function_name == "echo_tool":
+                result = await self._execute_echo_tool(EchoToolParams(**function_args), trace_id)
+            elif function_name == "claude_code_direct":
+                result = await self._execute_claude_code_direct(function_args, trace_id)
+            elif function_name == "generate_image":
+                result = await self._execute_image_generation(ImageGenerationParams(**function_args), trace_id)
+            elif function_name == "analyze_youtube_video":
+                result = await self._execute_youtube_analysis(YouTubeAnalysisParams(**function_args), trace_id)
+            else:
+                logger.error(f"❌ [TRACE:{trace_id}] Неизвестная функция: {function_name}")
+                return ToolResponse(
+                    success=False,
+                    error=f"Неизвестная функция: {function_name}"
+                )
+                
+            execution_time = time.time() - start_time
+            logger.info(f"✅ [TRACE:{trace_id}] Инструмент выполнен за {execution_time:.2f}с")
+            logger.info(f"📊 [TRACE:{trace_id}] Результат: success={result.success}")
+            
+            if result.success:
+                logger.info(f"✨ [TRACE:{trace_id}] Данные получены: {len(str(result.data))} символов")
+            else:
+                logger.warning(f"⚠️ [TRACE:{trace_id}] Ошибка выполнения: {result.error}")
+                
+            return result
+            
+        except Exception as e:
+            execution_time = time.time() - start_time
+            logger.error(f"💥 [TRACE:{trace_id}] Критическая ошибка выполнения инструмента за {execution_time:.2f}с: {e}", exc_info=True)
             return ToolResponse(
                 success=False,
-                error=f"Неизвестная функция: {function_name}"
+                error=f"Ошибка выполнения {function_name}: {str(e)}"
             )
     
-    async def _execute_echo_tool(self, params: EchoToolParams) -> ToolResponse:
+    async def _execute_echo_tool(self, params: EchoToolParams, trace_id: str = None) -> ToolResponse:
         """Выполняет echo инструмент (для тестирования)"""
+        if not trace_id:
+            trace_id = "no-trace"
+            
         try:
+            logger.info(f"🔄 [TRACE:{trace_id}] Echo инструмент: обработка сообщения")
+            
             result = params.message
             if params.uppercase:
                 result = result.upper()
+                logger.info(f"🔠 [TRACE:{trace_id}] Применен верхний регистр")
+            
+            logger.info(f"✅ [TRACE:{trace_id}] Echo завершен успешно")
             
             return ToolResponse(
                 success=True,
@@ -390,37 +865,60 @@ class IntelligentAgent:
                 metadata={"tool_type": ToolType.ECHO}
             )
         except Exception as e:
+            logger.error(f"❌ [TRACE:{trace_id}] Ошибка Echo инструмента: {e}")
             return ToolResponse(success=False, error=str(e))
     
-    async def _execute_claude_code_direct(self, function_args: Dict[str, Any]) -> ToolResponse:
+    async def _execute_claude_code_direct(self, function_args: Dict[str, Any], trace_id: str = None) -> ToolResponse:
         """Выполняет прямой вызов Claude Code Service"""
+        if not trace_id:
+            trace_id = "no-trace"
+            
         try:
             message = function_args.get("message")
             user_id = function_args.get("user_id")
             
-            logger.info(f"🔌 Прямой вызов Claude Code Service: {message}")
+            logger.info(f"🔌 [TRACE:{trace_id}] Начинаем прямой вызов Claude Code Service")
+            logger.info(f"📝 [TRACE:{trace_id}] Команда: '{message}'")
+            logger.info(f"👤 [TRACE:{trace_id}] Пользователь: {user_id}")
             
             if self.claude_code_service:
-                # Прямой вызов Claude Code Service
-                result = await self.claude_code_service.execute_mcp_command(message, user_id)
+                logger.info(f"✅ [TRACE:{trace_id}] Claude Code Service доступен, выполняем вызов...")
+                
+                # Прямой вызов Claude Code Service с передачей trace_id
+                result = await self.claude_code_service.execute_mcp_command(message, user_id, trace_id)
+                
+                logger.info(f"📊 [TRACE:{trace_id}] Получен результат от Claude Code Service")
+                logger.info(f"🎯 [TRACE:{trace_id}] Success: {result.get('success')}")
                 
                 if result.get("success"):
+                    response_text = result.get("response", "Команда выполнена")
+                    mcp_data = result.get("data") or result.get("mcp_response")
+                    
+                    logger.info(f"✅ [TRACE:{trace_id}] Claude Code успешно выполнен")
+                    logger.info(f"📝 [TRACE:{trace_id}] Ответ: {len(response_text)} символов")
+                    logger.info(f"📦 [TRACE:{trace_id}] MCP данные: {len(str(mcp_data)) if mcp_data else 0} символов")
+                    
                     return ToolResponse(
                         success=True,
                         data={
                             "message": message,
-                            "response": result.get("response", "Команда выполнена"),
-                            "mcp_response": result.get("data") or result.get("mcp_response")
+                            "response": response_text,
+                            "mcp_response": mcp_data
                         },
                         metadata={"tool_type": ToolType.MCP}
                     )
                 else:
+                    error_msg = result.get("error", "Ошибка выполнения Claude Code Service")
+                    logger.warning(f"⚠️ [TRACE:{trace_id}] Claude Code вернул ошибку: {error_msg}")
+                    
                     return ToolResponse(
                         success=False,
-                        error=result.get("error", "Ошибка выполнения Claude Code Service"),
+                        error=error_msg,
                         metadata={"tool_type": ToolType.MCP}
                     )
             else:
+                logger.error(f"❌ [TRACE:{trace_id}] Claude Code Service недоступен")
+                
                 # Fallback если сервис недоступен
                 return ToolResponse(
                     success=False,
@@ -429,15 +927,22 @@ class IntelligentAgent:
                 )
                 
         except Exception as e:
-            logger.error(f"❌ Ошибка прямого вызова Claude Code Service: {e}", exc_info=True)
+            logger.error(f"💥 [TRACE:{trace_id}] Критическая ошибка Claude Code Service: {e}", exc_info=True)
             return ToolResponse(
                 success=False,
                 error=f"Ошибка: {str(e)}",
                 metadata={"tool_type": ToolType.MCP}
             )
     
-    async def _execute_image_generation(self, params: ImageGenerationParams) -> ToolResponse:
+    async def _execute_image_generation(self, params: ImageGenerationParams, trace_id: str = None) -> ToolResponse:
         """Заглушка для генерации изображений"""
+        if not trace_id:
+            trace_id = "no-trace"
+            
+        logger.info(f"🖼️ [TRACE:{trace_id}] Генерация изображения (заглушка)")
+        logger.info(f"📝 [TRACE:{trace_id}] Промпт: '{params.prompt}'")
+        logger.info(f"🎨 [TRACE:{trace_id}] Стиль: {params.style}, Размер: {params.size}")
+        
         # TODO: Интегрировать с DALL-E
         return ToolResponse(
             success=True,
@@ -449,8 +954,15 @@ class IntelligentAgent:
             metadata={"tool_type": ToolType.IMAGE_GENERATOR}
         )
     
-    async def _execute_youtube_analysis(self, params: YouTubeAnalysisParams) -> ToolResponse:
+    async def _execute_youtube_analysis(self, params: YouTubeAnalysisParams, trace_id: str = None) -> ToolResponse:
         """Заглушка для анализа YouTube видео"""
+        if not trace_id:
+            trace_id = "no-trace"
+            
+        logger.info(f"🎥 [TRACE:{trace_id}] Анализ YouTube видео (заглушка)")
+        logger.info(f"🔗 [TRACE:{trace_id}] URL: {params.url}")
+        logger.info(f"📝 [TRACE:{trace_id}] Субтитры: {params.extract_subtitles}, Язык: {params.subtitle_language}")
+        
         # TODO: Интегрировать с YouTube API
         return ToolResponse(
             success=True,
@@ -466,9 +978,15 @@ class IntelligentAgent:
         self,
         messages: List[Dict[str, str]],
         assistant_message,
-        tool_response: ToolResponse
+        tool_response: ToolResponse,
+        trace_id: str = None
     ) -> str:
         """Получает финальный ответ после выполнения инструмента"""
+        if not trace_id:
+            trace_id = "no-trace"
+            
+        logger.info(f"📝 [TRACE:{trace_id}] Подготовка контекста для генерации финального ответа")
+        
         # Добавляем сообщение ассистента с tool_calls
         messages.append({
             "role": "assistant",
@@ -478,19 +996,31 @@ class IntelligentAgent:
         
         # Добавляем результат выполнения функции
         tool_call = assistant_message.tool_calls[0]
+        tool_result_content = json.dumps(tool_response.dict(), ensure_ascii=False)
+        
         messages.append({
             "role": "tool",
-            "content": json.dumps(tool_response.dict(), ensure_ascii=False),
+            "content": tool_result_content,
             "tool_call_id": tool_call.id
         })
         
+        logger.info(f"📋 [TRACE:{trace_id}] Контекст подготовлен: {len(messages)} сообщений")
+        logger.info(f"📦 [TRACE:{trace_id}] Данные инструмента: {len(tool_result_content)} символов")
+        
         # Получаем финальный ответ
+        logger.info(f"🧠 [TRACE:{trace_id}] Запрос финального ответа к LLM...")
+        
         final_response = await self.client.chat.completions.create(
             model=self.model,
             messages=messages
         )
         
-        return final_response.choices[0].message.content or "Операция выполнена"
+        final_text = final_response.choices[0].message.content or "Операция выполнена"
+        
+        logger.info(f"✅ [TRACE:{trace_id}] Финальный ответ получен: {len(final_text)} символов")
+        logger.debug(f"📝 [TRACE:{trace_id}] Финальный ответ: {final_text[:200]}...")
+        
+        return final_text
     
     def _get_available_tool_types(self, intent: Intent) -> List[ToolType]:
         """Получает доступные типы инструментов для намерения"""
@@ -561,3 +1091,57 @@ class IntelligentAgent:
         }
         
         return function_to_type.get(function_name)
+    
+    def _extract_keywords(self, message: str) -> List[str]:
+        """Извлекает ключевые слова из сообщения"""
+        keywords = []
+        message_lower = message.lower()
+        
+        # MCP ключевые слова
+        mcp_keywords = [
+            'приложения', 'apps', 'сервера', 'mcp', 'базы данных',
+            'деплой', 'инфраструктура', 'digitalocean', 'supabase'
+        ]
+        
+        # Ключевые слова для изображений
+        image_keywords = ['нарисуй', 'создай картинку', 'сгенерируй', 'изображение']
+        
+        # YouTube ключевые слова
+        youtube_keywords = ['youtube.com', 'youtu.be', 'видео', 'субтитры', 'анализ видео']
+        
+        all_keywords = mcp_keywords + image_keywords + youtube_keywords
+        
+        for keyword in all_keywords:
+            if keyword in message_lower:
+                keywords.append(keyword)
+                
+        return keywords
+    
+    def _assess_tool_match_confidence(self, message: str, selected_tool: str) -> str:
+        """Оценивает уверенность в соответствии инструмента сообщению"""
+        message_lower = message.lower()
+        
+        if selected_tool == "claude_code_direct":
+            mcp_indicators = ['приложения', 'apps', 'сервера', 'mcp']
+            matches = sum(1 for indicator in mcp_indicators if indicator in message_lower)
+            if matches >= 2:
+                return "high"
+            elif matches >= 1:
+                return "medium"
+            else:
+                return "low"
+                
+        elif selected_tool == "generate_image":
+            image_indicators = ['нарисуй', 'создай', 'сгенерируй']
+            matches = sum(1 for indicator in image_indicators if indicator in message_lower)
+            return "high" if matches > 0 else "low"
+            
+        elif selected_tool == "analyze_youtube_video":
+            youtube_indicators = ['youtube', 'youtu.be', 'видео']
+            matches = sum(1 for indicator in youtube_indicators if indicator in message_lower)
+            return "high" if matches > 0 else "low"
+            
+        elif selected_tool == "echo_tool":
+            return "medium"  # Обычно fallback вариант
+            
+        return "unknown"

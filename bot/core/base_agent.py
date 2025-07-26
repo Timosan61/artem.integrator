@@ -95,14 +95,59 @@ class ChainedAgent(IAgent):
         
     async def process_message(self, message: Message) -> Response:
         """Обрабатывает сообщение через цепочку агентов"""
-        for agent in self.agents:
-            if await agent.can_handle(message):
-                return await agent.process_message(message)
+        import logging
+        import uuid
+        
+        logger = logging.getLogger(__name__)
+        trace_id = str(uuid.uuid4())[:8]
+        
+        logger.info(f"🔗 [TRACE:{trace_id}] ChainedAgent начинает маршрутизацию сообщения")
+        logger.info(f"👤 [TRACE:{trace_id}] Пользователь: {message.user.id} (role: {message.user.role.value})")
+        logger.info(f"📝 [TRACE:{trace_id}] Сообщение: '{message.text[:100]}{'...' if len(message.text) > 100 else ''}'")
+        logger.info(f"🏗️ [TRACE:{trace_id}] Business сообщение: {getattr(message, 'is_business_message', False)}")
+        logger.info(f"🔗 [TRACE:{trace_id}] Доступно агентов: {len(self.agents)}")
+        
+        # Показываем агентов в порядке приоритета
+        for i, agent in enumerate(self.agents):
+            logger.info(f"   {i+1}. {agent.get_name()} (приоритет: {agent.get_priority()})")
+        
+        # Проверяем каждого агента
+        for i, agent in enumerate(self.agents):
+            logger.info(f"🔍 [TRACE:{trace_id}] Проверяем агента {i+1}: {agent.get_name()}")
+            
+            try:
+                can_handle = await agent.can_handle(message)
+                logger.info(f"🎯 [TRACE:{trace_id}] {agent.get_name()} can_handle = {can_handle}")
+                
+                if can_handle:
+                    logger.info(f"✅ [TRACE:{trace_id}] Агент {agent.get_name()} принял сообщение к обработке")
+                    logger.info(f"⚡ [TRACE:{trace_id}] Делегируем обработку агенту {agent.get_name()}...")
+                    
+                    # Передаем trace_id агенту если он его поддерживает
+                    response = await agent.process_message(message)
+                    
+                    # Добавляем информацию о том, какой агент обработал
+                    if not response.metadata:
+                        response.metadata = {}
+                    response.metadata["agent"] = agent.get_name()
+                    response.metadata["trace_id"] = trace_id
+                    
+                    logger.info(f"✅ [TRACE:{trace_id}] Сообщение успешно обработано агентом {agent.get_name()}")
+                    logger.info(f"📊 [TRACE:{trace_id}] Результат: {len(response.text)} символов")
+                    
+                    return response
+                    
+            except Exception as e:
+                logger.error(f"❌ [TRACE:{trace_id}] Ошибка проверки агента {agent.get_name()}: {e}", exc_info=True)
+                continue
                 
         # Если никто не может обработать - возвращаем стандартный ответ
+        logger.warning(f"⚠️ [TRACE:{trace_id}] Ни один агент не смог обработать сообщение")
+        logger.warning(f"🚨 [TRACE:{trace_id}] Возвращаем стандартную ошибку")
+        
         return Response(
             text="Извините, я не могу обработать ваш запрос.",
-            metadata={"error": "No suitable agent found"}
+            metadata={"error": "No suitable agent found", "trace_id": trace_id}
         )
         
     async def can_handle(self, message: Message) -> bool:
