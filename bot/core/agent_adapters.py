@@ -38,7 +38,7 @@ class IntelligentAgentAdapter(IAgent):
         
     async def can_handle(self, message: Message) -> bool:
         """Проверяет, может ли обработать сообщение"""
-        # Intelligent Agent обрабатывает только MCP команды от администраторов бота
+        # Intelligent Agent обрабатывает ВСЕ сообщения от администраторов бота
         from ..core.config import config
         from ..services.unified_mcp_service import unified_mcp_service
         
@@ -50,18 +50,11 @@ class IntelligentAgentAdapter(IAgent):
         if message.user.role != UserRole.ADMIN:
             return False
             
-        # IntelligentAgent доступен любому администратору (не только владельцу)
-        logger.debug(f"Admin user {message.user.id} can access IntelligentAgent")
-            
-        # Проверяем, что это MCP команда
-        if not message.text:
-            return False
-            
-        # Проверяем через unified_mcp_service или fallback для команд /mcp
-        return (unified_mcp_service.is_mcp_command(message.text) or 
-                message.text.startswith('/mcp') or
-                message.text.startswith('/db') or 
-                message.text.startswith('/docs'))
+        # IntelligentAgent обрабатывает ВСЕ сообщения от любого администратора
+        logger.debug(f"Admin user {message.user.id} can access IntelligentAgent for any message")
+        
+        # Администратор всегда направляется к IntelligentAgent
+        return True
         
     def get_name(self) -> str:
         return "IntelligentAgent"

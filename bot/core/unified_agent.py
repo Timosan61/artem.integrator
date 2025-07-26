@@ -36,14 +36,14 @@ class UnifiedAgent:
         
         # Добавляем агентов в порядке приоритета
         try:
-            # 1. Intelligent Agent для администраторов бота + MCP команды (приоритет 90)
+            # 1. Intelligent Agent для всех сообщений от администраторов бота (приоритет 90)
             agents.append(IntelligentAgentAdapter())
             logger.info("✅ IntelligentAgent добавлен в цепочку")
         except Exception as e:
             logger.warning(f"⚠️ IntelligentAgent недоступен: {e}")
             
         try:
-            # 2. Default Agent (ArtemAgent) для всех остальных + Business (приоритет 10)
+            # 2. Default Agent (ArtemAgent) для обычных пользователей + Business (приоритет 10)
             agents.append(DefaultAgentAdapter())
             logger.info("✅ DefaultAgent добавлен в цепочку")
         except Exception as e:
