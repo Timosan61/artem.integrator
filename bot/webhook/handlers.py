@@ -236,7 +236,7 @@ class WebhookHandler:
     
     async def _handle_message(self, telegram_message: Dict[str, Any], is_business: bool = False, business_connection_id: Optional[str] = None) -> Dict[str, Any]:
         """Обрабатывает обычное сообщение"""
-        trace_id = None  # Инициализируем переменную
+        trace_id = None  # Инициализируем переменную для всей области видимости метода
         
         try:
             logger.info(f"📩 Processing message: {telegram_message}")
