@@ -12,6 +12,7 @@ try:
         get_structured_logger, ComponentType, TraceContext,
         log_operation_start, log_operation_success, log_operation_error
     )
+    from .request_tracer import request_tracer, ComponentStep
     STRUCTURED_LOGGING = True
 except ImportError:
     STRUCTURED_LOGGING = False
@@ -47,10 +48,27 @@ class IntelligentAgentAdapter(IAgent):
             
     async def process_message(self, message: Message) -> Response:
         """Обрабатывает сообщение через Intelligent Agent"""
+        trace_id = getattr(message, 'trace_id', None)
+        
         if not self._service:
+            if self.structured_logger and trace_id:
+                self.structured_logger.error(
+                    "❌ Intelligent Agent недоступен",
+                    trace_id=trace_id,
+                    operation="service_unavailable",
+                    metadata={"service_available": False}
+                )
             return Response(text="Intelligent Agent недоступен", metadata={"error": "Service not available"})
-            
-        return await self._service.process_message(message)
+        
+        # Трассировка обработки сообщения через IntelligentAgent
+        if STRUCTURED_LOGGING and trace_id:
+            async with request_tracer.trace_operation(
+                trace_id, ComponentType.AGENT, ComponentStep.AGENT_PROCESSING,
+                details={"agent": "IntelligentAgent", "user_id": message.user.id}
+            ):
+                return await self._service.process_message(message)
+        else:
+            return await self._service.process_message(message)
         
     async def can_handle(self, message: Message) -> bool:
         """Проверяет, может ли обработать сообщение"""
@@ -161,13 +179,30 @@ class DefaultAgentAdapter(IAgent):
             
     async def process_message(self, message: Message) -> Response:
         """Обрабатывает сообщение через стандартный агент"""
+        trace_id = getattr(message, 'trace_id', None)
+        
         if not self._agent:
+            if self.structured_logger and trace_id:
+                self.structured_logger.error(
+                    "❌ DefaultAgent не инициализирован",
+                    trace_id=trace_id,
+                    operation="agent_unavailable",
+                    metadata={"agent_initialized": False}
+                )
             return Response(
                 text="Извините, сервис временно недоступен",
                 metadata={"error": "Agent not initialized"}
             )
-            
-        return await self._agent.process_message(message)
+        
+        # Трассировка обработки сообщения через DefaultAgent
+        if STRUCTURED_LOGGING and trace_id:
+            async with request_tracer.trace_operation(
+                trace_id, ComponentType.AGENT, ComponentStep.AGENT_PROCESSING,
+                details={"agent": "DefaultAgent", "user_id": message.user.id}
+            ):
+                return await self._agent.process_message(message)
+        else:
+            return await self._agent.process_message(message)
         
     async def can_handle(self, message: Message) -> bool:
         """Стандартный агент может обработать любое сообщение"""

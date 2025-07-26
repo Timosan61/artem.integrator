@@ -11,7 +11,21 @@ from ..core.interfaces import Message, User, MessageType, UserRole
 from ..core.unified_agent import unified_agent
 from ..core.config import config
 
+# Импорт системы трассировки
+try:
+    from ..core.request_tracer import request_tracer, ComponentStep, ComponentType, TraceStatus
+    from ..core.logging_utils import get_structured_logger
+    REQUEST_TRACING = True
+except ImportError:
+    REQUEST_TRACING = False
+
 logger = logging.getLogger(__name__)
+
+# Инициализируем структурированный логгер для webhook если доступен
+if REQUEST_TRACING:
+    webhook_logger = get_structured_logger("webhook_handler", ComponentType.WEBHOOK)
+else:
+    webhook_logger = None
 
 # Опциональные импорты сервисов
 try:
@@ -299,6 +313,10 @@ class WebhookHandler:
                 is_business_message=is_business
             )
             
+            # Добавляем trace_id в сообщение для передачи агентам
+            if REQUEST_TRACING and trace_id:
+                message.trace_id = trace_id
+            
             # Проверяем специальные команды
             if text and text.startswith('/'):
                 special_response = await self._handle_special_command(message)
@@ -312,18 +330,96 @@ class WebhookHandler:
                 if social_response:
                     return social_response
             
+            # Логируем начало маршрутизации к агенту
+            if REQUEST_TRACING and trace_id:
+                request_tracer.add_event(
+                    trace_id, ComponentType.WEBHOOK, ComponentStep.AGENT_ROUTING,
+                    details={
+                        'message_text_length': len(text) if text else 0,
+                        'user_role': user.role.value,
+                        'is_business': is_business
+                    }
+                )
+            
             # Обрабатываем через унифицированный агент
-            logger.info(f"🔗 Processing message through UnifiedAgent")
-            response = await self.agent.process_message(message)
+            if webhook_logger and trace_id:
+                webhook_logger.info(
+                    "🔗 Обработка через UnifiedAgent",
+                    trace_id=trace_id,
+                    operation="agent_processing_start"
+                )
+            else:
+                logger.info(f"🔗 Processing message through UnifiedAgent")
+            
+            # Используем трассировку для обработки агентом
+            if REQUEST_TRACING and trace_id:
+                async with request_tracer.trace_operation(
+                    trace_id, ComponentType.AGENT, ComponentStep.AGENT_PROCESSING
+                ):
+                    response = await self.agent.process_message(message)
+            else:
+                response = await self.agent.process_message(message)
+            
+            # Логируем начало отправки ответа
+            if REQUEST_TRACING and trace_id:
+                request_tracer.add_event(
+                    trace_id, ComponentType.WEBHOOK, ComponentStep.RESPONSE_GENERATION,
+                    details={
+                        'response_length': len(response.text) if response.text else 0,
+                        'response_type': 'business' if is_business else 'regular',
+                        'has_business_connection': bool(business_connection_id)
+                    }
+                )
             
             # Отправляем ответ
             if is_business and business_connection_id:
                 # Для Business сообщений используем специальную функцию
-                logger.info(f"📤 Sending Business response to {chat_id}: {response.text[:100]}...")
-                result = send_business_message(chat_id, response.text, business_connection_id)
+                if webhook_logger and trace_id:
+                    webhook_logger.info(
+                        "📤 Отправка Business ответа",
+                        trace_id=trace_id,
+                        operation="business_response_send",
+                        metadata={
+                            'chat_id': chat_id,
+                            'response_preview': response.text[:100],
+                            'business_connection_id': business_connection_id
+                        }
+                    )
+                else:
+                    logger.info(f"📤 Sending Business response to {chat_id}: {response.text[:100]}...")
+                
+                # Используем трассировку для отправки
+                if REQUEST_TRACING and trace_id:
+                    async with request_tracer.trace_operation(
+                        trace_id, ComponentType.API, ComponentStep.RESPONSE_SENT,
+                        details={'method': 'business_api'}
+                    ):
+                        result = send_business_message(chat_id, response.text, business_connection_id)
+                else:
+                    result = send_business_message(chat_id, response.text, business_connection_id)
                 
                 if result.get("success"):
-                    logger.info(f"✅ Business сообщение отправлено: message_id={result.get('message_id')}")
+                    # Успешная отправка
+                    if REQUEST_TRACING and trace_id:
+                        request_tracer.complete_trace(
+                            trace_id, TraceStatus.COMPLETED,
+                            final_metadata={
+                                'delivery_method': 'business_api',
+                                'message_id': result.get('message_id'),
+                                'response_length': len(response.text) if response.text else 0
+                            }
+                        )
+                    
+                    if webhook_logger and trace_id:
+                        webhook_logger.info(
+                            "✅ Business сообщение успешно отправлено",
+                            trace_id=trace_id,
+                            operation="business_send_success",
+                            metadata={'message_id': result.get('message_id')}
+                        )
+                    else:
+                        logger.info(f"✅ Business сообщение отправлено: message_id={result.get('message_id')}")
+                    
                     return {
                         "ok": True, 
                         "response_sent": True, 
@@ -332,17 +428,83 @@ class WebhookHandler:
                         "business_connection_id": business_connection_id
                     }
                 else:
+                    # Ошибка Business API - fallback
                     error_details = result.get("details", "Unknown error")
-                    logger.warning(f"⚠️ Business API не сработал ({error_details}), пробуем обычную отправку...")
+                    
+                    if REQUEST_TRACING and trace_id:
+                        request_tracer.add_event(
+                            trace_id, ComponentType.API, ComponentStep.ERROR_HANDLING,
+                            details={
+                                'error_type': 'business_api_failure',
+                                'error_details': error_details,
+                                'fallback_to': 'regular_api'
+                            },
+                            success=False,
+                            error=error_details
+                        )
+                    
+                    if webhook_logger and trace_id:
+                        webhook_logger.warning(
+                            "⚠️ Business API fallback к обычной отправке",
+                            trace_id=trace_id,
+                            operation="business_api_fallback",
+                            metadata={'error_details': error_details}
+                        )
+                    else:
+                        logger.warning(f"⚠️ Business API не сработал ({error_details}), пробуем обычную отправку...")
                     # Fallback к обычной отправке
             
             # Обычная отправка или fallback для Business
             try:
                 from ..telegram_bot import bot
-                logger.info(f"📤 Sending response to {chat_id}: {response.text[:100]}...")
-                result = bot.send_message(chat_id, response.text)
-                logger.info(f"✅ Response sent successfully. Message ID: {result.message_id if hasattr(result, 'message_id') else 'Unknown'}")
-                return {"ok": True, "response_sent": True, "message_id": result.message_id if hasattr(result, 'message_id') else None}
+                
+                if webhook_logger and trace_id:
+                    webhook_logger.info(
+                        "📤 Отправка обычного ответа",
+                        trace_id=trace_id,
+                        operation="regular_response_send",
+                        metadata={
+                            'chat_id': chat_id,
+                            'response_preview': response.text[:100]
+                        }
+                    )
+                else:
+                    logger.info(f"📤 Sending response to {chat_id}: {response.text[:100]}...")
+                
+                # Используем трассировку для отправки
+                if REQUEST_TRACING and trace_id:
+                    async with request_tracer.trace_operation(
+                        trace_id, ComponentType.API, ComponentStep.RESPONSE_SENT,
+                        details={'method': 'telegram_bot'}
+                    ):
+                        result = bot.send_message(chat_id, response.text)
+                else:
+                    result = bot.send_message(chat_id, response.text)
+                
+                # Успешная отправка
+                message_id = result.message_id if hasattr(result, 'message_id') else None
+                
+                if REQUEST_TRACING and trace_id:
+                    request_tracer.complete_trace(
+                        trace_id, TraceStatus.COMPLETED,
+                        final_metadata={
+                            'delivery_method': 'telegram_api',
+                            'message_id': message_id,
+                            'response_length': len(response.text) if response.text else 0
+                        }
+                    )
+                
+                if webhook_logger and trace_id:
+                    webhook_logger.info(
+                        "✅ Ответ успешно отправлен",
+                        trace_id=trace_id,
+                        operation="response_sent_success",
+                        metadata={'message_id': message_id}
+                    )
+                else:
+                    logger.info(f"✅ Response sent successfully. Message ID: {message_id}")
+                
+                return {"ok": True, "response_sent": True, "message_id": message_id}
             except ImportError as e:
                 logger.error(f"❌ Failed to import telegram bot: {e}", exc_info=True)
                 # Fallback: используем requests для отправки
@@ -365,7 +527,31 @@ class WebhookHandler:
                 return {"ok": True, "response_sent": False, "error": str(e)}
             
         except Exception as e:
-            logger.error(f"❌ Ошибка обработки сообщения: {e}", exc_info=True)
+            # Общая ошибка обработки
+            if REQUEST_TRACING and trace_id:
+                request_tracer.add_event(
+                    trace_id, ComponentType.WEBHOOK, ComponentStep.ERROR_HANDLING,
+                    details={
+                        'error_type': 'general_processing_error',
+                        'error_message': str(e)
+                    },
+                    success=False,
+                    error=str(e)
+                )
+                request_tracer.complete_trace(trace_id, TraceStatus.FAILED, {
+                    'final_error': str(e)
+                })
+            
+            if webhook_logger and trace_id:
+                webhook_logger.error(
+                    "❌ Ошибка обработки сообщения",
+                    trace_id=trace_id,
+                    operation="message_processing_error",
+                    exc_info=True
+                )
+            else:
+                logger.error(f"❌ Ошибка обработки сообщения: {e}", exc_info=True)
+            
             return {"ok": False, "error": str(e)}
     
     async def _handle_callback_query(self, callback_query: Dict[str, Any]) -> Dict[str, Any]:

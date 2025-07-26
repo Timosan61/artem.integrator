@@ -11156,3 +11156,810 @@ A  get_digitalocean_logs.sh
 
 ---
 
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:41:22
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+M  agent/core/intelligent_agent.py
+M  bot/core/agent_adapters.py
+M  bot/core/base_agent.py
+A  bot/core/logging_utils.py
+M  bot/services/claude_code_service.py
+M  bot/services/unified_mcp_service.py
+A  check_and_setup_webhook.py
+M  debug-history.md
+A  diagnose_business_api_issue.py
+A  doctl
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:41:34
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:41:44
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:41:56
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:42:03
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+- Отлично! Пункт 5 "Структурированное логирование с контекстом" завершен. Давайте теперь выполним коммит всех и
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:43:21
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:45:06
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:45:56
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:46:01
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:46:09
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:46:14
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:46:17
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:46:58
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:47:02
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:47:15
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+- Теперь интегрирую трассировку в метод `_handle_message`:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:47:20
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:48:02
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:48:07
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:48:11
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:48:38
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:48:43
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:48:46
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:50:15
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+- Теперь интегрируем трассировку в систему агентов. Обновим базовый агент:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:53:18
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/base_agent.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:53:34
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:54:37
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:55:36
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? test_request_tracing.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:56:50
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 04:57:05
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:01:42
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:01:57
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:02:02
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:03:18
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? doc/LOGGING_SYSTEM_GUIDE.md
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:04:33
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? doc/LOGGING_API_REFERENCE.md
+?? doc/LOGGING_SYSTEM_GUIDE.md
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:05:16
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? doc/LOGGING_API_REFERENCE.md
+?? doc/LOGGING_SYSTEM_GUIDE.md
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:05:33
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? doc/LOGGING_API_REFERENCE.md
+?? doc/LOGGING_SYSTEM_GUIDE.md
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:05:39
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? doc/LOGGING_API_REFERENCE.md
+?? doc/LOGGING_SYSTEM_GUIDE.md
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:56:33
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? doc/LOGGING_API_REFERENCE.md
+?? doc/LOGGING_SYSTEM_GUIDE.md
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:56:36
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? doc/LOGGING_API_REFERENCE.md
+?? doc/LOGGING_SYSTEM_GUIDE.md
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:56:41
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/core/agent_adapters.py
+ M bot/core/base_agent.py
+ M bot/services/unified_mcp_service.py
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? bot/core/request_tracer.py
+?? doc/LOGGING_API_REFERENCE.md
+?? doc/LOGGING_SYSTEM_GUIDE.md
+?? test_request_tracing.py
+?? test_tracing_isolated.py
+```
+
+### Recent Events:
+- Отлично! Я успешно завершил реализацию Пункта 6 "Система трассировки запросов" и создал документацию по систе
+
+---
+

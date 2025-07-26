@@ -15,6 +15,7 @@ try:
         get_structured_logger, ComponentType, TraceContext,
         log_operation_start, log_operation_success, log_operation_error
     )
+    from ..core.request_tracer import request_tracer, ComponentStep
     STRUCTURED_LOGGING = True
 except ImportError:
     STRUCTURED_LOGGING = False
@@ -121,27 +122,71 @@ class UnifiedMCPService:
                 
         return None
         
-    async def execute_command(self, command: MCPCommand) -> Dict[str, Any]:
+    async def execute_command(self, command: MCPCommand, trace_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Выполняет MCP команду
+        
+        Args:
+            command: MCP команда для выполнения
+            trace_id: ID трассировки
         
         Returns:
             Dict с результатом выполнения
         """
         try:
-            if self._claude_sdk_available:
-                return await self._execute_via_sdk(command)
+            # Трассировка выполнения MCP команды
+            if STRUCTURED_LOGGING and trace_id:
+                async with request_tracer.trace_operation(
+                    trace_id, ComponentType.MCP, ComponentStep.TOOL_EXECUTION,
+                    details={
+                        "provider": command.provider.value,
+                        "action": command.action,
+                        "sdk_available": self._claude_sdk_available
+                    }
+                ):
+                    if self._claude_sdk_available:
+                        return await self._execute_via_sdk(command, trace_id)
+                    else:
+                        return await self._emulate_command(command, trace_id)
             else:
-                return await self._emulate_command(command)
+                if self._claude_sdk_available:
+                    return await self._execute_via_sdk(command, trace_id)
+                else:
+                    return await self._emulate_command(command, trace_id)
                 
         except Exception as e:
-            logger.error(f"Ошибка выполнения MCP команды: {e}")
+            if self.structured_logger and trace_id:
+                self.structured_logger.error(
+                    f"❌ Ошибка выполнения MCP команды: {str(e)}",
+                    trace_id=trace_id,
+                    operation="mcp_command_error",
+                    metadata={"command": command.action, "provider": command.provider.value, "error": str(e)}
+                )
+            else:
+                logger.error(f"Ошибка выполнения MCP команды: {e}")
+            
+            # Добавляем событие ошибки в трассировку
+            if STRUCTURED_LOGGING and trace_id:
+                request_tracer.add_event(
+                    trace_id, ComponentType.MCP, ComponentStep.ERROR_HANDLING,
+                    details={"command": command.action, "provider": command.provider.value},
+                    success=False, error=str(e)
+                )
+            
             raise MCPError(f"Ошибка выполнения команды: {str(e)}")
             
-    async def _execute_via_sdk(self, command: MCPCommand) -> Dict[str, Any]:
+    async def _execute_via_sdk(self, command: MCPCommand, trace_id: Optional[str] = None) -> Dict[str, Any]:
         """Выполнение через Claude Code SDK"""
         try:
             from claude_code_sdk import claude_code_execute_mcp_tool
+            
+            if self.structured_logger and trace_id:
+                self.structured_logger.info(
+                    "🤖 Выполняем MCP команду через Claude Code SDK",
+                    trace_id=trace_id,
+                    operation="sdk_execution",
+                    metadata={"command": command.action, "provider": command.provider.value}
+                )
             
             # Маппинг команд на MCP функции
             mcp_function_map = {
@@ -178,9 +223,17 @@ class UnifiedMCPService:
                 "error": str(e)
             }
             
-    async def _emulate_command(self, command: MCPCommand) -> Dict[str, Any]:
+    async def _emulate_command(self, command: MCPCommand, trace_id: Optional[str] = None) -> Dict[str, Any]:
         """Эмуляция выполнения команды (для отладки)"""
-        logger.info(f"📋 Эмуляция MCP команды: {command.provider} -> {command.action}")
+        if self.structured_logger and trace_id:
+            self.structured_logger.info(
+                "📋 Эмуляция MCP команды",
+                trace_id=trace_id,
+                operation="mcp_emulation",
+                metadata={"command": command.action, "provider": command.provider.value}
+            )
+        else:
+            logger.info(f"📋 Эмуляция MCP команды: {command.provider} -> {command.action}")
         
         if command.provider == MCPProvider.DIGITALOCEAN and command.action == "list_apps":
             return {
@@ -221,9 +274,13 @@ class UnifiedMCPService:
         # Используем форматтер для красивого вывода
         return self.formatter.format_mcp_result(result)
         
-    async def process_message(self, text: str) -> Optional[str]:
+    async def process_message(self, text: str, trace_id: Optional[str] = None) -> Optional[str]:
         """
         Обрабатывает сообщение и выполняет MCP команду если найдена
+        
+        Args:
+            text: Текст сообщения
+            trace_id: ID трассировки
         
         Returns:
             Отформатированный результат или None если не MCP команда
@@ -231,14 +288,42 @@ class UnifiedMCPService:
         command = self.parse_mcp_command(text)
         if not command:
             return None
+        
+        # Добавляем событие обнаружения MCP команды
+        if STRUCTURED_LOGGING and trace_id:
+            request_tracer.add_event(
+                trace_id, ComponentType.MCP, ComponentStep.TOOL_EXECUTION,
+                details={
+                    "mcp_command_detected": True,
+                    "provider": command.provider.value,
+                    "action": command.action,
+                    "raw_text": command.raw_text
+                }
+            )
             
         try:
-            result = await self.execute_command(command)
-            return self.format_result(result)
+            result = await self.execute_command(command, trace_id)
+            formatted_result = self.format_result(result)
+            return formatted_result
         except MCPError as e:
+            if self.structured_logger and trace_id:
+                self.structured_logger.error(
+                    f"❌ MCP Error: {str(e)}",
+                    trace_id=trace_id,
+                    operation="mcp_error",
+                    metadata={"error": str(e), "command": command.action}
+                )
             return f"❌ {str(e)}"
         except Exception as e:
-            logger.error(f"Unexpected error in MCP processing: {e}")
+            if self.structured_logger and trace_id:
+                self.structured_logger.error(
+                    f"❌ Неожиданная ошибка в MCP обработке: {str(e)}",
+                    trace_id=trace_id,
+                    operation="unexpected_error",
+                    metadata={"error": str(e), "command": command.action}
+                )
+            else:
+                logger.error(f"Unexpected error in MCP processing: {e}")
             return "❌ Произошла неожиданная ошибка при обработке команды"
             
     def is_mcp_command(self, text: str) -> bool:
