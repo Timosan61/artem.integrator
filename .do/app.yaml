@@ -1,0 +1,60 @@
+alerts:
+- rule: DEPLOYMENT_FAILED
+- rule: DOMAIN_FAILED
+databases: []
+domains: []
+envs:
+- key: MCP_ENABLED
+  scope: RUN_AND_BUILD_TIME
+  value: "true"
+- key: ANTHROPIC_API_KEY
+  scope: RUN_AND_BUILD_TIME
+  value: ${ANTHROPIC_API_KEY}
+- key: TELEGRAM_BOT_TOKEN
+  scope: RUN_AND_BUILD_TIME
+  value: ${TELEGRAM_BOT_TOKEN}
+- key: WEBHOOK_SECRET_TOKEN
+  scope: RUN_AND_BUILD_TIME
+  value: ${WEBHOOK_SECRET_TOKEN}
+- key: BASE_URL
+  scope: RUN_AND_BUILD_TIME
+  value: ${BASE_URL}
+- key: ADMIN_TOKEN
+  scope: RUN_AND_BUILD_TIME
+  value: ${ADMIN_TOKEN}
+- key: DIGITALOCEAN_TOKEN
+  scope: RUN_AND_BUILD_TIME
+  value: ${DIGITALOCEAN_TOKEN}
+- key: SUPABASE_URL
+  scope: RUN_AND_BUILD_TIME
+  value: ${SUPABASE_URL}
+- key: SUPABASE_KEY
+  scope: RUN_AND_BUILD_TIME
+  value: ${SUPABASE_KEY}
+- key: CONTEXT7_API_KEY
+  scope: RUN_AND_BUILD_TIME
+  value: ${CONTEXT7_API_KEY}
+functions: []
+jobs: []
+name: artemintegrator
+region: fra
+services:
+- build_command: ""
+  dockerfile_path: Dockerfile
+  environment_slug: docker
+  github:
+    branch: main
+    deploy_on_push: true
+    repo: Timosan61/artem.integrator
+  health_check:
+    http_path: /health
+  http_port: 8000
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  name: web
+  routes:
+  - path: /
+  run_command: ""
+  source_dir: /
+static_sites: []
+workers: []
