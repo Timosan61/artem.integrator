@@ -236,21 +236,49 @@ class WebhookHandler:
     
     async def _handle_message(self, telegram_message: Dict[str, Any], is_business: bool = False, business_connection_id: Optional[str] = None) -> Dict[str, Any]:
         """Обрабатывает обычное сообщение"""
+        trace_id = None  # Инициализируем переменную
+        
         try:
             logger.info(f"📩 Processing message: {telegram_message}")
             
-            # Извлекаем данные
+            # Извлекаем данные для создания трассировки
             user_data = telegram_message.get('from', {})
             chat_id = telegram_message.get('chat', {}).get('id')
             text = telegram_message.get('text')
             voice = telegram_message.get('voice')
+            user_id = user_data.get('id')
             
-            logger.info(f"👤 User: {user_data.get('username', 'Unknown')} ({user_data.get('id', 'Unknown')})")
+            # Создаем трассировку запроса
+            if REQUEST_TRACING:
+                trace_id = request_tracer.create_trace(
+                    user_id=str(user_id),
+                    session_id=str(chat_id),
+                    metadata={
+                        "message_type": "telegram",
+                        "chat_type": telegram_message.get('chat', {}).get('type', 'private'),
+                        "is_business_message": is_business,
+                        "business_connection_id": business_connection_id,
+                        "has_text": bool(text),
+                        "has_voice": bool(voice)
+                    }
+                )
+                
+                # Логируем получение webhook
+                request_tracer.add_event(
+                    trace_id, ComponentType.WEBHOOK, ComponentStep.WEBHOOK_RECEIVED,
+                    details={
+                        "message_id": telegram_message.get('message_id'),
+                        "user_id": user_id,
+                        "chat_id": chat_id,
+                        "text_length": len(text) if text else 0
+                    }
+                )
+            
+            logger.info(f"👤 User: {user_data.get('username', 'Unknown')} ({user_id})")
             logger.info(f"💬 Text: {text}")
             logger.info(f"🎤 Voice: {bool(voice)}")
             
             # Создаем объект пользователя
-            user_id = user_data.get('id')
             username = user_data.get('username')
             is_user_admin = is_admin(user_id, username)
             
