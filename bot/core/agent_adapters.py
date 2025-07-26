@@ -29,8 +29,8 @@ else:
     adapter_logger = None
 
 
-class IntelligentAgentAdapter(IAgent):
-    """Адаптер для Intelligent Agent"""
+class UnifiedAgentAdapter(IAgent):
+    """Адаптер для Unified Agent с Claude Code SDK"""
     
     def __init__(self):
         self._service = None
@@ -40,31 +40,31 @@ class IntelligentAgentAdapter(IAgent):
     def _init_service(self):
         """Ленивая инициализация сервиса"""
         try:
-            from ..services.intelligent_agent_service import intelligent_agent_service
-            self._service = intelligent_agent_service
-            logger.info("✅ IntelligentAgentAdapter инициализирован")
+            from .unified_agent import unified_agent
+            self._service = unified_agent
+            logger.info("✅ UnifiedAgentAdapter инициализирован")
         except ImportError as e:
-            logger.warning(f"⚠️ Intelligent Agent недоступен: {e}")
+            logger.warning(f"⚠️ Unified Agent недоступен: {e}")
             
     async def process_message(self, message: Message) -> Response:
-        """Обрабатывает сообщение через Intelligent Agent"""
+        """Обрабатывает сообщение через Unified Agent"""
         trace_id = getattr(message, 'trace_id', None)
         
         if not self._service:
             if self.structured_logger and trace_id:
                 self.structured_logger.error(
-                    "❌ Intelligent Agent недоступен",
+                    "❌ Unified Agent недоступен",
                     trace_id=trace_id,
                     operation="service_unavailable",
                     metadata={"service_available": False}
                 )
-            return Response(text="Intelligent Agent недоступен", metadata={"error": "Service not available"})
+            return Response(text="Unified Agent недоступен", metadata={"error": "Service not available"})
         
-        # Трассировка обработки сообщения через IntelligentAgent
+        # Трассировка обработки сообщения через UnifiedAgent
         if STRUCTURED_LOGGING and trace_id:
             async with request_tracer.trace_operation(
                 trace_id, ComponentType.AGENT, ComponentStep.AGENT_PROCESSING,
-                details={"agent": "IntelligentAgent", "user_id": message.user.id}
+                details={"agent": "UnifiedAgent", "user_id": message.user.id}
             ):
                 return await self._service.process_message(message)
         else:
@@ -77,7 +77,7 @@ class IntelligentAgentAdapter(IAgent):
         
         if self.structured_logger:
             self.structured_logger.info(
-                "🔍 IntelligentAgentAdapter: анализ возможности обработки",
+                "🔍 UnifiedAgentAdapter: анализ возможности обработки",
                 trace_id=trace_id,
                 operation="can_handle_analysis",
                 metadata={
@@ -88,26 +88,25 @@ class IntelligentAgentAdapter(IAgent):
                 }
             )
         else:
-            logger.info(f"🔍 [TRACE:{trace_id}] IntelligentAgentAdapter: анализ возможности обработки")
+            logger.info(f"🔍 [TRACE:{trace_id}] UnifiedAgentAdapter: анализ возможности обработки")
             logger.info(f"👤 [TRACE:{trace_id}] Пользователь: {message.user.id}")
             logger.info(f"🏷️ [TRACE:{trace_id}] Роль пользователя: {message.user.role.value}")
             logger.info(f"🏗️ [TRACE:{trace_id}] Business сообщение: {getattr(message, 'is_business_message', False)}")
         
-        # Intelligent Agent обрабатывает ВСЕ сообщения от администраторов бота
+        # Unified Agent обрабатывает ВСЕ сообщения от администраторов бота
         from ..core.config import config
-        from ..services.unified_mcp_service import unified_mcp_service
         
-        # Если IntelligentAgent недоступен, не обрабатываем
-        if not self._service or not self._service.is_available():
+        # Если UnifiedAgent недоступен, не обрабатываем
+        if not self._service:
             if self.structured_logger:
                 self.structured_logger.warning(
-                    "❌ IntelligentAgent недоступен или не инициализирован",
+                    "❌ UnifiedAgent недоступен или не инициализирован",
                     trace_id=trace_id,
                     operation="availability_check",
                     metadata={"service_available": False}
                 )
             else:
-                logger.warning(f"❌ [TRACE:{trace_id}] IntelligentAgent недоступен или не инициализирован")
+                logger.warning(f"❌ [TRACE:{trace_id}] UnifiedAgent недоступен или не инициализирован")
             return False
             
         # Проверяем, что пользователь админ
@@ -123,10 +122,10 @@ class IntelligentAgentAdapter(IAgent):
                 logger.info(f"❌ [TRACE:{trace_id}] Отклонено: пользователь не администратор")
             return False
             
-        # IntelligentAgent обрабатывает ВСЕ сообщения от любого администратора
+        # UnifiedAgent обрабатывает ВСЕ сообщения от любого администратора
         if self.structured_logger:
             self.structured_logger.info(
-                "✅ Принято: администратор может использовать IntelligentAgent",
+                "✅ Принято: администратор может использовать UnifiedAgent",
                 trace_id=trace_id,
                 operation="admin_access_granted",
                 metadata={
@@ -136,14 +135,14 @@ class IntelligentAgentAdapter(IAgent):
                 }
             )
         else:
-            logger.info(f"✅ [TRACE:{trace_id}] Принято: администратор может использовать IntelligentAgent")
-            logger.debug(f"Admin user {message.user.id} can access IntelligentAgent for any message")
+            logger.info(f"✅ [TRACE:{trace_id}] Принято: администратор может использовать UnifiedAgent")
+            logger.debug(f"Admin user {message.user.id} can access UnifiedAgent for any message")
         
-        # Администратор всегда направляется к IntelligentAgent
+        # Администратор всегда направляется к UnifiedAgent
         return True
         
     def get_name(self) -> str:
-        return "IntelligentAgent"
+        return "UnifiedAgent"
         
     def get_priority(self) -> int:
         return 90  # Высокий приоритет для админов

@@ -369,24 +369,36 @@ class WebhookHandler:
                     }
                 )
             
-            # Обрабатываем через унифицированный агент
+            # Выбираем агента на основе роли пользователя
+            if user.role == UserRole.ADMIN:
+                # Администраторы используют UnifiedAgent с Claude Code SDK
+                selected_agent = unified_agent
+                agent_name = "UnifiedAgent"
+                logger.info(f"👑 Администратор {user.id} -> Claude Code SDK")
+            else:
+                # Обычные пользователи используют ArtemAgent
+                from ..core.agent import AgentFactory
+                selected_agent = AgentFactory.get_agent()
+                agent_name = "ArtemAgent"
+                logger.info(f"👤 Обычный пользователь {user.id} -> ArtemAgent")
+            
             if webhook_logger and trace_id:
                 webhook_logger.info(
-                    "🔗 Обработка через UnifiedAgent",
+                    f"🔗 Обработка через {agent_name}",
                     trace_id=trace_id,
                     operation="agent_processing_start"
                 )
             else:
-                logger.info(f"🔗 Processing message through UnifiedAgent")
+                logger.info(f"🔗 Processing message through {agent_name}")
             
             # Используем трассировку для обработки агентом
             if REQUEST_TRACING and trace_id:
                 async with request_tracer.trace_operation(
                     trace_id, ComponentType.AGENT, ComponentStep.AGENT_PROCESSING
                 ):
-                    response = await self.agent.process_message(message)
+                    response = await selected_agent.process_message(message)
             else:
-                response = await self.agent.process_message(message)
+                response = await selected_agent.process_message(message)
             
             # Логируем начало отправки ответа
             if REQUEST_TRACING and trace_id:
