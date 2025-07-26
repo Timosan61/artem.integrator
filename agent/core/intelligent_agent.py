@@ -6,9 +6,18 @@ import logging
 import time
 from typing import List, Dict, Any, Optional, TYPE_CHECKING
 from openai import AsyncOpenAI
+import openai
 from datetime import datetime
 import sys
 import os
+
+# Добавляем поддержку Anthropic
+try:
+    from anthropic import AsyncAnthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+    AsyncAnthropic = None
 
 # Добавляем bot в path для импорта logging_utils
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -42,18 +51,37 @@ else:
 
 
 class IntelligentAgent:
-    """Упрощенный интеллектуальный агент с прямым LLM-анализом"""
+    """Упрощенный интеллектуальный агент с прямым LLM-анализом и fallback системой"""
     
-    def __init__(self, api_key: str, model: str = "gpt-4o"):
+    def __init__(self, api_key: str, model: str = "gpt-4o", anthropic_api_key: Optional[str] = None):
         """
-        Инициализация агента
+        Инициализация агента с поддержкой нескольких LLM провайдеров
         
         Args:
             api_key: OpenAI API ключ
             model: Модель для использования (по умолчанию gpt-4o)
+            anthropic_api_key: Anthropic API ключ для fallback
         """
-        self.client = AsyncOpenAI(api_key=api_key)
-        self.model = model
+        # Инициализация OpenAI клиента (первичный провайдер)
+        self.openai_client = AsyncOpenAI(api_key=api_key)
+        self.openai_model = model
+        
+        # Инициализация Anthropic клиента (fallback провайдер)
+        self.anthropic_client = None
+        self.anthropic_model = "claude-3-5-sonnet-20241022"
+        
+        if anthropic_api_key and ANTHROPIC_AVAILABLE:
+            try:
+                self.anthropic_client = AsyncAnthropic(api_key=anthropic_api_key)
+                logger.info("✅ Anthropic клиент инициализирован для fallback")
+            except Exception as e:
+                logger.warning(f"⚠️ Ошибка инициализации Anthropic клиента: {e}")
+        elif not ANTHROPIC_AVAILABLE:
+            logger.warning("⚠️ Anthropic библиотека не доступна")
+        
+        # Устаревшие свойства для обратной совместимости
+        self.client = self.openai_client
+        self.model = self.openai_model
         self.conversation_history = []
         
         self.logger = logger
@@ -65,7 +93,24 @@ class IntelligentAgent:
         # Доступные функции
         self.available_functions = self._get_available_functions()
         
-        logger.info(f"✅ Упрощенный IntelligentAgent инициализирован с моделью {model}")
+        # Статистика использования провайдеров
+        self.provider_stats = {
+            "openai_calls": 0,
+            "anthropic_calls": 0,
+            "claude_sdk_calls": 0,
+            "openai_errors": 0,
+            "anthropic_errors": 0
+        }
+        
+        providers_available = []
+        if api_key:
+            providers_available.append("OpenAI")
+        if self.anthropic_client:
+            providers_available.append("Anthropic")
+        if hasattr(self, 'claude_code_service') and self.claude_code_service:
+            providers_available.append("Claude SDK")
+            
+        logger.info(f"✅ IntelligentAgent инициализирован с провайдерами: {', '.join(providers_available)}")
     
     def _init_claude_code_service(self) -> None:
         """Инициализирует Claude Code Service для прямых вызовов"""
@@ -77,6 +122,242 @@ class IntelligentAgent:
         except Exception as e:
             logger.warning(f"⚠️ Не удалось подключить Claude Code Service: {e}")
             self.claude_code_service = None
+    
+    async def _call_llm_with_fallback(
+        self, 
+        messages: List[Dict[str, str]], 
+        trace_id: str = "no-trace"
+    ) -> Dict[str, Any]:
+        """
+        Универсальный метод для вызова LLM с автоматическим fallback
+        
+        Args:
+            messages: Сообщения для LLM
+            trace_id: ID трассировки для логирования
+            
+        Returns:
+            Ответ от LLM в стандартном формате
+        """
+        
+        # Попытка 1: OpenAI
+        try:
+            self.structured_logger.info(
+                f"🧠 Попытка 1: Вызов OpenAI ({self.openai_model})",
+                trace_id=trace_id,
+                operation="openai_request",
+                metadata={"model": self.openai_model, "provider": "openai"}
+            )
+            
+            response = await self.openai_client.chat.completions.create(
+                model=self.openai_model,
+                messages=messages,
+                tools=self.available_functions,
+                tool_choice="auto"
+            )
+            
+            self.provider_stats["openai_calls"] += 1
+            
+            self.structured_logger.info(
+                "✅ OpenAI ответ получен успешно",
+                trace_id=trace_id,
+                operation="openai_success",
+                metadata={"provider": "openai", "model": self.openai_model}
+            )
+            
+            # Возвращаем в стандартном формате
+            return {
+                "provider": "openai",
+                "model": self.openai_model,
+                "message": response.choices[0].message,
+                "success": True
+            }
+            
+        except openai.RateLimitError as e:
+            self.provider_stats["openai_errors"] += 1
+            self.structured_logger.warning(
+                f"⚠️ OpenAI квота превышена (429), переключаемся на Anthropic",
+                trace_id=trace_id,
+                operation="openai_rate_limit",
+                metadata={"error": str(e), "provider": "openai"}
+            )
+            
+        except openai.AuthenticationError as e:
+            self.provider_stats["openai_errors"] += 1
+            self.structured_logger.error(
+                f"❌ OpenAI аутентификация неуспешна (401), переключаемся на Anthropic",
+                trace_id=trace_id,
+                operation="openai_auth_error",
+                metadata={"error": str(e), "provider": "openai"}
+            )
+            
+        except openai.APIError as e:
+            self.provider_stats["openai_errors"] += 1
+            self.structured_logger.error(
+                f"❌ OpenAI API ошибка ({e.status_code}), переключаемся на Anthropic",
+                trace_id=trace_id,
+                operation="openai_api_error",
+                metadata={"error": str(e), "status_code": getattr(e, 'status_code', None), "provider": "openai"}
+            )
+            
+        except Exception as e:
+            self.provider_stats["openai_errors"] += 1
+            self.structured_logger.error(
+                f"❌ OpenAI неожиданная ошибка, переключаемся на Anthropic",
+                trace_id=trace_id,
+                operation="openai_unexpected_error",
+                metadata={"error": str(e), "provider": "openai"}
+            )
+        
+        # Попытка 2: Anthropic
+        if self.anthropic_client:
+            try:
+                self.structured_logger.info(
+                    f"🤖 Попытка 2: Вызов Anthropic ({self.anthropic_model})",
+                    trace_id=trace_id,
+                    operation="anthropic_request",
+                    metadata={"model": self.anthropic_model, "provider": "anthropic"}
+                )
+                
+                # Конвертируем OpenAI формат в Anthropic формат
+                anthropic_messages = self._convert_messages_for_anthropic(messages)
+                
+                response = await self.anthropic_client.messages.create(
+                    model=self.anthropic_model,
+                    max_tokens=4096,
+                    messages=anthropic_messages
+                )
+                
+                self.provider_stats["anthropic_calls"] += 1
+                
+                self.structured_logger.info(
+                    "✅ Anthropic ответ получен успешно",
+                    trace_id=trace_id,
+                    operation="anthropic_success",
+                    metadata={"provider": "anthropic", "model": self.anthropic_model}
+                )
+                
+                # Конвертируем Anthropic ответ в OpenAI формат для совместимости
+                return {
+                    "provider": "anthropic",
+                    "model": self.anthropic_model,
+                    "message": self._convert_anthropic_response_to_openai(response),
+                    "success": True
+                }
+                
+            except Exception as e:
+                self.provider_stats["anthropic_errors"] += 1
+                self.structured_logger.error(
+                    f"❌ Anthropic ошибка, переключаемся на Claude SDK",
+                    trace_id=trace_id,
+                    operation="anthropic_error", 
+                    metadata={"error": str(e), "provider": "anthropic"}
+                )
+        else:
+            self.structured_logger.warning(
+                "⚠️ Anthropic клиент недоступен, переключаемся на Claude SDK",
+                trace_id=trace_id,
+                operation="anthropic_unavailable"
+            )
+        
+        # Попытка 3: Claude Code SDK
+        if self.claude_code_service:
+            try:
+                self.structured_logger.info(
+                    "🔌 Попытка 3: Вызов Claude Code SDK",
+                    trace_id=trace_id,
+                    operation="claude_sdk_request",
+                    metadata={"provider": "claude_sdk"}
+                )
+                
+                # Извлекаем последнее пользовательское сообщение
+                user_message = None
+                for msg in reversed(messages):
+                    if msg.get("role") == "user":
+                        user_message = msg.get("content", "")
+                        break
+                
+                if user_message:
+                    sdk_response = await self.claude_code_service.execute_mcp_command(
+                        user_message, 
+                        user_id="fallback",
+                        trace_id=trace_id
+                    )
+                    
+                    self.provider_stats["claude_sdk_calls"] += 1
+                    
+                    if sdk_response.get("success"):
+                        self.structured_logger.info(
+                            "✅ Claude SDK ответ получен успешно",
+                            trace_id=trace_id,
+                            operation="claude_sdk_success",
+                            metadata={"provider": "claude_sdk"}
+                        )
+                        
+                        # Эмулируем OpenAI формат ответа
+                        mock_message = type('MockMessage', (), {
+                            'content': sdk_response.get("response", "Ответ получен от Claude SDK"),
+                            'tool_calls': None
+                        })()
+                        
+                        return {
+                            "provider": "claude_sdk",
+                            "model": "claude-code-sdk",
+                            "message": mock_message,
+                            "success": True
+                        }
+                        
+            except Exception as e:
+                self.structured_logger.error(
+                    f"❌ Claude SDK ошибка",
+                    trace_id=trace_id,
+                    operation="claude_sdk_error",
+                    metadata={"error": str(e), "provider": "claude_sdk"}
+                )
+        else:
+            self.structured_logger.warning(
+                "⚠️ Claude SDK недоступен",
+                trace_id=trace_id,
+                operation="claude_sdk_unavailable"
+            )
+        
+        # Все провайдеры недоступны
+        self.structured_logger.error(
+            "🚨 ВСЕ LLM провайдеры недоступны!",
+            trace_id=trace_id,
+            operation="all_providers_failed"
+        )
+        
+        raise Exception("Все LLM провайдеры недоступны. Попробуйте позже.")
+    
+    def _convert_messages_for_anthropic(self, openai_messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        """Конвертирует OpenAI формат сообщений в формат Anthropic"""
+        anthropic_messages = []
+        
+        for msg in openai_messages:
+            if msg["role"] == "system":
+                # Anthropic не поддерживает системные сообщения в messages, добавляем как user
+                anthropic_messages.append({
+                    "role": "user",
+                    "content": f"[SYSTEM] {msg['content']}"
+                })
+            elif msg["role"] in ["user", "assistant"]:
+                anthropic_messages.append({
+                    "role": msg["role"],
+                    "content": msg["content"]
+                })
+                
+        return anthropic_messages
+    
+    def _convert_anthropic_response_to_openai(self, anthropic_response) -> object:
+        """Конвертирует ответ Anthropic в формат OpenAI для совместимости"""
+        
+        # Создаем mock объект в стиле OpenAI ответа
+        mock_message = type('MockMessage', (), {
+            'content': anthropic_response.content[0].text if anthropic_response.content else "Нет ответа",
+            'tool_calls': None  # Пока не поддерживаем tools для Anthropic
+        })()
+        
+        return mock_message
     
     def _get_available_functions(self) -> List[Dict[str, Any]]:
         """Возвращает список доступных функций для OpenAI"""
@@ -326,33 +607,32 @@ class IntelligentAgent:
                 }
             )
             
-            # 3. ВЫЗОВ LLM
+            # 3. ВЫЗОВ LLM С FALLBACK
             self.structured_logger.info(
-                f"🧠 Этап 3: Отправка запроса к LLM ({self.model})",
+                f"🧠 Этап 3: Отправка запроса к LLM с fallback системой",
                 trace_id=trace_id,
                 operation="llm_request",
                 metadata={
-                    "model": self.model,
                     "available_tools": [func['function']['name'] for func in self.available_functions],
                     "tools_count": len(self.available_functions)
                 }
             )
             
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                tools=self.available_functions,
-                tool_choice="auto"
-            )
+            # Используем универсальный метод с fallback логикой
+            llm_response = await self._call_llm_with_fallback(messages, trace_id)
             
-            # Получаем ответ
-            assistant_message = response.choices[0].message
+            # Получаем ответ и информацию о провайдере
+            assistant_message = llm_response["message"]
+            used_provider = llm_response["provider"]
+            used_model = llm_response["model"]
             
             self.structured_logger.info(
-                "💭 LLM ответ получен",
+                f"💭 LLM ответ получен от {used_provider} ({used_model})",
                 trace_id=trace_id,
                 operation="llm_response",
                 metadata={
+                    "provider": used_provider,
+                    "model": used_model,
                     "has_tool_calls": bool(assistant_message.tool_calls),
                     "tool_calls_count": len(assistant_message.tool_calls) if assistant_message.tool_calls else 0,
                     "content_length": len(assistant_message.content or "")
@@ -529,22 +809,28 @@ class IntelligentAgent:
         logger.info(f"📋 [TRACE:{trace_id}] Подготовлено {len(messages)} сообщений для LLM")
         logger.debug(f"📋 [TRACE:{trace_id}] System prompt: {messages[0]['content'][:200]}...")
         
-        # 3. ВЫЗОВ LLM
-        logger.info(f"🧠 [TRACE:{trace_id}] Этап 3: Отправка запроса к LLM ({self.model})...")
+        # 3. ВЫЗОВ LLM С FALLBACK
+        logger.info(f"🧠 [TRACE:{trace_id}] Этап 3: Отправка запроса к LLM с fallback системой...")
         logger.info(f"🛠️ [TRACE:{trace_id}] Доступные инструменты: {len(self.available_functions)}")
         for func in self.available_functions:
             logger.debug(f"🔧 [TRACE:{trace_id}] - {func['function']['name']}: {func['function']['description']}")
         
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            tools=self.available_functions,
-            tool_choice="auto"
-        )
-        
-        # Получаем ответ
-        assistant_message = response.choices[0].message
-        logger.info(f"💭 [TRACE:{trace_id}] LLM ответ получен")
+        # Используем универсальный метод с fallback логикой
+        try:
+            llm_response = await self._call_llm_with_fallback(messages, trace_id)
+            # Получаем ответ и информацию о провайдере
+            assistant_message = llm_response["message"]
+            used_provider = llm_response["provider"]
+            used_model = llm_response["model"]
+            logger.info(f"💭 [TRACE:{trace_id}] LLM ответ получен от {used_provider} ({used_model})")
+        except Exception as e:
+            logger.error(f"❌ [TRACE:{trace_id}] Все LLM провайдеры недоступны: {e}")
+            return AgentResponse(
+                message=f"Извините, сервис временно недоступен: {str(e)}",
+                confidence=0.0,
+                requires_confirmation=False,
+                tool_response=ToolResponse(success=False, error=str(e))
+            )
         
         # 4. АНАЛИЗ РЕШЕНИЯ LLM
         if assistant_message.tool_calls:
@@ -1008,18 +1294,21 @@ class IntelligentAgent:
         logger.info(f"📋 [TRACE:{trace_id}] Контекст подготовлен: {len(messages)} сообщений")
         logger.info(f"📦 [TRACE:{trace_id}] Данные инструмента: {len(tool_result_content)} символов")
         
-        # Получаем финальный ответ
-        logger.info(f"🧠 [TRACE:{trace_id}] Запрос финального ответа к LLM...")
+        # Получаем финальный ответ через fallback систему
+        logger.info(f"🧠 [TRACE:{trace_id}] Запрос финального ответа к LLM с fallback...")
         
-        final_response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=messages
-        )
-        
-        final_text = final_response.choices[0].message.content or "Операция выполнена"
-        
-        logger.info(f"✅ [TRACE:{trace_id}] Финальный ответ получен: {len(final_text)} символов")
-        logger.debug(f"📝 [TRACE:{trace_id}] Финальный ответ: {final_text[:200]}...")
+        try:
+            # Используем fallback систему для финального ответа
+            final_llm_response = await self._call_llm_with_fallback(messages, trace_id)
+            final_text = final_llm_response["message"].content or "Операция выполнена"
+            used_provider = final_llm_response["provider"]
+            used_model = final_llm_response["model"]
+            
+            logger.info(f"✅ [TRACE:{trace_id}] Финальный ответ получен от {used_provider} ({used_model}): {len(final_text)} символов")
+            logger.debug(f"📝 [TRACE:{trace_id}] Финальный ответ: {final_text[:200]}...")
+        except Exception as e:
+            logger.error(f"❌ [TRACE:{trace_id}] Ошибка получения финального ответа: {e}")
+            final_text = f"Операция выполнена, но не удалось сформировать ответ: {str(e)}"
         
         return final_text
     

@@ -21,17 +21,33 @@ class IntelligentAgentService:
         self.enabled = False
         self.agent = None
         
-        # Проверяем наличие OpenAI API ключа
+        # Проверяем наличие API ключей
         openai_key = config.openai.api_key or os.getenv("OPENAI_API_KEY")
+        anthropic_key = config.anthropic.api_key or os.getenv("ANTHROPIC_API_KEY")
+        
         if not openai_key:
             logger.warning("⚠️ OpenAI API key не найден - Simple Agent отключен")
             return
             
         try:
-            # Создаем упрощенного агента
-            self.agent = IntelligentAgent(api_key=openai_key, model="gpt-4o")
+            # Создаем агента с поддержкой нескольких провайдеров
+            self.agent = IntelligentAgent(
+                api_key=openai_key, 
+                model="gpt-4o",
+                anthropic_api_key=anthropic_key
+            )
             self.enabled = True
-            logger.info("✅ Simple Agent Service инициализирован")
+            
+            # Логируем доступные провайдеры
+            providers = []
+            if openai_key:
+                providers.append("OpenAI")
+            if anthropic_key:
+                providers.append("Anthropic")
+            if hasattr(self.agent, 'claude_code_service') and self.agent.claude_code_service:
+                providers.append("Claude SDK")
+                
+            logger.info(f"✅ Simple Agent Service инициализирован с провайдерами: {', '.join(providers)}")
         except Exception as e:
             logger.error(f"❌ Ошибка инициализации Simple Agent: {e}")
     

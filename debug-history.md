@@ -11963,3 +11963,2781 @@ A  doctl
 
 ---
 
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:56:45
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+M  bot/core/agent_adapters.py
+M  bot/core/base_agent.py
+A  bot/core/request_tracer.py
+M  bot/services/unified_mcp_service.py
+M  bot/webhook/handlers.py
+M  debug-history.md
+A  doc/LOGGING_API_REFERENCE.md
+A  doc/LOGGING_SYSTEM_GUIDE.md
+A  test_request_tracing.py
+A  test_tracing_isolated.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:57:03
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:57:08
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:57:18
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:57:51
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:57:55
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:58:03
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:59:23
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 05:59:32
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:00:10
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:00:14
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+- Отлично! Нашел приложение. Теперь получим подробную информацию о нем:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:00:28
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:01:09
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:01:27
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:01:31
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+```
+
+### Recent Events:
+- Проблема с аутентификацией. Давайте проверим токен и используем doctl для изменения:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:01:42
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:01:44
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+?? updated_app_spec.json
+```
+
+### Recent Events:
+- Нужно создать спецификацию приложения с новой веткой. Сохраним текущую спецификацию и изменим ветку:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:01:48
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+?? updated_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:02:32
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+?? updated_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:04:44
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+?? updated_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:04:50
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+?? updated_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:05:55
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+?? updated_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:06:03
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+?? updated_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:06:09
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+?? updated_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:06:13
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+?? updated_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:06:18
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+?? updated_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:06:54
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+?? current_app_spec.json
+?? updated_app_spec.json
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:06:59
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:07:11
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+- Отлично! Проверим статус приложения:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:07:18
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:09:08
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:09:22
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:12:25
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:13:48
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:13:53
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:13:58
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:14:02
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:14:07
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:14:13
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:14:24
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:14:28
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:14:34
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:14:38
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:14:42
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:14:53
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:14:57
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:15:03
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:15:08
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:15:13
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:15:19
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:15:23
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:15:27
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:15:31
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:15:37
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+M  bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:15:46
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:15:50
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:16:37
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:17:57
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:18:04
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:18:10
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:18:16
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:18:24
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:18:32
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:18:36
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:18:41
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:18:47
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+M  bot/webhook/handlers.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:18:55
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:19:00
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:21:48
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:21:55
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:22:09
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 06:22:15
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:19:40
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:19:45
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:19:54
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:20:01
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:20:07
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:20:14
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:20:21
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:20:27
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+M  agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:20:35
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:20:41
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:21:45
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:27:26
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:28:38
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:28:45
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+- Подождем пару минут для деплоя и проверим результат:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:28:51
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:28:57
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:29:03
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:29:10
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:29:15
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:29:21
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:29:28
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:29:33
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:29:40
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:29:46
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:29:53
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:29:59
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:30:07
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:30:14
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:30:19
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:30:29
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:30:40
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:31:54
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+- Отлично! Теперь я понимаю проблему. Давайте посмотрим на логи еще раз чтобы понять почему Claude SDK не работает:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:32:04
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:32:10
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:32:17
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:32:23
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:32:30
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:32:36
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:32:43
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:32:48
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:32:53
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:33:06
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:33:32
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:34:08
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:37:08
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:37:14
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:37:23
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:37:44
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:37:50
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:38:34
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:38:41
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:38:48
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:38:56
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:39:08
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:39:17
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:39:23
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:39:29
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:39:44
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:39:51
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:39:58
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:40:05
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:40:11
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:40:18
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:40:33
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:41:09
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:41:15
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:41:31
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:41:38
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:41:44
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:41:59
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:42:36
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:43:34
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+?? test_fallback_system.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:44:21
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+?? test_fallback_system.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:44:33
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+?? test_fallback_system.py
+```
+
+### Recent Events:
+- Теперь запущу тест системы fallback:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:44:56
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+?? test_fallback_system.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:45:05
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+?? test_fallback_system.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:45:11
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+?? test_fallback_system.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:45:19
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+?? test_fallback_system.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:45:32
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+?? test_fallback_system.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:46:00
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+?? test_fallback_system.py
+?? test_quick_fallback.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:46:12
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+?? test_fallback_system.py
+?? test_quick_fallback.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:46:48
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+ M agent/core/intelligent_agent.py
+ M bot/services/intelligent_agent_service.py
+ M debug-history.md
+?? change_deployment_branch.py
+?? test_fallback_system.py
+?? test_quick_fallback.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:46:56
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+M  agent/core/intelligent_agent.py
+M  bot/services/intelligent_agent_service.py
+A  change_deployment_branch.py
+M  debug-history.md
+A  test_fallback_system.py
+A  test_quick_fallback.py
+```
+
+### Recent Events:
+
+---
+
+## 📦 Compact Trigger: `unknown`
+
+- **Session ID:** `2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df`
+- **Timestamp:** 2025-07-26 08:47:01
+- **Working Directory:** `/home/coder/Desktop/2202/artem.integrator`
+- **Transcript:** `/home/coder/.claude/projects/-home-coder-Desktop-2202-artem-integrator/2c80d49b-3bdb-496c-b5b4-bd55d7b9b2df.jsonl`
+
+### Git Status:
+```
+M  agent/core/intelligent_agent.py
+M  bot/services/intelligent_agent_service.py
+A  change_deployment_branch.py
+MM debug-history.md
+A  test_fallback_system.py
+A  test_quick_fallback.py
+```
+
+### Recent Events:
+
+---
+
